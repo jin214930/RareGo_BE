@@ -12,6 +12,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.bugzero.rarego.boundedContext.auth.app.AuthAccessTokenBlacklistUseCase;
@@ -45,10 +46,10 @@ public class SecurityConfig {
 		CustomAuthenticationEntryPoint authenticationEntryPoint,
 		CustomAccessDeniedHandler accessDeniedHandler,
 		AuthOAuth2AccountService authOAuth2AccountService,
-		CustomOAuth2SuccessHandler customOAuth2SuccessHandler,
-		AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase) throws Exception {
+		CustomOAuth2SuccessHandler customOAuth2SuccessHandler) throws Exception {
 		http.authorizeHttpRequests(
 				auth -> auth
+					.requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
 					.requestMatchers(SecurityPaths.PUBLIC).permitAll()
 					.requestMatchers(HttpMethod.GET, SecurityPaths.PUBLIC_GET).permitAll()
 					.anyRequest().authenticated()
@@ -71,7 +72,7 @@ public class SecurityConfig {
 				.authenticationEntryPoint(authenticationEntryPoint)
 				.accessDeniedHandler(accessDeniedHandler)
 			)
-			.addFilterBefore(new JwtAuthenticationFilter(jwtParser, authAccessTokenBlacklistUseCase),
+			.addFilterBefore(new JwtAuthenticationFilter(jwtParser),
 				UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();

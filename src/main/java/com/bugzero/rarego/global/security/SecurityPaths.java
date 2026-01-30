@@ -10,14 +10,17 @@ public final class SecurityPaths {
 		"/h2-console/**",
 		"/swagger-ui/**",
 		"/v3/api-docs/**",
+		"/swagger-ui.html",
+		"/api-docs/**",
 
-		// OAuth2 로그인 관련
+
+ // OAuth2 로그인 관련
 		"/oauth2/**",
 		"/login/**",
 
 		// Auction bid stream
-		"/api/v1/auctions/{auctionId}/subscribe",
-		"/api/v1/auctions/{auctionId}/subscribers/count",
+		"/api/v1/auctions/*/subscribe",
+		"/api/v1/auctions/*/subscribers/count",
 		"/api/v1/auctions/subscribers/count",
 
 		// Auth
@@ -32,13 +35,12 @@ public final class SecurityPaths {
 
 		// 임시로 internal 일단 허용한다
 		"/api/v1/internal/**"
-
 	};
 
 	public static final String[] PUBLIC_GET = {
 		// Auction
 		"/api/v1/auctions",
-		"/api/v1/auctions/{auctionId}",
-		"/api/v1/auctions/{auctionId}/bids",
+		"/api/v1/auctions/*",
+		"/api/v1/auctions/*/bids",
 	};
 }
