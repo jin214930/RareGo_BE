@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -20,6 +21,7 @@ import com.bugzero.rarego.boundedContext.auth.app.AuthOAuth2AccountService;
 import com.bugzero.rarego.global.security.CustomOAuth2SuccessHandler;
 import com.bugzero.rarego.global.security.JwtAuthenticationFilter;
 import com.bugzero.rarego.global.security.JwtParser;
+import com.bugzero.rarego.global.security.SecurityPaths;
 
 import java.util.Arrays;
 import java.util.List;
@@ -47,9 +49,8 @@ public class SecurityConfig {
 		AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase) throws Exception {
 		http.authorizeHttpRequests(
 				auth -> auth
-					.requestMatchers("/favicon.ico").permitAll()
-					.requestMatchers("/h2-console/**").permitAll()
-					.requestMatchers("/**").permitAll()
+					.requestMatchers(SecurityPaths.PUBLIC).permitAll()
+					.requestMatchers(HttpMethod.GET, SecurityPaths.PUBLIC_GET).permitAll()
 					.anyRequest().authenticated()
 			)
 			.headers(
