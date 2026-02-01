@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j
 @Service
@@ -36,6 +37,7 @@ public class AuctionFacade {
     private final AuctionUpdateAuctionUseCase auctionUpdateAuctionUseCase;
     private final AuctionDeleteAuctionUseCase auctionDeleteAuctionUseCase;
     private final AuctionDetermineStartAuctionUseCase auctionDetermineStartAuctionUseCase;
+    private final AuctionSubscribeStreamUseCase auctionSubscribeStreamUseCase;
 
     // 쓰기 작업 (입찰 생성)
     @Transactional
@@ -154,5 +156,17 @@ public class AuctionFacade {
 
     public Long determineStartAuction(Long productId) {
         return auctionDetermineStartAuctionUseCase.determineStartAuction(productId);
+    }
+
+    public SseEmitter subscribeAuctionStream(Long auctionId) {
+        return auctionSubscribeStreamUseCase.execute(auctionId);
+    }
+
+    public int getTotalSubscribers() {
+        return auctionSubscribeStreamUseCase.getTotalSubscribers();
+    }
+
+    public int getAuctionSubscribers(Long auctionId) {
+        return auctionSubscribeStreamUseCase.getAuctionSubscribers(auctionId);
     }
 }
