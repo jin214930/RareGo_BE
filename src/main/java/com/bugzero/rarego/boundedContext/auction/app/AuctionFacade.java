@@ -1,5 +1,9 @@
 package com.bugzero.rarego.boundedContext.auction.app;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.bugzero.rarego.boundedContext.auction.domain.AuctionMember;
 import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrderStatus;
 import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
@@ -10,10 +14,22 @@ import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionWithdrawResponseD
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
 import com.bugzero.rarego.global.response.SuccessType;
-import com.bugzero.rarego.shared.auction.dto.*;
+import com.bugzero.rarego.shared.auction.dto.AuctionDetailResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionFilterType;
+import com.bugzero.rarego.shared.auction.dto.AuctionListResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionOrderResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionRelistRequestDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionRelistResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionSearchCondition;
+import com.bugzero.rarego.shared.auction.dto.BidLogResponseDto;
+import com.bugzero.rarego.shared.auction.dto.BidResponseDto;
+import com.bugzero.rarego.shared.auction.dto.MyAuctionOrderListResponseDto;
+import com.bugzero.rarego.shared.auction.dto.MyBidResponseDto;
+import com.bugzero.rarego.shared.auction.dto.MySaleResponseDto;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -139,20 +155,23 @@ public class AuctionFacade {
         return auctionWithdrawUseCase.hasProcessingOrders(publicId);
     }
 
-    // 경매 정보 생성
-    public Long createAuction(Long productId, String publicId, ProductAuctionRequestDto productAuctionRequestDto) {
-        return auctionCreateAuctionUseCase.createAuction(productId, publicId, productAuctionRequestDto);
-    }
+	// 경매 정보 생성
+	@Transactional
+	public Long createAuction(Long productId, String publicId, ProductAuctionRequestDto productAuctionRequestDto) {
+		return auctionCreateAuctionUseCase.createAuction(productId, publicId, productAuctionRequestDto);
+	}
 
-    // 경매 정보 수정
-    public Long updateAuction(String publicId, ProductAuctionUpdateDto dto) {
-        return auctionUpdateAuctionUseCase.updateAuction(publicId, dto);
-    }
+	// 경매 정보 수정
+	@Transactional
+	public Long updateAuction(String publicId, ProductAuctionUpdateDto dto) {
+		return auctionUpdateAuctionUseCase.updateAuction(publicId, dto);
+	}
 
-    // 경매 정보 삭제
-    public void deleteAuction(String publicId, Long productId) {
-        auctionDeleteAuctionUseCase.deleteAuction(publicId, productId);
-    }
+	// 경매 정보 삭제
+	@Transactional
+	public void deleteAuction(String publicId, Long productId) {
+		auctionDeleteAuctionUseCase.deleteAuction(publicId, productId);
+	}
 
     public Long determineStartAuction(Long productId) {
         return auctionDetermineStartAuctionUseCase.determineStartAuction(productId);
