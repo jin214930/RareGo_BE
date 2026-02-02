@@ -5,6 +5,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 TRUNCATE TABLE payment_settlement;
 TRUNCATE TABLE payment_deposit;
+TRUNCATE TABLE payment_transaction;
 TRUNCATE TABLE product_image;
 TRUNCATE TABLE product_inspection;
 TRUNCATE TABLE auction_auctionorder;
