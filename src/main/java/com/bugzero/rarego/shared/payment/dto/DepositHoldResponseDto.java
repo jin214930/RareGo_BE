@@ -12,10 +12,10 @@ public record DepositHoldResponseDto(
         LocalDateTime createdAt) {
     public static DepositHoldResponseDto from(Deposit deposit) {
         return new DepositHoldResponseDto(
-                deposit.getId(),
-                deposit.getAuctionId(),
-                deposit.getAmount(),
-                deposit.getStatus().name(),
-                deposit.getCreatedAt());
+            deposit.getId(),
+            deposit.getAuctionId(),
+            deposit.getAmount(),
+            deposit.getStatus().name(),
+            deposit.getCreatedAt());
     }
 }
