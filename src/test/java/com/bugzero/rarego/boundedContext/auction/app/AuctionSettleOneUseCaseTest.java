@@ -121,6 +121,6 @@ class AuctionSettleOneUseCaseTest {
         useCase.execute(1L);
 
         // then: 정산 핵심 로직이 1번 호출되었는지 확인
-        verify(support, times(1)).processSettlement(auction);
+        verify(support, times(1)).processSettlement(auction.getId());
     }
 }

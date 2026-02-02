@@ -31,7 +31,6 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class AuctionSettlementSupportTest {
 
-    // 1. 필요한 모든 의존성을 @Mock으로 선언합니다.
     @Mock
     private AuctionRepository auctionRepository;
 
@@ -44,7 +43,6 @@ class AuctionSettlementSupportTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    // 2. 위 Mock들을 주입받을 대상입니다.
     @InjectMocks
     private AuctionSettlementSupport support;
 
@@ -52,7 +50,6 @@ class AuctionSettlementSupportTest {
 
     @BeforeEach
     void setUp() {
-        // Auction 객체 생성 시 durationDays 등 필수 필드 누락 주의!
         auction = Auction.builder()
                 .sellerId(1L)
                 .productId(100L)
@@ -70,21 +67,24 @@ class AuctionSettlementSupportTest {
     @DisplayName("입찰자가 있는 경우: 낙찰 처리되고 주문이 생성된다")
     void processSettlement_success_with_bid() {
         // given
+        Long auctionId = 1L;
         Bid winningBid = Bid.builder()
                 .bidderId(10L)
                 .bidAmount(50000)
                 .build();
 
-        given(bidRepository.existsByAuctionId(1L)).willReturn(true);
-        given(bidRepository.findTopByAuctionIdOrderByBidAmountDescBidTimeAsc(1L))
+        given(auctionRepository.findByIdWithLock(auctionId)).willReturn(Optional.of(auction));
+
+        given(bidRepository.existsByAuctionId(auctionId)).willReturn(true);
+        given(bidRepository.findTopByAuctionIdOrderByBidAmountDescBidTimeAsc(auctionId))
                 .willReturn(Optional.of(winningBid));
 
         // when
-        support.processSettlement(auction);
+        support.processSettlement(auctionId);
 
         // then
         assertThat(auction.getStatus()).isEqualTo(AuctionStatus.ENDED);
-        verify(auctionRepository).save(auction); // 이 부분이 null이 아니어야 함
+        verify(auctionRepository).save(auction);
         verify(auctionOrderRepository).save(any(AuctionOrder.class));
         verify(eventPublisher).publishEvent(any(AuctionEndedEvent.class));
     }
@@ -93,10 +93,14 @@ class AuctionSettlementSupportTest {
     @DisplayName("입찰자가 없는 경우: 유찰 처리되고 실패 이벤트가 발행된다")
     void processSettlement_fail_no_bid() {
         // given
-        given(bidRepository.existsByAuctionId(1L)).willReturn(false);
+        Long auctionId = 1L;
+
+        given(auctionRepository.findByIdWithLock(auctionId)).willReturn(Optional.of(auction));
+
+        given(bidRepository.existsByAuctionId(auctionId)).willReturn(false);
 
         // when
-        support.processSettlement(auction);
+        support.processSettlement(auctionId);
 
         // then
         assertThat(auction.getStatus()).isEqualTo(AuctionStatus.ENDED);
