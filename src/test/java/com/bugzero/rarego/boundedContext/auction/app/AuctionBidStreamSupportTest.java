@@ -131,7 +131,7 @@ class AuctionBidStreamSupportTest {
         );
 
         // then
-        assertThat(event.getMaskedBidderName()).isEqualTo("김*수");
+        assertThat(event.bidderName()).isEqualTo("김*수");
 
         // given
         AuctionBidEventDto event2 = AuctionBidEventDto.create(
@@ -142,7 +142,7 @@ class AuctionBidStreamSupportTest {
         );
 
         // then
-        assertThat(event2.getMaskedBidderName()).contains("*");
-        assertThat(event2.getMaskedBidderName()).startsWith("le");
+        assertThat(event2.bidderName()).contains("*");
+        assertThat(event2.bidderName()).startsWith("le");
     }
 }
