@@ -39,26 +39,18 @@ public class AuctionSettlementSupport {
         );
     }
 
-    /**
-     * 개별 경매 정산 로직 (트랜잭션 분리)
-     * 이 메서드는 독립적인 트랜잭션으로 실행되어, 호출부의 루프에서 에러가 나도 commit/rollback이 개별적으로 보장됨
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processSettlement(Long auctionId) {
-
-        // 새로운 트랜잭션 안에서 최신 상태를 SELECT ... FOR UPDATE로 조회
-        // 만약 다른 스레드가 먼저 정산했다면, 여기서 조회되지 않거나(상태 필터링 시) 대기하게 됨
-        // 1. 비관적 락으로 조회
+        // 1. 비관적 락으로 조회: 다른 트랜잭션이 끝날 때까지 대기하여 최신 상태 보장
         Auction auction = auctionRepository.findByIdWithLock(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
 
-        // 2. 이미 종료된 상태라면 예외를 던져 중복 처리를 방지
-        // 에러 코드 의미와 실제 상태 체크 로직을 일치시킴
+        // 2. 상태 검증: 진행 중이 아니라면 이미 다른 곳에서 정산/철회된 것임
         if (auction.getStatus() != AuctionStatus.IN_PROGRESS) {
             throw new CustomException(ErrorType.AUCTION_NOT_FOUND_OR_ALREADY_SETTLED);
         }
-        
-        // 최신화된 auction 객체로 정산 진행
+
+        // 3. 낙찰/유찰 처리
         if (bidRepository.existsByAuctionId(auction.getId())) {
             handleSuccess(auction);
         } else {

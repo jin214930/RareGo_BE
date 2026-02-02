@@ -1,15 +1,11 @@
 package com.bugzero.rarego.boundedContext.auction.app;
 
-import com.bugzero.rarego.boundedContext.auction.domain.Auction;
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
 import com.bugzero.rarego.boundedContext.auction.out.AuctionRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -20,31 +16,17 @@ public class AuctionSettleOneUseCase {
     private final AuctionSettlementSupport support;
 
     public void execute(Long auctionId) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
+        try {
+            support.processSettlement(auctionId);
+            log.info("경매 {} 정산 처리 완료", auctionId);
 
-        // 이미 종료된 경우: 로그만 남기고 'execute' 자체를 종료(Early Return)
-        if (auction.getStatus() == AuctionStatus.ENDED) {
-            log.warn("경매 {}는 이미 종료되었습니다.", auction.getId());
-            return;
-        }
-
-        // 그 외 비정상 상태 검증: 예외 발생
-        validateAuctionSettlementEligibility(auction);
-
-        // 정산 실행
-        support.processSettlement(auctionId);
-        log.info("경매 {} 정산 처리 완료", auctionId);
-    }
-
-    private void validateAuctionSettlementEligibility(Auction auction) {
-        // 진행 중이 아니거나 (SCHEDULED 등)
-        if (auction.getStatus() != AuctionStatus.IN_PROGRESS) {
-            throw new CustomException(ErrorType.AUCTION_NOT_IN_PROGRESS);
-        }
-        // 아직 시간이 안 된 경우
-        if (auction.getEndTime().isAfter(LocalDateTime.now())) {
-            throw new CustomException(ErrorType.AUCTION_NOT_IN_PROGRESS);
+        } catch (CustomException e) {
+            // 이미 다른 스레드에 의해 정산된 경우, 에러가 아닌 정상 흐름으로 간주
+            if (e.getErrorType() == ErrorType.AUCTION_NOT_FOUND_OR_ALREADY_SETTLED) {
+                log.warn("경매 {}는 이미 종료되었거나 정산 대상이 아닙니다.", auctionId);
+                return;
+            }
+            throw e;
         }
     }
 }
