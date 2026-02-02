@@ -41,16 +41,21 @@ public class AuctionSettlementSupport {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processSettlement(Long auctionId) {
-        // 1. 비관적 락으로 조회: 다른 트랜잭션이 끝날 때까지 대기하여 최신 상태 보장
+        // 비관적 락으로 조회: 다른 트랜잭션이 끝날 때까지 대기하여 최신 상태 보장
         Auction auction = auctionRepository.findByIdWithLock(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
 
-        // 2. 상태 검증: 진행 중이 아니라면 이미 다른 곳에서 정산/철회된 것임
+        // 상태 검증: 진행 중이 아니라면 이미 다른 곳에서 정산/철회된 것임
         if (auction.getStatus() != AuctionStatus.IN_PROGRESS) {
             throw new CustomException(ErrorType.AUCTION_NOT_FOUND_OR_ALREADY_SETTLED);
         }
 
-        // 3. 낙찰/유찰 처리
+        // 시간 검증
+        if (auction.getEndTime().isAfter(LocalDateTime.now())) {
+            throw new CustomException(ErrorType.AUCTION_NOT_FINISHED);
+        }
+
+        // 낙찰/유찰 처리
         if (bidRepository.existsByAuctionId(auction.getId())) {
             handleSuccess(auction);
         } else {

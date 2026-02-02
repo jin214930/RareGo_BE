@@ -87,6 +87,7 @@ public enum ErrorType {
     AUCTION_WITHDRAW_NOT_INSPECTED(400, 2513, "검수 전 경매는 판매 포기할 수 없습니다."),
     BOOKMARK_UNAUTHORIZED_ACCESS(403, 2514, "요청한 사용자가 북마크의 memberId와 일치하지 않습니다."),
     AUCTION_NOT_FOUND_OR_ALREADY_SETTLED(404, 2515, "존재하지 않는 경매이거나 이미 정산이 완료된 경매입니다."),
+    AUCTION_NOT_FINISHED(400, 2516, "아직 경매 종료 시간이 되지 않아 정산할 수 없습니다."),
 
     // Product (3000 ~ 3999)
     PRODUCT_NOT_FOUND(404, 3001, "상품이 존재하지 않습니다."),
