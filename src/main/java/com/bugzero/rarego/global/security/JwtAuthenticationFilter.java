@@ -20,12 +20,11 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	private final JwtParser jwtParser;
-	private final AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase;
+	// private final AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase;
 
-	public JwtAuthenticationFilter(JwtParser jwtParser,
-		AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase) {
+	public JwtAuthenticationFilter(JwtParser jwtParser) {
 		this.jwtParser = jwtParser;
-		this.authAccessTokenBlacklistUseCase = authAccessTokenBlacklistUseCase;
+		// this.authAccessTokenBlacklistUseCase = authAccessTokenBlacklistUseCase;
 	}
 
 	private static String resolveToken(HttpServletRequest request) {
@@ -46,11 +45,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		throws ServletException, IOException {
 		String token = resolveToken(request);
 		if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-			// 블랙리스트에 올라있으면 null 반환
-			if (authAccessTokenBlacklistUseCase.isBlacklisted(token)) {
-				filterChain.doFilter(request, response);
-				return;
-			}
+
+			// TODO: 블랙리스트에 올라있으면 null 반환 => 이후에 redis로 이전, MSA를 위해 주석처리
+			// if (authAccessTokenBlacklistUseCase.isBlacklisted(token)) {
+			// 	filterChain.doFilter(request, response);
+			// 	return;
+			// }
 
 			// 토큰이 유효한지 검사, 유효하지 않으면 null 반환
 			MemberPrincipal principal = jwtParser.parsePrincipal(token);
@@ -66,7 +66,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				SecurityContextHolder.getContext().setAuthentication(authentication);
 			}
 		}
-
 		filterChain.doFilter(request, response);
 	}
 }
