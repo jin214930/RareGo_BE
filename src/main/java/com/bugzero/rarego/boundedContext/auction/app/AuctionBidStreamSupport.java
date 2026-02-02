@@ -74,7 +74,7 @@ public class AuctionBidStreamSupport {
                     System.currentTimeMillis() + "_init",
                     AuctionConnectEventDto.create(auctionId, currentPrice)
             );
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             log.error("연결 이벤트 전송 실패", e);
             removeEmitter(auctionId, emitter);
         }

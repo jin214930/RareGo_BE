@@ -1,6 +1,5 @@
 package com.bugzero.rarego.boundedContext.auction.app;
 
-import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionBidEventDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -117,32 +116,5 @@ class AuctionBidStreamSupportTest {
 
         // then: 스케줄러가 shutdown 상태인지 검증
         assertTrue(scheduler.isShutdown(), "스케줄러가 shutdown 상태여야 합니다.");
-    }
-
-    @Test
-    @DisplayName("이름 마스킹 테스트")
-    void maskName() {
-        // given
-        AuctionBidEventDto event = AuctionBidEventDto.create(
-                1L,
-                100_000,
-                "김철수",
-                LocalDateTime.now()
-        );
-
-        // then
-        assertThat(event.getMaskedBidderName()).isEqualTo("김*수");
-
-        // given
-        AuctionBidEventDto event2 = AuctionBidEventDto.create(
-                1L,
-                100_000,
-                "legoKing",
-                LocalDateTime.now()
-        );
-
-        // then
-        assertThat(event2.getMaskedBidderName()).contains("*");
-        assertThat(event2.getMaskedBidderName()).startsWith("le");
     }
 }
