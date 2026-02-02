@@ -1,18 +1,15 @@
 package com.bugzero.rarego.boundedContext.auction.app;
 
-import com.bugzero.rarego.boundedContext.auction.domain.*;
-import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionBookmarkListResponseDto;
-import com.bugzero.rarego.boundedContext.auction.out.*;
-import com.bugzero.rarego.boundedContext.product.app.ProductCreateS3PresignerUrlUseCase;
-import com.bugzero.rarego.boundedContext.product.domain.Product;
-import com.bugzero.rarego.boundedContext.product.domain.ProductImage;
-import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
-import com.bugzero.rarego.boundedContext.product.out.ProductImageRepository;
-import com.bugzero.rarego.boundedContext.product.out.ProductRepository;
-import com.bugzero.rarego.global.exception.CustomException;
-import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.global.response.PagedResponseDto;
-import com.bugzero.rarego.shared.auction.dto.*;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.BDDMockito.*;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,12 +22,33 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.*;
+import com.bugzero.rarego.boundedContext.auction.domain.Auction;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionBookmark;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionMember;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrder;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrderStatus;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
+import com.bugzero.rarego.boundedContext.auction.domain.Bid;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionBookmarkListResponseDto;
+import com.bugzero.rarego.boundedContext.auction.out.AuctionBookmarkRepository;
+import com.bugzero.rarego.boundedContext.auction.out.AuctionMemberRepository;
+import com.bugzero.rarego.boundedContext.auction.out.AuctionOrderRepository;
+import com.bugzero.rarego.boundedContext.auction.out.AuctionRepository;
+import com.bugzero.rarego.boundedContext.auction.out.BidRepository;
+import com.bugzero.rarego.boundedContext.product.app.ProductImageS3UseCase;
+import com.bugzero.rarego.boundedContext.product.domain.Product;
+import com.bugzero.rarego.boundedContext.product.domain.ProductImage;
+import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
+import com.bugzero.rarego.boundedContext.product.out.ProductImageRepository;
+import com.bugzero.rarego.boundedContext.product.out.ProductRepository;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.global.response.PagedResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionDetailResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionListResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionOrderResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionSearchCondition;
+import com.bugzero.rarego.shared.auction.dto.MyAuctionOrderListResponseDto;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionReadUseCaseTest {
@@ -42,23 +60,23 @@ class AuctionReadUseCaseTest {
     @Mock
     private AuctionSupport support;
 
-    // [유지] Bulk 조회 등에 여전히 쓰이는 Mock들
-    @Mock
-    private AuctionRepository auctionRepository;
-    @Mock
-    private BidRepository bidRepository;
-    @Mock
-    private AuctionOrderRepository auctionOrderRepository;
-    @Mock
-    private ProductRepository productRepository;
-    @Mock
-    private AuctionMemberRepository auctionMemberRepository;
-    @Mock
-    private ProductImageRepository productImageRepository;
-    @Mock
-    private AuctionBookmarkRepository auctionBookmarkRepository;
-    @Mock
-    private ProductCreateS3PresignerUrlUseCase s3PresignerUrlUseCase;
+	// [유지] Bulk 조회 등에 여전히 쓰이는 Mock들
+	@Mock
+	private AuctionRepository auctionRepository;
+	@Mock
+	private BidRepository bidRepository;
+	@Mock
+	private AuctionOrderRepository auctionOrderRepository;
+	@Mock
+	private ProductRepository productRepository;
+	@Mock
+	private AuctionMemberRepository auctionMemberRepository;
+	@Mock
+	private ProductImageRepository productImageRepository;
+	@Mock
+	private AuctionBookmarkRepository auctionBookmarkRepository;
+	@Mock
+	private ProductImageS3UseCase productImageS3UseCase;
 
     // --- 1. 경매 상세 조회 (getAuctionDetail) 테스트 ---
 
@@ -178,7 +196,7 @@ class AuctionReadUseCaseTest {
         given(productImageRepository.findAllByProductId(50L)).willReturn(List.of(image));
 
         // S3 Presigned URL 변환 Mocking
-        lenient().when(s3PresignerUrlUseCase.getPresignedGetUrl(anyString()))
+        lenient().when(productImageS3UseCase.getPresignedGetUrl(anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -258,7 +276,7 @@ class AuctionReadUseCaseTest {
         given(productImageRepository.findAllByProductIdIn(anySet())).willReturn(List.of());
 
         // S3 Presigned URL 변환 Mocking
-        lenient().when(s3PresignerUrlUseCase.getPresignedGetUrl(anyString()))
+        lenient().when(productImageS3UseCase.getPresignedGetUrl(anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // [When]
@@ -395,7 +413,7 @@ class AuctionReadUseCaseTest {
         given(productImageRepository.findAllByProductIdIn(Set.of(50L))).willReturn(Collections.emptyList());
 
         // S3 Presigned URL 변환 Mocking
-        lenient().when(s3PresignerUrlUseCase.getPresignedGetUrl(anyString()))
+        lenient().when(productImageS3UseCase.getPresignedGetUrl(anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -461,7 +479,7 @@ class AuctionReadUseCaseTest {
         given(productImageRepository.findAllByProductIdIn(Set.of(50L))).willReturn(List.of(img1, img2));
 
         // S3 Presigned URL 변환 Mocking
-        lenient().when(s3PresignerUrlUseCase.getPresignedGetUrl(anyString()))
+        lenient().when(productImageS3UseCase.getPresignedGetUrl(anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
