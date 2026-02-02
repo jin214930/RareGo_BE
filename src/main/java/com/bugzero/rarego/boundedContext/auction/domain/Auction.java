@@ -1,19 +1,23 @@
 package com.bugzero.rarego.boundedContext.auction.domain;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Objects;
 
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.jpa.entity.BaseIdAndTime;
 import com.bugzero.rarego.global.response.ErrorType;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 @Entity
 @Table(name = "AUCTION_AUCTION")
@@ -54,7 +58,7 @@ public class Auction extends BaseIdAndTime {
 
     // 입찰 가격 갱신
     @Builder
-    public Auction(Long productId, Long sellerId, LocalDateTime startTime,  Integer durationDays, LocalDateTime endTime, int startPrice) {
+    public Auction(Long productId, Long sellerId, LocalDateTime startTime, Integer durationDays, LocalDateTime endTime, int startPrice) {
         this.productId = productId;
         this.sellerId = sellerId;
         this.startTime = startTime;
@@ -119,6 +123,10 @@ public class Auction extends BaseIdAndTime {
 
     public void withdraw() {
         this.status = AuctionStatus.WITHDRAWN;
+    }
+
+    public Integer getCurrentPriceOrStartPrice() {
+        return currentPrice != null ? currentPrice : startPrice;
     }
 
     // 호가단위 결정

@@ -9,17 +9,19 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.bugzero.rarego.boundedContext.auth.app.AuthAccessTokenBlacklistUseCase;
 import com.bugzero.rarego.global.security.CustomAccessDeniedHandler;
 import com.bugzero.rarego.global.security.CustomAuthenticationEntryPoint;
-import com.bugzero.rarego.boundedContext.auth.app.AuthOAuth2AccountService;
-import com.bugzero.rarego.global.security.CustomOAuth2SuccessHandler;
 import com.bugzero.rarego.global.security.JwtAuthenticationFilter;
 import com.bugzero.rarego.global.security.JwtParser;
+import com.bugzero.rarego.global.security.OAuth2SecurityConfigurer;
+import com.bugzero.rarego.global.security.SecurityPaths;
 
 import java.util.Arrays;
 import java.util.List;
@@ -42,36 +44,25 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http, JwtParser jwtParser,
 		CustomAuthenticationEntryPoint authenticationEntryPoint,
 		CustomAccessDeniedHandler accessDeniedHandler,
-		AuthOAuth2AccountService authOAuth2AccountService,
-		CustomOAuth2SuccessHandler customOAuth2SuccessHandler,
-		AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase) throws Exception {
+		OAuth2SecurityConfigurer oauth2SecurityConfigurer) throws Exception {
 		http.authorizeHttpRequests(
-				auth -> auth
-					.requestMatchers("/favicon.ico").permitAll()
-					.requestMatchers("/h2-console/**").permitAll()
-					.requestMatchers("/**").permitAll()
-					.anyRequest().authenticated()
-			)
-			.headers(
-				headers -> headers
-					.frameOptions(
-						HeadersConfigurer.FrameOptionsConfig::sameOrigin
-					)
-			).csrf(
-				AbstractHttpConfigurer::disable
-			).cors(cors -> cors.configurationSource(corsConfigurationSource())
-			).oauth2Login(oauth2 -> oauth2
-				.userInfoEndpoint(userInfo -> userInfo.userService(authOAuth2AccountService))
-				.successHandler(customOAuth2SuccessHandler)
-			).sessionManagement(
-				sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-			)
-			.exceptionHandling(ex -> ex
-				.authenticationEntryPoint(authenticationEntryPoint)
-				.accessDeniedHandler(accessDeniedHandler)
-			)
-			.addFilterBefore(new JwtAuthenticationFilter(jwtParser, authAccessTokenBlacklistUseCase),
-				UsernamePasswordAuthenticationFilter.class);
+			auth -> auth
+				.requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
+				.requestMatchers(SecurityPaths.PUBLIC).permitAll()
+				.requestMatchers(HttpMethod.GET, SecurityPaths.PUBLIC_GET).permitAll()
+				.anyRequest().authenticated()
+		);
+		http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+		http.csrf(AbstractHttpConfigurer::disable);
+		http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+		oauth2SecurityConfigurer.configure(http);
+		http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+		http.exceptionHandling(ex -> ex
+			.authenticationEntryPoint(authenticationEntryPoint)
+			.accessDeniedHandler(accessDeniedHandler)
+		);
+		http.addFilterBefore(new JwtAuthenticationFilter(jwtParser),
+			UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}
