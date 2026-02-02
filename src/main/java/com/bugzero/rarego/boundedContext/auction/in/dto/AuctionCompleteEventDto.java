@@ -17,10 +17,6 @@ public record AuctionCompleteEventDto(
         return "AUCTION_ENDED";
     }
 
-    public String getMaskedWinnerName() {
-        return maskName(winnerName);
-    }
-
     public static AuctionCompleteEventDto create(
             Long auctionId,
             Integer finalPrice,
@@ -32,21 +28,5 @@ public record AuctionCompleteEventDto(
                 winnerName,
                 LocalDateTime.now()
         );
-    }
-
-    private static String maskName(String name) {
-        if (name == null || name.length() <= 2) {
-            return name;
-        }
-
-        int length = name.length();
-        int maskStart = length / 3;
-        int maskEnd = length - length / 3;
-
-        StringBuilder masked = new StringBuilder(name);
-        for (int i = maskStart; i < maskEnd; i++) {
-            masked.setCharAt(i, '*');
-        }
-        return masked.toString();
     }
 }

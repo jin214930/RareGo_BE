@@ -3,30 +3,25 @@ package com.bugzero.rarego.boundedContext.auction.in.dto;
 import com.bugzero.rarego.boundedContext.auction.domain.Auction;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
-import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Getter
 @Builder
-public class AuctionAutoSettleResponseDto {
-
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime requestTime;
-
-    private Integer processedCount;
-    private Integer successCount;
-    private Integer failCount;
-    private List<SettlementDetail> details;
-
-    @Getter
+public record AuctionAutoSettleResponseDto(
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        LocalDateTime requestTime,
+        Integer processedCount,
+        Integer successCount,
+        Integer failCount,
+        List<SettlementDetail> details
+) {
     @Builder
-    public static class SettlementDetail {
-        private Long auctionId;
-        private String result;   // SUCCESS_BID, FAILED_NO_BIDS
-        private Long winnerId;
-
+    public record SettlementDetail(
+            Long auctionId,
+            String result,   // SUCCESS_BID, FAILED_NO_BIDS
+            Long winnerId
+    ) {
         public static SettlementDetail success(Long auctionId, Long winnerId) {
             return SettlementDetail.builder()
                     .auctionId(auctionId)

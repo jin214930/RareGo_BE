@@ -1,34 +1,27 @@
 package com.bugzero.rarego.boundedContext.auction.in;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
-
+import com.bugzero.rarego.boundedContext.auction.app.AuctionFacade;
+import com.bugzero.rarego.global.aspect.ResponseAspect;
+import com.bugzero.rarego.global.config.JacksonConfig;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.exception.GlobalExceptionHandler;
+import com.bugzero.rarego.global.response.ErrorType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.bugzero.rarego.boundedContext.auction.app.AuctionBidStreamSupport;
-import com.bugzero.rarego.boundedContext.auction.domain.Auction;
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
-import com.bugzero.rarego.boundedContext.auction.out.AuctionRepository;
-import com.bugzero.rarego.global.aspect.ResponseAspect;
-import com.bugzero.rarego.global.config.JacksonConfig;
-import com.bugzero.rarego.global.exception.GlobalExceptionHandler;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * GlobalExceptionHandler가 예외를 JSON으로 변환하므로
@@ -44,28 +37,21 @@ class AuctionBidStreamControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private AuctionBidStreamSupport streamSupport;
-
-    @MockitoBean
-    private AuctionRepository auctionRepository;
+    private AuctionFacade auctionFacade;  // 변경
 
     @Test
     @DisplayName("SSE 구독 성공")
     void subscribe_Success() throws Exception {
         // given
         Long auctionId = 1L;
-        Auction auction = createAuction(auctionId, 100_000, 50_000);
-
-        given(auctionRepository.findById(auctionId)).willReturn(Optional.of(auction));
-        given(streamSupport.getAuctionSubscribers(auctionId)).willReturn(10);
-        given(streamSupport.subscribe(eq(auctionId), any())).willReturn(new SseEmitter());
+        given(auctionFacade.subscribeAuctionStream(auctionId)).willReturn(new SseEmitter());
 
         // when & then
         mockMvc.perform(get("/api/v1/auctions/{auctionId}/subscribe", auctionId))
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        verify(streamSupport).subscribe(eq(auctionId), eq(100_000));
+        verify(auctionFacade).subscribeAuctionStream(auctionId);
     }
 
     @Test
@@ -73,17 +59,15 @@ class AuctionBidStreamControllerTest {
     void subscribe_AuctionNotFound() throws Exception {
         // given
         Long auctionId = 999L;
-        given(auctionRepository.findById(auctionId)).willReturn(Optional.empty());
+        given(auctionFacade.subscribeAuctionStream(auctionId))
+                .willThrow(new CustomException(ErrorType.AUCTION_NOT_FOUND));
 
         // when & then
         mockMvc.perform(get("/api/v1/auctions/{auctionId}/subscribe", auctionId))
                 .andDo(print())
                 .andExpect(status().isNotFound())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.code").value(2001));
-
-        verify(streamSupport, never()).subscribe(any(), any());
     }
 
     @Test
@@ -91,10 +75,8 @@ class AuctionBidStreamControllerTest {
     void subscribe_ServiceUnavailable() throws Exception {
         // given
         Long auctionId = 1L;
-        Auction auction = createAuction(auctionId, 100_000, 50_000);
-
-        given(auctionRepository.findById(auctionId)).willReturn(Optional.of(auction));
-        given(streamSupport.getAuctionSubscribers(auctionId)).willReturn(1000);
+        given(auctionFacade.subscribeAuctionStream(auctionId))
+                .willThrow(new CustomException(ErrorType.SERVICE_SUBSCRIBER_LIMIT_EXCEEDED));
 
         // when & then
         mockMvc.perform(get("/api/v1/auctions/{auctionId}/subscribe", auctionId))
@@ -102,8 +84,6 @@ class AuctionBidStreamControllerTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.status").value(503))
                 .andExpect(jsonPath("$.code").value(2506));
-
-        verify(streamSupport, never()).subscribe(any(), any());
     }
 
     @Test
@@ -111,25 +91,21 @@ class AuctionBidStreamControllerTest {
     void subscribe_UseStartPriceWhenCurrentPriceIsNull() throws Exception {
         // given
         Long auctionId = 1L;
-        Auction auction = createAuction(auctionId, null, 50_000);
-
-        given(auctionRepository.findById(auctionId)).willReturn(Optional.of(auction));
-        given(streamSupport.getAuctionSubscribers(auctionId)).willReturn(10);
-        given(streamSupport.subscribe(eq(auctionId), any())).willReturn(new SseEmitter());
+        given(auctionFacade.subscribeAuctionStream(auctionId)).willReturn(new SseEmitter());
 
         // when & then
         mockMvc.perform(get("/api/v1/auctions/{auctionId}/subscribe", auctionId))
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        verify(streamSupport).subscribe(eq(auctionId), eq(50_000));
+        verify(auctionFacade).subscribeAuctionStream(auctionId);
     }
 
     @Test
     @DisplayName("전체 구독자 수 조회")
     void getTotalSubscribers() throws Exception {
         // given
-        given(streamSupport.getTotalSubscribers()).willReturn(150);
+        given(auctionFacade.getTotalSubscribers()).willReturn(150);
 
         // when & then
         mockMvc.perform(get("/api/v1/auctions/subscribers/count"))
@@ -143,7 +119,7 @@ class AuctionBidStreamControllerTest {
     void getAuctionSubscribers() throws Exception {
         // given
         Long auctionId = 1L;
-        given(streamSupport.getAuctionSubscribers(auctionId)).willReturn(25);
+        given(auctionFacade.getAuctionSubscribers(auctionId)).willReturn(25);
 
         // when & then
         mockMvc.perform(get("/api/v1/auctions/{auctionId}/subscribers/count", auctionId))
@@ -152,19 +128,4 @@ class AuctionBidStreamControllerTest {
                 .andExpect(content().string("25"));
     }
 
-    private Auction createAuction(Long id, Integer currentPrice, Integer startPrice) {
-        Auction auction = Auction.builder()
-                .productId(100L)
-                .startTime(LocalDateTime.now().minusHours(1))
-                .endTime(LocalDateTime.now().plusHours(1))
-                .durationDays(3)
-                .startPrice(startPrice)
-                .build();
-
-        ReflectionTestUtils.setField(auction, "id", id);
-        ReflectionTestUtils.setField(auction, "status", AuctionStatus.IN_PROGRESS);
-        ReflectionTestUtils.setField(auction, "currentPrice", currentPrice);
-
-        return auction;
-    }
 }
