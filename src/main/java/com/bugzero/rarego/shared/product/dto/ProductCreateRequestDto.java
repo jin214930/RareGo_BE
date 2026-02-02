@@ -8,6 +8,7 @@ import com.bugzero.rarego.boundedContext.product.domain.InspectionStatus;
 import com.bugzero.rarego.boundedContext.product.domain.Product;
 import com.bugzero.rarego.boundedContext.product.domain.ProductCondition;
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageRequestDto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

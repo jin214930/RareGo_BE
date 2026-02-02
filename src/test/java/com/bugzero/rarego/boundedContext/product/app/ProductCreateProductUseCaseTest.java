@@ -19,12 +19,12 @@ import com.bugzero.rarego.boundedContext.product.domain.Category;
 import com.bugzero.rarego.boundedContext.product.domain.InspectionStatus;
 import com.bugzero.rarego.boundedContext.product.domain.Product;
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductCreateResponseDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageRequestDto;
 import com.bugzero.rarego.boundedContext.product.out.ProductRepository;
 import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
-import com.bugzero.rarego.shared.product.dto.ProductCreateResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
 
 @ExtendWith(MockitoExtension.class)
 class ProductCreateProductUseCaseTest {

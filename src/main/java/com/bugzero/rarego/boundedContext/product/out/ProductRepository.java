@@ -13,7 +13,7 @@ import org.springframework.data.repository.query.Param;
 import com.bugzero.rarego.boundedContext.product.domain.Category;
 import com.bugzero.rarego.boundedContext.product.domain.InspectionStatus;
 import com.bugzero.rarego.boundedContext.product.domain.Product;
-import com.bugzero.rarego.shared.product.dto.ProductResponseForInspectionDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductResponseForInspectionDto;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 	Optional<Product> findByIdAndDeletedIsFalse(Long id);
@@ -38,7 +38,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 	);
 
 	@Query("""
-		SELECT new com.bugzero.rarego.shared.product.dto.ProductResponseForInspectionDto(
+		SELECT new com.bugzero.rarego.boundedContext.product.domain.dto.ProductResponseForInspectionDto(
 		    p.id, 
 		    p.name, 
 		    s.email, 

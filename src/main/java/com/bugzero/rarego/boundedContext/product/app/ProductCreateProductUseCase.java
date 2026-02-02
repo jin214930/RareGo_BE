@@ -8,11 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.boundedContext.product.domain.Product;
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductCreateResponseDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageRequestDto;
 import com.bugzero.rarego.boundedContext.product.out.ProductRepository;
 import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
-import com.bugzero.rarego.shared.product.dto.ProductCreateResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
 
 import lombok.RequiredArgsConstructor;
 

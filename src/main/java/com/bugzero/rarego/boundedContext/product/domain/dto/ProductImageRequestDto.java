@@ -1,4 +1,4 @@
-package com.bugzero.rarego.shared.product.dto;
+package com.bugzero.rarego.boundedContext.product.domain.dto;
 
 import com.bugzero.rarego.boundedContext.product.domain.Product;
 import com.bugzero.rarego.boundedContext.product.domain.ProductImage;

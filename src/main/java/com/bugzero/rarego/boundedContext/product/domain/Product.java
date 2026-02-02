@@ -6,10 +6,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageUpdateDto;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.jpa.entity.BaseIdAndTime;
 import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.shared.product.dto.ProductImageUpdateDto;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

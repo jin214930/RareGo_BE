@@ -2,11 +2,6 @@ package com.bugzero.rarego.shared.auction.out;
 
 import java.util.Optional;
 
-import com.bugzero.rarego.global.exception.CustomException;
-import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.global.response.SuccessResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;

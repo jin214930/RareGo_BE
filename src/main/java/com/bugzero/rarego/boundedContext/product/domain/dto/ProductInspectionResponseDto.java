@@ -1,4 +1,4 @@
-package com.bugzero.rarego.shared.product.dto;
+package com.bugzero.rarego.boundedContext.product.domain.dto;
 
 import java.time.LocalDateTime;
 

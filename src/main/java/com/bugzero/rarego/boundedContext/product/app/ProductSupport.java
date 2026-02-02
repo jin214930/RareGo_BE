@@ -9,12 +9,12 @@ import org.springframework.stereotype.Service;
 
 import com.bugzero.rarego.boundedContext.product.domain.Product;
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageRequestDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageUpdateDto;
 import com.bugzero.rarego.boundedContext.product.out.ProductMemberRepository;
 import com.bugzero.rarego.boundedContext.product.out.ProductRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
-import com.bugzero.rarego.shared.product.dto.ProductImageUpdateDto;
 
 import lombok.RequiredArgsConstructor;
 
