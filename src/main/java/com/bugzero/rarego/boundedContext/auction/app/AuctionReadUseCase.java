@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class AuctionReadUseCase {
 
+	//
 	private final AuctionSupport support;
 	private final BidRepository bidRepository;
 	private final AuctionMemberRepository auctionMemberRepository;
@@ -150,6 +151,7 @@ public class AuctionReadUseCase {
 		if (viewerRole == GUEST) throw new CustomException(ErrorType.AUCTION_ORDER_ACCESS_DENIED);
 
 		// [변경] 상품 정보 조회
+		// 상품 정보가 필요하면 Client에게 ID를 주고 DTO를 받아옴
 		ProductAuctionResponseDto product = productApiClient.getProduct(auction.getProductId())
 			.orElseThrow(() -> new CustomException(ErrorType.PRODUCT_NOT_FOUND));
 
@@ -197,7 +199,7 @@ public class AuctionReadUseCase {
 		Set<Long> productIds = auctions.stream().map(Auction::getProductId).collect(Collectors.toSet());
 		Set<Long> auctionIds = auctions.stream().map(Auction::getId).collect(Collectors.toSet());
 
-		// [변경] 상품 정보 Bulk 조회
+		// 상품 정보 Bulk 조회
 		Map<Long, ProductAuctionResponseDto> productMap = productApiClient.getProducts(productIds).stream()
 			.collect(Collectors.toMap(ProductAuctionResponseDto::id, Function.identity()));
 
