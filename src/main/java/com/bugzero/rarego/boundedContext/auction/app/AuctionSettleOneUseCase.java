@@ -33,7 +33,7 @@ public class AuctionSettleOneUseCase {
         validateAuctionSettlementEligibility(auction);
 
         // 정산 실행
-        support.processSettlement(auction);
+        support.processSettlement(auctionId);
         log.info("경매 {} 정산 처리 완료", auctionId);
     }
 

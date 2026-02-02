@@ -43,7 +43,14 @@ public class AuctionSettlementSupport {
      * 이 메서드는 독립적인 트랜잭션으로 실행되어, 호출부의 루프에서 에러가 나도 commit/rollback이 개별적으로 보장됨
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processSettlement(Auction auction) {
+    public void processSettlement(Long auctionId) {
+
+        // 새로운 트랜잭션 안에서 최신 상태를 SELECT ... FOR UPDATE로 조회
+        // 만약 다른 스레드가 먼저 정산했다면, 여기서 조회되지 않거나(상태 필터링 시) 대기하게 됨
+        Auction auction = auctionRepository.findByIdWithLock(auctionId)
+                .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND_OR_ALREADY_SETTLED));
+
+        // 최신화된 auction 객체로 정산 진행
         if (bidRepository.existsByAuctionId(auction.getId())) {
             handleSuccess(auction);
         } else {

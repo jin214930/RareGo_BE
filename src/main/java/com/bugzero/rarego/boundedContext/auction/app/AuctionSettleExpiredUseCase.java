@@ -30,7 +30,7 @@ public class AuctionSettleExpiredUseCase {
         for (Auction auction : auctions) {
             try {
                 // 개별 트랜잭션 실행
-                support.processSettlement(auction);
+                support.processSettlement(auction.getId());
 
                 // 성공 결과 수집
                 if (support.hasBids(auction.getId())) {
