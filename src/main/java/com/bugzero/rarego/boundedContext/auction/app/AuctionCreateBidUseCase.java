@@ -12,6 +12,7 @@ import com.bugzero.rarego.boundedContext.auction.out.BidRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.dto.BidResponseDto;
+import com.bugzero.rarego.shared.payment.dto.DepositHoldResponseDto;
 import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
