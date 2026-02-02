@@ -28,7 +28,7 @@ public class ProductApiAdapter implements ProductApiClient {
 
 	private final ProductRepository productRepository;
 	private final ProductImageRepository productImageRepository;
-	private final ProductCreateS3PresignerUrlUseCase s3PresignerUrlUseCase;
+	private final ProductImageS3UseCase productImageS3UseCase;
 	private final InspectionRepository inspectionRepository;
 
 	@Override
@@ -69,7 +69,7 @@ public class ProductApiAdapter implements ProductApiClient {
 		// 이미지 정렬 및 URL Presigning
 		List<String> signedImageUrls = images.stream()
 			.sorted(Comparator.comparingInt(ProductImage::getSortOrder))
-			.map(img -> s3PresignerUrlUseCase.getPresignedGetUrl(img.getImageUrl()))
+			.map(img -> productImageS3UseCase.getPresignedGetUrl(img.getImageUrl()))
 			.collect(Collectors.toList());
 
 		String thumbnail = signedImageUrls.isEmpty() ? null : signedImageUrls.get(0);
