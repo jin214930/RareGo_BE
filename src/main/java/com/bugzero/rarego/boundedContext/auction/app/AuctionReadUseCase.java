@@ -1,9 +1,38 @@
 package com.bugzero.rarego.boundedContext.auction.app;
 
-import com.bugzero.rarego.boundedContext.auction.domain.*;
+import static com.bugzero.rarego.boundedContext.auction.domain.AuctionViewerRoleStatus.*;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.bugzero.rarego.boundedContext.auction.domain.Auction;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionBookmark;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionMember;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrder;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrderStatus;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionViewerRoleStatus;
+import com.bugzero.rarego.boundedContext.auction.domain.Bid;
 import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionBookmarkListResponseDto;
-import com.bugzero.rarego.boundedContext.auction.out.*;
-import com.bugzero.rarego.boundedContext.product.app.ProductCreateS3PresignerUrlUseCase;
+import com.bugzero.rarego.boundedContext.auction.out.AuctionBookmarkRepository;
+import com.bugzero.rarego.boundedContext.auction.out.AuctionMemberRepository;
+import com.bugzero.rarego.boundedContext.auction.out.AuctionOrderRepository;
+import com.bugzero.rarego.boundedContext.auction.out.AuctionRepository;
+import com.bugzero.rarego.boundedContext.auction.out.BidRepository;
+import com.bugzero.rarego.boundedContext.product.app.ProductImageS3UseCase;
 import com.bugzero.rarego.boundedContext.product.domain.Product;
 import com.bugzero.rarego.boundedContext.product.domain.ProductImage;
 import com.bugzero.rarego.boundedContext.product.out.ProductImageRepository;
@@ -12,21 +41,18 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.PageDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;
-import com.bugzero.rarego.shared.auction.dto.*;
+import com.bugzero.rarego.shared.auction.dto.AuctionDetailResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionFilterType;
+import com.bugzero.rarego.shared.auction.dto.AuctionListResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionOrderResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionSearchCondition;
+import com.bugzero.rarego.shared.auction.dto.BidLogResponseDto;
+import com.bugzero.rarego.shared.auction.dto.MyAuctionOrderListResponseDto;
+import com.bugzero.rarego.shared.auction.dto.MyBidResponseDto;
+import com.bugzero.rarego.shared.auction.dto.MySaleResponseDto;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.bugzero.rarego.boundedContext.auction.domain.AuctionViewerRoleStatus.*;
 
 @Slf4j
 @Service
@@ -43,7 +69,7 @@ public class AuctionReadUseCase {
 	private final AuctionOrderRepository auctionOrderRepository;
 	private final ProductImageRepository productImageRepository;
 	private final AuctionBookmarkRepository auctionBookmarkRepository;
-	private final ProductImageS3UseCase s3PresignerUrlUseCase;
+	private final ProductImageS3UseCase productImageS3UseCase;
 
     // 경매 입찰 기록 조회
     public PagedResponseDto<BidLogResponseDto> getBidLogs(Long auctionId, Pageable pageable) {
@@ -157,7 +183,7 @@ public class AuctionReadUseCase {
         List<String> imageUrls = productImages.stream()
                 .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
                 .map(ProductImage::getImageUrl)
-                .map(s3PresignerUrlUseCase::getPresignedGetUrl)
+                .map(productImageS3UseCase::getPresignedGetUrl)
                 .toList();
 
         // 2. 전체 최고가 입찰 조회
@@ -206,7 +232,7 @@ public class AuctionReadUseCase {
         String thumbnail = productImages.stream()
                 .findFirst()
                 .map(ProductImage::getImageUrl)
-                .map(s3PresignerUrlUseCase::getPresignedGetUrl)
+                .map(productImageS3UseCase::getPresignedGetUrl)
                 .orElse(null);
 
         Long traderId = viewerRole == BUYER ? order.getSellerId() : order.getBidderId();
@@ -276,7 +302,7 @@ public class AuctionReadUseCase {
                 .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
                 .collect(Collectors.toMap(
                         img -> img.getProduct().getId(),
-                        img -> s3PresignerUrlUseCase.getPresignedGetUrl(img.getImageUrl()),
+                        img -> productImageS3UseCase.getPresignedGetUrl(img.getImageUrl()),
                         (existing, replacement) -> existing));
 
         // 5. DTO 변환 (기존 로직 유지)
@@ -328,7 +354,7 @@ public class AuctionReadUseCase {
                 .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
                 .collect(Collectors.toMap(
                         img -> img.getProduct().getId(),
-                        img -> s3PresignerUrlUseCase.getPresignedGetUrl(img.getImageUrl()),
+                        img -> productImageS3UseCase.getPresignedGetUrl(img.getImageUrl()),
                         (existing, replacement) -> existing));
 
         List<MyAuctionOrderListResponseDto> dtos = orders.stream()
@@ -407,7 +433,7 @@ public class AuctionReadUseCase {
                 .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
                 .collect(Collectors.toMap(
                         img -> img.getProduct().getId(),
-                        img -> s3PresignerUrlUseCase.getPresignedGetUrl(img.getImageUrl()),
+                        img -> productImageS3UseCase.getPresignedGetUrl(img.getImageUrl()),
                         (e, r) -> e));
 
         return auctions.stream()
