@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.app;
+package com.bugzero.rarego.bounded_context.payment.app;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -14,10 +14,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.boundedContext.payment.domain.Settlement;
-import com.bugzero.rarego.boundedContext.payment.domain.SettlementStatus;
-import com.bugzero.rarego.boundedContext.payment.event.SettlementFinishedEvent;
-import com.bugzero.rarego.boundedContext.payment.out.SettlementRepository;
+import com.bugzero.rarego.bounded_context.payment.domain.Settlement;
+import com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus;
+import com.bugzero.rarego.bounded_context.payment.event.SettlementFinishedEvent;
+import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
 import com.bugzero.rarego.global.event.EventPublisher;
 
 @ExtendWith(MockitoExtension.class)

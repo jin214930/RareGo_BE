@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.app;
+package com.bugzero.rarego.bounded_context.payment.app;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -14,13 +14,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.boundedContext.payment.domain.Deposit;
-import com.bugzero.rarego.boundedContext.payment.domain.DepositStatus;
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentMember;
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentTransaction;
-import com.bugzero.rarego.boundedContext.payment.domain.Wallet;
-import com.bugzero.rarego.boundedContext.payment.out.DepositRepository;
-import com.bugzero.rarego.boundedContext.payment.out.PaymentTransactionRepository;
+import com.bugzero.rarego.bounded_context.payment.domain.Deposit;
+import com.bugzero.rarego.bounded_context.payment.domain.DepositStatus;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentTransaction;
+import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
+import com.bugzero.rarego.bounded_context.payment.out.DepositRepository;
+import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentReleaseDepositUseCaseTest {

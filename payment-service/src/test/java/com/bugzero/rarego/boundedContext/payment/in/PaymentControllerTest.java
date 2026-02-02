@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.in;
+package com.bugzero.rarego.bounded_context.payment.in;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
@@ -25,15 +25,15 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.bugzero.rarego.boundedContext.payment.app.PaymentFacade;
-import com.bugzero.rarego.boundedContext.payment.in.dto.AuctionFinalPaymentRequestDto;
-import com.bugzero.rarego.boundedContext.payment.in.dto.AuctionFinalPaymentResponseDto;
-import com.bugzero.rarego.boundedContext.payment.in.dto.PaymentConfirmRequestDto;
-import com.bugzero.rarego.boundedContext.payment.in.dto.PaymentConfirmResponseDto;
-import com.bugzero.rarego.boundedContext.payment.in.dto.PaymentRequestDto;
-import com.bugzero.rarego.boundedContext.payment.in.dto.PaymentRequestResponseDto;
-import com.bugzero.rarego.boundedContext.payment.in.dto.WalletResponseDto;
-import com.bugzero.rarego.boundedContext.payment.in.dto.WalletTransactionResponseDto;
+import com.bugzero.rarego.bounded_context.payment.app.PaymentFacade;
+import com.bugzero.rarego.bounded_context.payment.in.dto.AuctionFinalPaymentRequestDto;
+import com.bugzero.rarego.bounded_context.payment.in.dto.AuctionFinalPaymentResponseDto;
+import com.bugzero.rarego.bounded_context.payment.in.dto.PaymentConfirmRequestDto;
+import com.bugzero.rarego.bounded_context.payment.in.dto.PaymentConfirmResponseDto;
+import com.bugzero.rarego.bounded_context.payment.in.dto.PaymentRequestDto;
+import com.bugzero.rarego.bounded_context.payment.in.dto.PaymentRequestResponseDto;
+import com.bugzero.rarego.bounded_context.payment.in.dto.WalletResponseDto;
+import com.bugzero.rarego.bounded_context.payment.in.dto.WalletTransactionResponseDto;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
@@ -400,8 +400,8 @@ class PaymentControllerTest {
 		String publicId = "1";
 		int page = 1;
 		int size = 5;
-		com.bugzero.rarego.boundedContext.payment.domain.WalletTransactionType type =
-			com.bugzero.rarego.boundedContext.payment.domain.WalletTransactionType.TOPUP_DONE;
+		com.bugzero.rarego.bounded_context.payment.domain.WalletTransactionType type =
+			com.bugzero.rarego.bounded_context.payment.domain.WalletTransactionType.TOPUP_DONE;
 
 		// 날짜 조건 설정
 		java.time.LocalDate fromDate = java.time.LocalDate.of(2024, 1, 1);
@@ -463,7 +463,7 @@ class PaymentControllerTest {
 		String publicId = "1";
 
 		// Mock 응답 생성 (빈 페이지)
-		PagedResponseDto<com.bugzero.rarego.boundedContext.payment.in.dto.SettlementResponseDto> emptyResponse =
+		PagedResponseDto<com.bugzero.rarego.bounded_context.payment.in.dto.SettlementResponseDto> emptyResponse =
 			new PagedResponseDto<>(java.util.Collections.emptyList(),
 				new com.bugzero.rarego.global.response.PageDto(1, 10, 0, 0, false, false));
 
@@ -491,7 +491,7 @@ class PaymentControllerTest {
 		String publicId = "1";
 		int page = 0;
 		int size = 20;
-		com.bugzero.rarego.boundedContext.payment.domain.SettlementStatus status = com.bugzero.rarego.boundedContext.payment.domain.SettlementStatus.DONE;
+		com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus status = com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus.DONE;
 		java.time.LocalDate fromDate = java.time.LocalDate.of(2024, 1, 1);
 		java.time.LocalDate toDate = java.time.LocalDate.of(2024, 1, 31);
 

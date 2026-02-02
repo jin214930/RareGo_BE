@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.app;
+package com.bugzero.rarego.bounded_context.payment.app;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
@@ -11,12 +11,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.boundedContext.payment.domain.Payment;
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentMember;
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentStatus;
-import com.bugzero.rarego.boundedContext.payment.in.dto.PaymentRequestDto;
-import com.bugzero.rarego.boundedContext.payment.in.dto.PaymentRequestResponseDto;
-import com.bugzero.rarego.boundedContext.payment.out.PaymentRepository;
+import com.bugzero.rarego.bounded_context.payment.domain.Payment;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentStatus;
+import com.bugzero.rarego.bounded_context.payment.in.dto.PaymentRequestDto;
+import com.bugzero.rarego.bounded_context.payment.in.dto.PaymentRequestResponseDto;
+import com.bugzero.rarego.bounded_context.payment.out.PaymentRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 

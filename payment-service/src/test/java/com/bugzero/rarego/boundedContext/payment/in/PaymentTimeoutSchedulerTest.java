@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.in;
+package com.bugzero.rarego.bounded_context.payment.in;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
@@ -16,7 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.bugzero.rarego.boundedContext.payment.app.PaymentAuctionTimeoutUseCase;
+import com.bugzero.rarego.bounded_context.payment.app.PaymentAuctionTimeoutUseCase;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.auction.port.AuctionOrderPort;
 

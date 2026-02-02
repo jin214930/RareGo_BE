@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.app;
+package com.bugzero.rarego.bounded_context.payment.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,16 +17,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentMember;
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentTransaction;
-import com.bugzero.rarego.boundedContext.payment.domain.ReferenceType;
-import com.bugzero.rarego.boundedContext.payment.domain.Settlement;
-import com.bugzero.rarego.boundedContext.payment.domain.SettlementStatus;
-import com.bugzero.rarego.boundedContext.payment.domain.Wallet;
-import com.bugzero.rarego.boundedContext.payment.domain.WalletTransactionType;
-import com.bugzero.rarego.boundedContext.payment.in.dto.RefundResponseDto;
-import com.bugzero.rarego.boundedContext.payment.out.PaymentTransactionRepository;
-import com.bugzero.rarego.boundedContext.payment.out.SettlementRepository;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentTransaction;
+import com.bugzero.rarego.bounded_context.payment.domain.ReferenceType;
+import com.bugzero.rarego.bounded_context.payment.domain.Settlement;
+import com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus;
+import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
+import com.bugzero.rarego.bounded_context.payment.domain.WalletTransactionType;
+import com.bugzero.rarego.bounded_context.payment.in.dto.RefundResponseDto;
+import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
+import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;

@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.app;
+package com.bugzero.rarego.bounded_context.payment.app;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -19,13 +19,13 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentMember;
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentTransaction;
-import com.bugzero.rarego.boundedContext.payment.domain.ReferenceType;
-import com.bugzero.rarego.boundedContext.payment.domain.Wallet;
-import com.bugzero.rarego.boundedContext.payment.domain.WalletTransactionType;
-import com.bugzero.rarego.boundedContext.payment.in.dto.WalletTransactionResponseDto;
-import com.bugzero.rarego.boundedContext.payment.out.PaymentTransactionRepository;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentTransaction;
+import com.bugzero.rarego.bounded_context.payment.domain.ReferenceType;
+import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
+import com.bugzero.rarego.bounded_context.payment.domain.WalletTransactionType;
+import com.bugzero.rarego.bounded_context.payment.in.dto.WalletTransactionResponseDto;
+import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
 import com.bugzero.rarego.global.response.PagedResponseDto;
 
 @ExtendWith(MockitoExtension.class)

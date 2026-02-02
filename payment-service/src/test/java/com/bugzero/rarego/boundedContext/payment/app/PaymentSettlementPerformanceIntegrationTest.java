@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.app;
+package com.bugzero.rarego.bounded_context.payment.app;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,14 +16,14 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentMember;
-import com.bugzero.rarego.boundedContext.payment.domain.Settlement;
-import com.bugzero.rarego.boundedContext.payment.domain.SettlementStatus;
-import com.bugzero.rarego.boundedContext.payment.domain.Wallet;
-import com.bugzero.rarego.boundedContext.payment.out.PaymentMemberRepository;
-import com.bugzero.rarego.boundedContext.payment.out.PaymentTransactionRepository;
-import com.bugzero.rarego.boundedContext.payment.out.SettlementRepository;
-import com.bugzero.rarego.boundedContext.payment.out.WalletRepository;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
+import com.bugzero.rarego.bounded_context.payment.domain.Settlement;
+import com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus;
+import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
+import com.bugzero.rarego.bounded_context.payment.out.PaymentMemberRepository;
+import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
+import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
+import com.bugzero.rarego.bounded_context.payment.out.WalletRepository;
 
 @SpringBootTest
 @ActiveProfiles("test")

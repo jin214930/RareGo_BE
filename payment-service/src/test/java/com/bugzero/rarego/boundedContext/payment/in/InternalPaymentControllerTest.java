@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.in;
+package com.bugzero.rarego.bounded_context.payment.in;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
@@ -19,7 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.bugzero.rarego.boundedContext.payment.app.PaymentFacade;
+import com.bugzero.rarego.bounded_context.payment.app.PaymentFacade;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.global.response.SuccessType;
 import com.bugzero.rarego.shared.payment.dto.DepositHoldRequestDto;

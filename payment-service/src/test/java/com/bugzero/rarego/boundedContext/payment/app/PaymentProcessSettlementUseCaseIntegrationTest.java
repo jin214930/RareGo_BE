@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.payment.app;
+package com.bugzero.rarego.bounded_context.payment.app;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.assertj.core.api.Assertions.*;
@@ -16,15 +16,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.bugzero.rarego.boundedContext.payment.domain.PaymentMember;
-import com.bugzero.rarego.boundedContext.payment.domain.Settlement;
-import com.bugzero.rarego.boundedContext.payment.domain.SettlementStatus;
-import com.bugzero.rarego.boundedContext.payment.domain.Wallet;
-import com.bugzero.rarego.boundedContext.payment.out.PaymentMemberRepository;
-import com.bugzero.rarego.boundedContext.payment.out.PaymentTransactionRepository;
-import com.bugzero.rarego.boundedContext.payment.out.SettlementFeeRepository;
-import com.bugzero.rarego.boundedContext.payment.out.SettlementRepository;
-import com.bugzero.rarego.boundedContext.payment.out.WalletRepository;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
+import com.bugzero.rarego.bounded_context.payment.domain.Settlement;
+import com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus;
+import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
+import com.bugzero.rarego.bounded_context.payment.out.PaymentMemberRepository;
+import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
+import com.bugzero.rarego.bounded_context.payment.out.SettlementFeeRepository;
+import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
+import com.bugzero.rarego.bounded_context.payment.out.WalletRepository;
 
 @SpringBootTest(properties = "custom.payment.settlement.holdDays=-1")
 class PaymentProcessSettlementUseCaseIntegrationTest {
