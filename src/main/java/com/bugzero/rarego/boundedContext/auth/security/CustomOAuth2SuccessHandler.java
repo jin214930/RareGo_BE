@@ -1,4 +1,4 @@
-package com.bugzero.rarego.global.security;
+package com.bugzero.rarego.boundedContext.auth.security;
 
 import java.io.IOException;
 import java.time.Duration;
