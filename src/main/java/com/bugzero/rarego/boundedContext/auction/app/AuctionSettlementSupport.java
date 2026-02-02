@@ -54,10 +54,10 @@ public class AuctionSettlementSupport {
 
         // 2. 이미 종료된 상태라면 예외를 던져 중복 처리를 방지
         // 에러 코드 의미와 실제 상태 체크 로직을 일치시킴
-        if (auction.getStatus() == AuctionStatus.ENDED) {
+        if (auction.getStatus() != AuctionStatus.IN_PROGRESS) {
             throw new CustomException(ErrorType.AUCTION_NOT_FOUND_OR_ALREADY_SETTLED);
         }
-
+        
         // 최신화된 auction 객체로 정산 진행
         if (bidRepository.existsByAuctionId(auction.getId())) {
             handleSuccess(auction);
