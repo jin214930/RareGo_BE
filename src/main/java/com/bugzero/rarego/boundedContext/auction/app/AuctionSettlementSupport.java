@@ -2,6 +2,7 @@ package com.bugzero.rarego.boundedContext.auction.app;
 
 import com.bugzero.rarego.boundedContext.auction.domain.Auction;
 import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrder;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
 import com.bugzero.rarego.boundedContext.auction.domain.Bid;
 import com.bugzero.rarego.boundedContext.auction.event.AuctionFailedEvent;
 import com.bugzero.rarego.boundedContext.auction.out.AuctionOrderRepository;
@@ -47,8 +48,15 @@ public class AuctionSettlementSupport {
 
         // 새로운 트랜잭션 안에서 최신 상태를 SELECT ... FOR UPDATE로 조회
         // 만약 다른 스레드가 먼저 정산했다면, 여기서 조회되지 않거나(상태 필터링 시) 대기하게 됨
+        // 1. 비관적 락으로 조회
         Auction auction = auctionRepository.findByIdWithLock(auctionId)
-                .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND_OR_ALREADY_SETTLED));
+                .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
+
+        // 2. 이미 종료된 상태라면 예외를 던져 중복 처리를 방지
+        // 에러 코드 의미와 실제 상태 체크 로직을 일치시킴
+        if (auction.getStatus() == AuctionStatus.ENDED) {
+            throw new CustomException(ErrorType.AUCTION_NOT_FOUND_OR_ALREADY_SETTLED);
+        }
 
         // 최신화된 auction 객체로 정산 진행
         if (bidRepository.existsByAuctionId(auction.getId())) {
