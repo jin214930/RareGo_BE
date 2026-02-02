@@ -1,10 +1,10 @@
 package com.bugzero.rarego.global.response;
 
-import java.util.Arrays;
-import java.util.Optional;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Getter
@@ -88,15 +88,17 @@ public enum ErrorType {
     AUCTION_WITHDRAW_PAYMENT_IN_PROGRESS(400, 2512, "결제 진행 중인 경매는 판매 포기할 수 없습니다."),
     AUCTION_WITHDRAW_NOT_INSPECTED(400, 2513, "검수 전 경매는 판매 포기할 수 없습니다."),
     BOOKMARK_UNAUTHORIZED_ACCESS(403, 2514, "요청한 사용자가 북마크의 memberId와 일치하지 않습니다."),
+    AUCTION_NOT_FOUND_OR_ALREADY_SETTLED(404, 2515, "존재하지 않는 경매이거나 이미 정산이 완료된 경매입니다."),
+    AUCTION_NOT_FINISHED(400, 2516, "아직 경매 종료 시간이 되지 않아 정산할 수 없습니다."),
 
-	// Product (3000 ~ 3999)
-	PRODUCT_NOT_FOUND(404, 3001, "상품이 존재하지 않습니다."),
-	UNAUTHORIZED_SELLER(403, 3002, "해당 상품의 판매자가 아닙니다."),
-	IMAGE_NOT_FOUND(404, 3003, "해당 상품 이미지가 존재하지 않습니다."),
+    // Product (3000 ~ 3999)
+    PRODUCT_NOT_FOUND(404, 3001, "상품이 존재하지 않습니다."),
+    UNAUTHORIZED_SELLER(403, 3002, "해당 상품의 판매자가 아닙니다."),
+    IMAGE_NOT_FOUND(404, 3003, "해당 상품 이미지가 존재하지 않습니다."),
 
     INSPECTION_REJECT_REASON_REQUIRED(400, 3501, "검수 반려시 사유가 있어야 합니다."),
     INSPECTION_ALREADY_COMPLETED(400, 3502, "검수가 이미 완료된 상품입니다."),
-	INSPECTION_NOT_FOUND(404,3503, "해당 상품에 해당하는 검수 정보가 없습니다."),
+    INSPECTION_NOT_FOUND(404, 3503, "해당 상품에 해당하는 검수 정보가 없습니다."),
 
     // Payment (4000 ~ 4999)
     WALLET_NOT_FOUND(404, 4001, "회원의 지갑이 존재하지 않습니다."),
@@ -119,7 +121,8 @@ public enum ErrorType {
     DEPOSIT_NOT_FOUND(404, 4204, "보증금 정보를 찾을 수 없습니다."),
     ALREADY_USED_DEPOSIT(409, 4205, "이미 사용된 보증금입니다."),
     PAYMENT_DEADLINE_EXCEEDED(400, 4206, "결제 기한이 지났습니다."),
-    SETTLEMENT_ALREADY_COMPLETED(400, 4207, "이미 정산이 완료되어 환불할 수 없습니다.");
+    SETTLEMENT_ALREADY_COMPLETED(400, 4207, "이미 정산이 완료되어 환불할 수 없습니다."),
+    ;
 
     private final Integer httpStatus;
     private final int code;
