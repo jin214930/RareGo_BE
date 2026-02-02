@@ -1,18 +1,11 @@
 package com.bugzero.rarego.boundedContext.auction.app;
 
 import com.bugzero.rarego.boundedContext.auction.domain.Auction;
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrder;
 import com.bugzero.rarego.boundedContext.auction.domain.Bid;
-import com.bugzero.rarego.boundedContext.auction.event.AuctionFailedEvent;
 import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionAutoSettleResponseDto;
-import com.bugzero.rarego.boundedContext.auction.out.AuctionOrderRepository;
-import com.bugzero.rarego.boundedContext.auction.out.AuctionRepository;
-import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,11 +17,8 @@ import java.util.List;
 public class AuctionSettleExpiredUseCase {
 
     private final AuctionSettlementSupport support;
-    private final AuctionRepository auctionRepository;
-    private final AuctionOrderRepository auctionOrderRepository;
-    private final ApplicationEventPublisher eventPublisher;
 
-    @Transactional
+    // 전체 트랜잭션을 걸지 않음 (내부의 REQUIRES_NEW가 개별 관리하도록 함)
     public AuctionAutoSettleResponseDto execute() {
         LocalDateTime now = LocalDateTime.now();
         List<Auction> auctions = support.findExpiredAuctions(now);
@@ -39,59 +29,25 @@ public class AuctionSettleExpiredUseCase {
 
         for (Auction auction : auctions) {
             try {
+                // 개별 트랜잭션 실행
+                support.processSettlement(auction.getId());
+
+                // 성공 결과 수집
                 if (support.hasBids(auction.getId())) {
-                    handleSuccess(auction);
                     Bid winningBid = support.findWinningBid(auction.getId());
                     details.add(AuctionAutoSettleResponseDto.SettlementDetail.success(
-                            auction.getId(),
-                            winningBid.getBidderId()));
-                    success++;
+                            auction.getId(), winningBid.getBidderId()));
                 } else {
-                    handleFail(auction);
                     details.add(AuctionAutoSettleResponseDto.SettlementDetail.failed(auction.getId()));
-                    fail++;
                 }
+                success++;
             } catch (Exception e) {
-                log.error("경매 낙찰 처리 실패 - auctionId: {}", auction.getId(), e);
+                log.error("경매 {} 정산 실패 - 다음 경매로 넘어갑니다.", auction.getId(), e);
+                details.add(AuctionAutoSettleResponseDto.SettlementDetail.failed(auction.getId()));
                 fail++;
             }
         }
 
         return AuctionAutoSettleResponseDto.from(now, auctions, success, fail, details);
-    }
-
-    private void handleFail(Auction auction) {
-        auction.end();
-        auctionRepository.save(auction);
-
-        eventPublisher.publishEvent(
-                new AuctionFailedEvent(
-                        auction.getId(),
-                        auction.getProductId()));
-    }
-
-    private void handleSuccess(Auction auction) {
-        Bid winningBid = support.findWinningBid(auction.getId());
-
-        auction.end();
-        auctionRepository.save(auction);
-
-        auctionOrderRepository.save(
-                AuctionOrder.builder()
-                        .auctionId(auction.getId())
-                        .sellerId(auction.getSellerId())
-                        .bidderId(winningBid.getBidderId())
-                        .finalPrice(winningBid.getBidAmount())
-                        .build()
-        );
-
-        eventPublisher.publishEvent(
-                new AuctionEndedEvent(
-                        auction.getId(),
-                        winningBid.getBidderId(),
-                        winningBid.getBidAmount(),
-                        auction.getProductId()
-                )
-        );
     }
 }

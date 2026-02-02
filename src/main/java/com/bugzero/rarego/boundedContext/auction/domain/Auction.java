@@ -1,7 +1,5 @@
 package com.bugzero.rarego.boundedContext.auction.domain;
 
-import java.time.LocalDateTime;
-import java.util.Objects;
 
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.jpa.entity.BaseIdAndTime;
@@ -16,6 +14,10 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 @Entity
 @Table(name = "AUCTION_AUCTION")
@@ -50,9 +52,13 @@ public class Auction extends BaseIdAndTime {
     @Column(nullable = false)
     private int tickSize;
 
+    // 연장 횟수 카운트
+    @Column(nullable = false)
+    private int extensionCount = 0;
+
     // 입찰 가격 갱신
     @Builder
-    public Auction(Long productId, Long sellerId, LocalDateTime startTime,  Integer durationDays, LocalDateTime endTime, int startPrice) {
+    public Auction(Long productId, Long sellerId, LocalDateTime startTime, Integer durationDays, LocalDateTime endTime, int startPrice) {
         this.productId = productId;
         this.sellerId = sellerId;
         this.startTime = startTime;
@@ -119,6 +125,10 @@ public class Auction extends BaseIdAndTime {
         this.status = AuctionStatus.WITHDRAWN;
     }
 
+    public Integer getCurrentPriceOrStartPrice() {
+        return currentPrice != null ? currentPrice : startPrice;
+    }
+
     // 호가단위 결정
     private int determineTickSize(int startPrice) {
         if (startPrice < 10000) {
@@ -134,6 +144,25 @@ public class Auction extends BaseIdAndTime {
         } else {
             return 30000; // 100만 원 이상
         }
+    }
+
+    public boolean extendEndTimeIfClose(LocalDateTime now) {
+        // 종료 시간까지 남은 분(minute) 계산
+        long minutesRemaining = ChronoUnit.MINUTES.between(now, this.endTime);
+
+        // 1. 남은 시간이 0분 이상 3분 이하인지 확인
+        // 2. 연장 횟수가 5회 미만인지 확인 (총 5회)
+        if (minutesRemaining >= 0 && minutesRemaining <= 3 && this.extensionCount < 5) {
+            this.endTime = this.endTime.plusMinutes(3); // 3분 연장
+            this.extensionCount++;
+            return true;
+        }
+        return false;
+    }
+
+    // 연장 관련 초기 데이터 확인을 위한 카운트 확인
+    public void setExtensionCountForTest(int count) {
+        this.extensionCount = count;
     }
 
 }
