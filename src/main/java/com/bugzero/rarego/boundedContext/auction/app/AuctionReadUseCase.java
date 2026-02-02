@@ -37,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class AuctionReadUseCase {
 
-	//
 	private final AuctionSupport support;
 	private final BidRepository bidRepository;
 	private final AuctionMemberRepository auctionMemberRepository;
