@@ -75,7 +75,17 @@ jobs:
             type=ref,event=branch
             type=sha,format=short
 
-      - name: Build and push Docker image
+      - name: Extract metadata (tags, labels) for payment-service
+        if: github.event_name == 'push'
+        id: meta_payment
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-payment-service
+          tags: |
+            type=ref,event=branch
+            type=sha,format=short
+
+      - name: Build and push app Docker image
         if: github.event_name == 'push'
         uses: docker/build-push-action@v5
         with:
@@ -83,6 +93,16 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push payment-service Docker image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: payment-service/Dockerfile
+          push: true
+          tags: ${{ steps.meta_payment.outputs.tags }}
+          labels: ${{ steps.meta_payment.outputs.labels }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -129,6 +149,7 @@ jobs:
             
             # .env.deploy 파일 초기화 및 환경 변수 주입
             echo "DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):${{ github.ref_name }}" > .env.deploy
+            echo "PAYMENT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-payment-service:${{ github.ref_name }}" >> .env.deploy
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.deploy
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env.deploy
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.deploy
@@ -145,6 +166,10 @@ jobs:
             echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env.deploy
             echo "GF_SERVER_ROOT_URL=${{ secrets.GF_SERVER_ROOT_URL }}" >> .env.deploy
             echo "GF_SERVER_SERVE_FROM_SUB_PATH=${{ secrets.GF_SERVER_SERVE_FROM_SUB_PATH }}" >> .env.deploy
+            echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env.deploy
+            echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env.deploy
+            echo "KAFKA_BOOTSTRAP_SERVERS=${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}" >> .env.deploy
+            echo "ELASTICSEARCH_URIS=${{ secrets.ELASTICSEARCH_URIS }}" >> .env.deploy
             
             # GitHub Secret에서 프로필 설정
             echo "SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}" >> .env.deploy
@@ -157,11 +182,9 @@ jobs:
             echo "NAVER_SECRET=${{ secrets.NAVER_SECRET }}" >> .env.deploy
 
             docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-            if [ "$DEPLOY_INFRA" = "true" ]; then
-              docker compose --env-file .env.deploy pull
-              docker compose --env-file .env.deploy up -d
-            else
-              docker compose --env-file .env.deploy pull app
-              docker compose --env-file .env.deploy up -d --no-deps app
-            fi
+            
+            # if/else 문을 제거하고 항상 모든 서비스를 pull 하고 up 시킵니다.
+            docker compose --env-file .env.deploy pull
+            docker compose --env-file .env.deploy up -d
+            
             docker image prune -f
