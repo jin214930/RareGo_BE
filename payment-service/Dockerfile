@@ -8,8 +8,6 @@ COPY . .
 # 실행 권한을 부여하고 'payment-service' 모듈만 bootJar로 빌드합니다.
 RUN chmod +x ./gradlew
 
-RUN sed -i 's/\r$//' gradlew
-
 RUN ./gradlew :payment-service:bootJar --no-daemon
 
 # Run stage
