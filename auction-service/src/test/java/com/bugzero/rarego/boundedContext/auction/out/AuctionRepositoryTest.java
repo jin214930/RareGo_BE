@@ -82,21 +82,4 @@ class AuctionRepositoryTest {
 		assertThat(resultIds).contains(target1.getId(), target2.getId());
 	}
 
-	@Test
-	@DisplayName("초기 데이터 확인용 테스트")
-	void checkInitData() {
-		// 1. 모든 경매 조회
-		List<Auction> allAuctions = auctionRepository.findAll();
-
-		// 2. 콘솔에 출력
-		System.out.println("========================================");
-		System.out.println("총 데이터 개수: " + allAuctions.size());
-		for (Auction auction : allAuctions) {
-			System.out.println("ID: " + auction.getId() + ", 상태: " + auction.getStatus() + ", 가격: " + auction.getCurrentPrice());
-		}
-		System.out.println("========================================");
-
-		// 데이터가 있다면 성공
-		assertThat(allAuctions).isNotEmpty();
-	}
 }
