@@ -11,6 +11,7 @@ COPY payment-service/build.gradle.kts payment-service/build.gradle.kts
 COPY member-service/build.gradle.kts member-service/build.gradle.kts
 COPY notification-service/build.gradle.kts notification-service/build.gradle.kts
 COPY auction-service/build.gradle.kts auction-service/build.gradle.kts
+COPY auth-service/build.gradle.kts auth-service/build.gradle.kts
 
 
 
@@ -26,6 +27,7 @@ COPY src src
 COPY notification-service notification-service
 COPY payment-service payment-service
 COPY auction-service auction-service
+COPY auth-service auth-service
 RUN ./gradlew build -x test --no-daemon
 
 # Run stage

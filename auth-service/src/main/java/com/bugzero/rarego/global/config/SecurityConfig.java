@@ -16,7 +16,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.bugzero.rarego.boundedContext.auth.app.AuthAccessTokenBlacklistUseCase;
 import com.bugzero.rarego.global.security.CustomAccessDeniedHandler;
 import com.bugzero.rarego.global.security.CustomAuthenticationEntryPoint;
 import com.bugzero.rarego.global.security.JwtAuthenticationFilter;
