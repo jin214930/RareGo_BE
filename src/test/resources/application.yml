@@ -24,6 +24,11 @@ spring:
             client-id: test
             client-secret: test
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 
 logging:
   level:
