@@ -19,12 +19,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.boundedContext.auction.domain.*;
 import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionBookmarkListResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionDetailResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionFilterType;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionListResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionOrderResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionSearchCondition;
+import com.bugzero.rarego.boundedContext.auction.in.dto.BidLogResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.MyAuctionOrderListResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.MyBidResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.MySaleResponseDto;
 import com.bugzero.rarego.boundedContext.auction.out.*;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.PageDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;
-import com.bugzero.rarego.shared.auction.dto.*;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.out.ProductApiClient;
 
