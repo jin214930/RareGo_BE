@@ -36,10 +36,10 @@ import com.bugzero.rarego.boundedContext.auction.out.AuctionOrderRepository;
 import com.bugzero.rarego.boundedContext.auction.out.AuctionRepository;
 import com.bugzero.rarego.boundedContext.auction.out.BidRepository;
 import com.bugzero.rarego.global.response.PagedResponseDto;
-import com.bugzero.rarego.shared.auction.dto.AuctionDetailResponseDto;
-import com.bugzero.rarego.shared.auction.dto.AuctionListResponseDto;
-import com.bugzero.rarego.shared.auction.dto.AuctionSearchCondition;
-import com.bugzero.rarego.shared.auction.dto.MyAuctionOrderListResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionDetailResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionListResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionSearchCondition;
+import com.bugzero.rarego.boundedContext.auction.in.dto.MyAuctionOrderListResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.out.ProductApiClient;
 

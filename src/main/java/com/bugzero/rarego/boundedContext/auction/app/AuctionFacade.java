@@ -14,27 +14,25 @@ import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionWithdrawResponseD
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
 import com.bugzero.rarego.global.response.SuccessType;
-import com.bugzero.rarego.shared.auction.dto.AuctionDetailResponseDto;
-import com.bugzero.rarego.shared.auction.dto.AuctionFilterType;
-import com.bugzero.rarego.shared.auction.dto.AuctionListResponseDto;
-import com.bugzero.rarego.shared.auction.dto.AuctionOrderResponseDto;
-import com.bugzero.rarego.shared.auction.dto.AuctionRelistRequestDto;
-import com.bugzero.rarego.shared.auction.dto.AuctionRelistResponseDto;
-import com.bugzero.rarego.shared.auction.dto.AuctionSearchCondition;
-import com.bugzero.rarego.shared.auction.dto.BidLogResponseDto;
-import com.bugzero.rarego.shared.auction.dto.BidResponseDto;
-import com.bugzero.rarego.shared.auction.dto.MyAuctionOrderListResponseDto;
-import com.bugzero.rarego.shared.auction.dto.MyBidResponseDto;
-import com.bugzero.rarego.shared.auction.dto.MySaleResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionDetailResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionFilterType;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionListResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionOrderResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionRelistRequestDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionRelistResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionSearchCondition;
+import com.bugzero.rarego.boundedContext.auction.in.dto.BidLogResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.BidResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.MyAuctionOrderListResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.MyBidResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.MySaleResponseDto;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j

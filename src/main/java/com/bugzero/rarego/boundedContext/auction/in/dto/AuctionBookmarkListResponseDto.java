@@ -1,6 +1,5 @@
 package com.bugzero.rarego.boundedContext.auction.in.dto;
 
-import com.bugzero.rarego.shared.auction.dto.AuctionListResponseDto;
 import lombok.Builder;
 
 @Builder

@@ -1,4 +1,4 @@
-package com.bugzero.rarego.shared.auction.dto;
+package com.bugzero.rarego.boundedContext.auction.in.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

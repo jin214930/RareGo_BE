@@ -1,4 +1,4 @@
-package com.bugzero.rarego.shared.auction.dto;
+package com.bugzero.rarego.boundedContext.auction.in.dto;
 
 import com.bugzero.rarego.boundedContext.auction.domain.Auction;
 import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
