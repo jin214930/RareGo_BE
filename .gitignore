@@ -73,6 +73,9 @@ src/main/resources/static/*
 .agent/
 .mantic/
 bin/
+docker/nginx/.htpasswd-monitoring
+docker/letsencrypt/
+docker/letsencrypt-lib/
 
 # ===== Node - husky =====
 node_modules/
