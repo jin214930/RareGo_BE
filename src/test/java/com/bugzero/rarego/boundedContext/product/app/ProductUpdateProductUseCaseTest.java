@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.bugzero.rarego.boundedContext.product.domain.Category;
 import com.bugzero.rarego.boundedContext.product.domain.Product;
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
 import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageUpdateDto;
@@ -24,6 +23,7 @@ import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 import com.bugzero.rarego.shared.product.dto.ProductUpdateDto;
+import com.bugzero.rarego.shared.product.type.Category;
 
 @ExtendWith(MockitoExtension.class)
 class ProductUpdateProductUseCaseTest {

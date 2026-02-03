@@ -10,6 +10,9 @@ import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageUpdateDt
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.jpa.entity.BaseIdAndTime;
 import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

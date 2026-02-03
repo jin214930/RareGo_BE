@@ -1,6 +1,8 @@
 package com.bugzero.rarego.boundedContext.product.domain;
 
 import com.bugzero.rarego.global.jpa.entity.BaseIdAndTime;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

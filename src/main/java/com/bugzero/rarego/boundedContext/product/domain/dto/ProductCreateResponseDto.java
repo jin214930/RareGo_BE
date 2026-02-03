@@ -1,6 +1,6 @@
 package com.bugzero.rarego.boundedContext.product.domain.dto;
 
-import com.bugzero.rarego.boundedContext.product.domain.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
 
 import lombok.Builder;
 
