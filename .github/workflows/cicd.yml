@@ -31,7 +31,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,6 +72,9 @@ jobs:
           - name: member-service
             dockerfile: member-service/Dockerfile
             image_suffix: "-member-service"
+          - name: notification-service
+            dockerfile: notification-service/Dockerfile
+            image_suffix: "-notification-service"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -107,7 +110,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: [build-test, build-images]
+    needs: [ build-test, build-images ]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     steps:
       - name: Checkout
@@ -152,6 +155,7 @@ jobs:
             echo "DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):${{ github.ref_name }}" > .env.deploy
             echo "PAYMENT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-payment-service:${{ github.ref_name }}" >> .env.deploy
             echo "MEMBER_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-member-service:${{ github.ref_name }}" >> .env.deploy
+            echo "NOTIFICATION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-notification-service:${{ github.ref_name }}" >> .env.deploy
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.deploy
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env.deploy
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.deploy

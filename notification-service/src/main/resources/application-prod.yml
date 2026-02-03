@@ -1,0 +1,15 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    root: INFO
+    com.bugzero.rarego: INFO
+
+management:
+  endpoint:
+    health:
+      show-details: never
