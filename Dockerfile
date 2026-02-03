@@ -9,6 +9,7 @@ COPY build.gradle.kts .
 COPY settings.gradle.kts .
 COPY payment-service/build.gradle.kts payment-service/build.gradle.kts
 COPY auction-service/build.gradle.kts auction-service/build.gradle.kts
+COPY notification-service/build.gradle.kts notification-service/build.gradle.kts
 
 # Grant execute permission and download dependencies
 RUN chmod +x ./gradlew
@@ -19,6 +20,7 @@ RUN ./gradlew dependencies --no-daemon
 
 # Copy source code and build
 COPY src src
+COPY notification-service notification-service
 COPY payment-service payment-service
 COPY auction-service auction-service
 RUN ./gradlew build -x test --no-daemon

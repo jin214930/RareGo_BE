@@ -4,15 +4,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.boundedContext.product.domain.Inspection;
-import com.bugzero.rarego.boundedContext.product.domain.InspectionStatus;
 import com.bugzero.rarego.boundedContext.product.domain.Product;
-import com.bugzero.rarego.boundedContext.product.domain.ProductCondition;
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductInspectionRequestDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductInspectionResponseDto;
 import com.bugzero.rarego.boundedContext.product.out.InspectionRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.shared.product.dto.ProductInspectionRequestDto;
-import com.bugzero.rarego.shared.product.dto.ProductInspectionResponseDto;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 import lombok.RequiredArgsConstructor;
 

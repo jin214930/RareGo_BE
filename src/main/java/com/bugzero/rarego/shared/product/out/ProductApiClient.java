@@ -17,7 +17,7 @@ public interface ProductApiClient {
 	List<Long> getProductIdsBySellerId(Long sellerId);
 
 	// 키워드 및 카테고리로 상품 ID 검색
-	List<Long> searchProductIds(String keyword, String category);
+	List<Long> searchProductIds(String keyword, Category category);
 
 	// 검수 승인된 상품 ID 목록 조회
 	List<Long> getApprovedProductIds();
