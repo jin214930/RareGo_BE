@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.app;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -13,8 +13,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.boundedContext.auth.domain.AccessTokenBlacklist;
-import com.bugzero.rarego.boundedContext.auth.out.AccessTokenBlacklistRepository;
+import com.bugzero.rarego.bounded_context.auth.domain.AccessTokenBlacklist;
+import com.bugzero.rarego.bounded_context.auth.out.AccessTokenBlacklistRepository;
+import com.bugzero.rarego.bounded_context.auth.app.AuthAccessTokenBlacklistUseCase;
 import com.bugzero.rarego.global.security.JwtParser;
 
 @ExtendWith(MockitoExtension.class)

@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.app;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -15,7 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.boundedContext.auth.domain.AuthRole;
+import com.bugzero.rarego.bounded_context.auth.domain.AuthRole;
+import com.bugzero.rarego.bounded_context.auth.app.AuthIssueTokenUseCase;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.security.JwtProvider;

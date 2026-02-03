@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.app;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -14,8 +14,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.bugzero.rarego.boundedContext.auth.domain.RefreshToken;
-import com.bugzero.rarego.boundedContext.auth.out.RefreshTokenRepository;
+import com.bugzero.rarego.bounded_context.auth.domain.RefreshToken;
+import com.bugzero.rarego.bounded_context.auth.out.RefreshTokenRepository;
+import com.bugzero.rarego.bounded_context.auth.app.AuthStoreRefreshTokenUseCase;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 

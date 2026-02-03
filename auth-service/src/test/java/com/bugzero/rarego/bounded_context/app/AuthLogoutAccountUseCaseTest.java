@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.app;
 
 import static org.mockito.Mockito.*;
 
@@ -12,8 +12,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.boundedContext.auth.domain.RefreshToken;
-import com.bugzero.rarego.boundedContext.auth.out.RefreshTokenRepository;
+import com.bugzero.rarego.bounded_context.auth.domain.RefreshToken;
+import com.bugzero.rarego.bounded_context.auth.out.RefreshTokenRepository;
+import com.bugzero.rarego.bounded_context.auth.app.AuthAccessTokenBlacklistUseCase;
+import com.bugzero.rarego.bounded_context.auth.app.AuthLogoutAccountUseCase;
 
 @ExtendWith(MockitoExtension.class)
 class AuthLogoutAccountUseCaseTest {

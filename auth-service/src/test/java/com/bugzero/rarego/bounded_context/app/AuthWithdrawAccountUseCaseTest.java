@@ -1,17 +1,8 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.app;
 
-import com.bugzero.rarego.boundedContext.auth.domain.Account;
-import com.bugzero.rarego.boundedContext.auth.domain.AuthRole;
-import com.bugzero.rarego.boundedContext.auth.domain.Provider;
-import com.bugzero.rarego.boundedContext.auth.out.AccountRepository;
-import com.bugzero.rarego.boundedContext.auth.out.RefreshTokenRepository;
-import com.bugzero.rarego.global.exception.CustomException;
-import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.global.security.JwtParser;
-import com.bugzero.rarego.global.security.MemberPrincipal;
-import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
-import com.bugzero.rarego.shared.member.out.MemberApiClient;
-import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,9 +10,21 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
+import com.bugzero.rarego.bounded_context.auth.domain.Account;
+import com.bugzero.rarego.bounded_context.auth.domain.AuthRole;
+import com.bugzero.rarego.bounded_context.auth.domain.Provider;
+import com.bugzero.rarego.bounded_context.auth.out.AccountRepository;
+import com.bugzero.rarego.bounded_context.auth.out.RefreshTokenRepository;
+import com.bugzero.rarego.bounded_context.auth.app.AuthAccessTokenBlacklistUseCase;
+import com.bugzero.rarego.bounded_context.auth.app.AuthSupport;
+import com.bugzero.rarego.bounded_context.auth.app.AuthWithdrawAccountUseCase;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.global.security.JwtParser;
+import com.bugzero.rarego.global.security.MemberPrincipal;
+import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
+import com.bugzero.rarego.shared.member.out.MemberApiClient;
+import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
 
 @ExtendWith(MockitoExtension.class)
 class AuthWithdrawAccountUseCaseTest {
