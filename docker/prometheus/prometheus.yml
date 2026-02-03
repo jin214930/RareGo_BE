@@ -12,6 +12,11 @@ scrape_configs:
     static_configs:
       - targets: ["app:8080"]
 
+  - job_name: member-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [ "member-service:8081" ]
+
   - job_name: payment-service
     metrics_path: /actuator/prometheus
     static_configs:
