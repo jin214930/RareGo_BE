@@ -1,9 +1,9 @@
-package com.bugzero.rarego.shared.product.dto;
+package com.bugzero.rarego.boundedContext.product.domain.dto;
 
 import java.time.LocalDateTime;
 
-import com.bugzero.rarego.boundedContext.product.domain.InspectionStatus;
-import com.bugzero.rarego.boundedContext.product.domain.ProductCondition;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 import lombok.Builder;
 

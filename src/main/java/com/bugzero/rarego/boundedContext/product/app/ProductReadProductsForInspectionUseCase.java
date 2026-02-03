@@ -5,10 +5,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductResponseForInspectionDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductSearchForInspectionCondition;
 import com.bugzero.rarego.boundedContext.product.out.ProductRepository;
 import com.bugzero.rarego.global.response.PagedResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductResponseForInspectionDto;
-import com.bugzero.rarego.shared.product.dto.ProductSearchForInspectionCondition;
 
 import lombok.RequiredArgsConstructor;
 
