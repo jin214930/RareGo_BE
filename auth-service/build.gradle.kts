@@ -7,7 +7,7 @@ plugins {
 
 group = "com.bugzero"
 version = "0.0.1-SNAPSHOT"
-description = "payment-service"
+description = "auth-service"
 
 java {
     toolchain {
@@ -89,3 +89,5 @@ tasks.jacocoTestCoverageVerification {
         }
     }
 }
+
+tasks.register("prepareKotlinBuildScriptModel") {}
