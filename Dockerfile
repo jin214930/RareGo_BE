@@ -10,6 +10,7 @@ COPY settings.gradle.kts .
 COPY payment-service/build.gradle.kts payment-service/build.gradle.kts
 COPY notification-service/build.gradle.kts notification-service/build.gradle.kts
 COPY auction-service/build.gradle.kts auction-service/build.gradle.kts
+COPY auth-service/build.gradle.kts auth-service/build.gradle.kts
 
 
 
