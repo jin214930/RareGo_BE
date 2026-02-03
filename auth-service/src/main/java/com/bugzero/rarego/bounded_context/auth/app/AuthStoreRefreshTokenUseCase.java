@@ -1,12 +1,12 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.auth.app;
 
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.bugzero.rarego.boundedContext.auth.domain.RefreshToken;
-import com.bugzero.rarego.boundedContext.auth.out.RefreshTokenRepository;
+import com.bugzero.rarego.bounded_context.auth.domain.RefreshToken;
+import com.bugzero.rarego.bounded_context.auth.out.RefreshTokenRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 

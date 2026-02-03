@@ -1,9 +1,9 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.auth.app;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.bugzero.rarego.boundedContext.auth.out.RefreshTokenRepository;
+import com.bugzero.rarego.bounded_context.auth.out.RefreshTokenRepository;
 
 import lombok.RequiredArgsConstructor;
 

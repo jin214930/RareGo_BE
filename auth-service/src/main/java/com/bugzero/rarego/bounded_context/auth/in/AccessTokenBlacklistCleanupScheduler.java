@@ -1,9 +1,9 @@
-package com.bugzero.rarego.boundedContext.auth.in;
+package com.bugzero.rarego.bounded_context.auth.in;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.bugzero.rarego.boundedContext.auth.app.AuthAccessTokenBlacklistUseCase;
+import com.bugzero.rarego.bounded_context.auth.app.AuthAccessTokenBlacklistUseCase;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

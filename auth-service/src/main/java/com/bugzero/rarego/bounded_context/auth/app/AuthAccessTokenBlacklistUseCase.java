@@ -1,12 +1,12 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.auth.app;
 
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.bugzero.rarego.boundedContext.auth.domain.AccessTokenBlacklist;
-import com.bugzero.rarego.boundedContext.auth.out.AccessTokenBlacklistRepository;
+import com.bugzero.rarego.bounded_context.auth.domain.AccessTokenBlacklist;
+import com.bugzero.rarego.bounded_context.auth.out.AccessTokenBlacklistRepository;
 import com.bugzero.rarego.global.security.JwtParser;
 
 import lombok.RequiredArgsConstructor;

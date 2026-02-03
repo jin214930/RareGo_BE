@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.auth.domain;
+package com.bugzero.rarego.bounded_context.auth.domain;
 
 import java.util.Map;
 

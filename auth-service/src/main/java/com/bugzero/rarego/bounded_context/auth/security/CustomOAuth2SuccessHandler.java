@@ -1,14 +1,11 @@
-package com.bugzero.rarego.boundedContext.auth.security;
+package com.bugzero.rarego.bounded_context.auth.security;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;

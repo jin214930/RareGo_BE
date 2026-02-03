@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.auth.app;
 
 import java.util.Map;
 

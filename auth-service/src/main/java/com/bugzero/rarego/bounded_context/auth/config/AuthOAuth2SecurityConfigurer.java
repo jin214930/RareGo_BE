@@ -1,10 +1,10 @@
-package com.bugzero.rarego.boundedContext.auth.config;
+package com.bugzero.rarego.bounded_context.auth.config;
 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.stereotype.Component;
 
-import com.bugzero.rarego.boundedContext.auth.app.AuthOAuth2AccountService;
-import com.bugzero.rarego.boundedContext.auth.security.CustomOAuth2SuccessHandler;
+import com.bugzero.rarego.bounded_context.auth.app.AuthOAuth2AccountService;
+import com.bugzero.rarego.bounded_context.auth.security.CustomOAuth2SuccessHandler;
 import com.bugzero.rarego.global.security.OAuth2SecurityConfigurer;
 
 import lombok.RequiredArgsConstructor;

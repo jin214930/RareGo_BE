@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.auth.app;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,9 +12,9 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import com.bugzero.rarego.boundedContext.auth.domain.AccountDto;
-import com.bugzero.rarego.boundedContext.auth.domain.OAuth2AttributeMapper;
-import com.bugzero.rarego.boundedContext.auth.domain.TokenPairDto;
+import com.bugzero.rarego.bounded_context.auth.domain.AccountDto;
+import com.bugzero.rarego.bounded_context.auth.domain.OAuth2AttributeMapper;
+import com.bugzero.rarego.bounded_context.auth.domain.TokenPairDto;
 
 import lombok.RequiredArgsConstructor;
 

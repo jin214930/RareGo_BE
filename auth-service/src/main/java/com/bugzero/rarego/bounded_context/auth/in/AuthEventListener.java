@@ -1,10 +1,10 @@
-package com.bugzero.rarego.boundedContext.auth.in;
+package com.bugzero.rarego.bounded_context.auth.in;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.bugzero.rarego.boundedContext.auth.app.AuthPromoteSellerUseCase;
+import com.bugzero.rarego.bounded_context.auth.app.AuthPromoteSellerUseCase;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.member.event.MemberBecameSellerEvent;

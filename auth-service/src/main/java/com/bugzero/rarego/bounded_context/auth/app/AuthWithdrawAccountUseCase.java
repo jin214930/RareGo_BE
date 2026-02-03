@@ -1,9 +1,9 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.auth.app;
 
-import com.bugzero.rarego.boundedContext.auth.domain.Account;
-import com.bugzero.rarego.boundedContext.auth.domain.AuthRole;
-import com.bugzero.rarego.boundedContext.auth.out.AccountRepository;
-import com.bugzero.rarego.boundedContext.auth.out.RefreshTokenRepository;
+import com.bugzero.rarego.bounded_context.auth.domain.Account;
+import com.bugzero.rarego.bounded_context.auth.domain.AuthRole;
+import com.bugzero.rarego.bounded_context.auth.out.AccountRepository;
+import com.bugzero.rarego.bounded_context.auth.out.RefreshTokenRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.security.JwtParser;

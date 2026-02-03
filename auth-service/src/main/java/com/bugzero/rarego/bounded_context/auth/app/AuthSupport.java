@@ -1,8 +1,8 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.auth.app;
 
-import com.bugzero.rarego.boundedContext.auth.domain.Account;
-import com.bugzero.rarego.boundedContext.auth.domain.Provider;
-import com.bugzero.rarego.boundedContext.auth.out.AccountRepository;
+import com.bugzero.rarego.bounded_context.auth.domain.Account;
+import com.bugzero.rarego.bounded_context.auth.domain.Provider;
+import com.bugzero.rarego.bounded_context.auth.out.AccountRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import lombok.RequiredArgsConstructor;

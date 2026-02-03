@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.auth.in;
+package com.bugzero.rarego.bounded_context.auth.in;
 
 import java.time.Duration;
 import java.util.Map;
@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.bugzero.rarego.boundedContext.auth.app.AuthFacade;
-import com.bugzero.rarego.boundedContext.auth.domain.TokenIssueDto;
-import com.bugzero.rarego.boundedContext.auth.domain.TokenPairDto;
+import com.bugzero.rarego.bounded_context.auth.app.AuthFacade;
+import com.bugzero.rarego.bounded_context.auth.domain.TokenIssueDto;
+import com.bugzero.rarego.bounded_context.auth.domain.TokenPairDto;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessResponseDto;

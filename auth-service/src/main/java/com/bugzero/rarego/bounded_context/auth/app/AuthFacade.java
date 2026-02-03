@@ -1,10 +1,10 @@
-package com.bugzero.rarego.boundedContext.auth.app;
+package com.bugzero.rarego.bounded_context.auth.app;
 
 import org.springframework.stereotype.Service;
 
-import com.bugzero.rarego.boundedContext.auth.domain.Account;
-import com.bugzero.rarego.boundedContext.auth.domain.Provider;
-import com.bugzero.rarego.boundedContext.auth.domain.TokenPairDto;
+import com.bugzero.rarego.bounded_context.auth.domain.Account;
+import com.bugzero.rarego.bounded_context.auth.domain.Provider;
+import com.bugzero.rarego.bounded_context.auth.domain.TokenPairDto;
 
 import lombok.RequiredArgsConstructor;
 
