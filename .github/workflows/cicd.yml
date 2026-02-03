@@ -69,6 +69,9 @@ jobs:
           - name: payment-service
             dockerfile: payment-service/Dockerfile
             image_suffix: "-payment-service"
+          - name: auction-service
+            dockerfile: auction-service/Dockerfile
+            image_suffix: "-acution-service"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -148,6 +151,7 @@ jobs:
             # .env.deploy 파일 초기화 및 환경 변수 주입
             echo "DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):${{ github.ref_name }}" > .env.deploy
             echo "PAYMENT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-payment-service:${{ github.ref_name }}" >> .env.deploy
+            echo "AUCTION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auction-service:${{ github.ref_name }}" >> .env.deploy
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.deploy
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env.deploy
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.deploy
