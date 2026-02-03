@@ -26,6 +26,7 @@ COPY src src
 COPY notification-service notification-service
 COPY payment-service payment-service
 COPY auction-service auction-service
+COPY auth-service auth-service
 RUN ./gradlew build -x test --no-daemon
 
 # Run stage
