@@ -4,16 +4,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductCreateResponseDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductInspectionRequestDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductInspectionResponseDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductResponseForInspectionDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductSearchForInspectionCondition;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductUpdateResponseDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
-import com.bugzero.rarego.shared.product.dto.ProductCreateResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductInspectionRequestDto;
-import com.bugzero.rarego.shared.product.dto.ProductInspectionResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductResponseForInspectionDto;
-import com.bugzero.rarego.shared.product.dto.ProductSearchForInspectionCondition;
 import com.bugzero.rarego.shared.product.dto.ProductUpdateDto;
-import com.bugzero.rarego.shared.product.dto.ProductUpdateResponseDto;
 
 import lombok.RequiredArgsConstructor;
 
