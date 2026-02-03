@@ -71,7 +71,7 @@ jobs:
             image_suffix: "-payment-service"
           - name: auction-service
             dockerfile: auction-service/Dockerfile
-            image_suffix: "-acution-service"
+            image_suffix: "-auction-service"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
