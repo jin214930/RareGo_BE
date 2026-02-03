@@ -119,7 +119,7 @@ services:
       - rarego-network
 
   member-service:
-    image: ${PAYMENT_DOCKER_IMAGE:-rarego-member-service:latest}
+    image: ${MEMBER_DOCKER_IMAGE:-rarego-member-service:latest}
     container_name: rarego-member-service
     ports:
       - "8081:8081"
