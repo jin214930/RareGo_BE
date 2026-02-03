@@ -118,6 +118,27 @@ services:
     networks:
       - rarego-network
 
+  notification-service:
+    image: ${NOTIFICATION_DOCKER_IMAGE:-rarego-notification-service:latest}
+    container_name: rarego-notification-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      TZ: Asia/Seoul
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+    networks:
+      - rarego-network
+
   product-service:
     image: ${PRODUCT_DOCKER_IMAGE:-rarego-product-service:latest}
     container_name: rarego-product-service
