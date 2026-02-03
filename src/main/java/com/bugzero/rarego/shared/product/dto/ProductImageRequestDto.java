@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.product.domain.dto;
+package com.bugzero.rarego.shared.product.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;

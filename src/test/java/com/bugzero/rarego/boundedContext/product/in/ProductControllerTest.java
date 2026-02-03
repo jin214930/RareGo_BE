@@ -28,8 +28,6 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import com.bugzero.rarego.boundedContext.product.app.ProductFacade;
 import com.bugzero.rarego.boundedContext.product.domain.dto.ProductCreateResponseDto;
-import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageRequestDto;
-import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageUpdateDto;
 import com.bugzero.rarego.boundedContext.product.domain.dto.ProductUpdateResponseDto;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.global.exception.GlobalExceptionHandler;
@@ -37,6 +35,8 @@ import com.bugzero.rarego.global.security.MemberPrincipal;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductImageUpdateDto;
 import com.bugzero.rarego.shared.product.dto.ProductUpdateDto;
 import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;

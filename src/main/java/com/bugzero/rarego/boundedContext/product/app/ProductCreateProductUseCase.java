@@ -10,11 +10,11 @@ import com.bugzero.rarego.boundedContext.product.domain.Product;
 import com.bugzero.rarego.boundedContext.product.domain.ProductImage;
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
 import com.bugzero.rarego.boundedContext.product.domain.dto.ProductCreateResponseDto;
-import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageRequestDto;
 import com.bugzero.rarego.boundedContext.product.out.ProductRepository;
 import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
 import com.bugzero.rarego.shared.product.event.S3ImageConfirmEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -28,19 +28,19 @@ public class ProductCreateProductUseCase {
 	private final EventPublisher eventPublisher;
 
     @Transactional
-    public ProductCreateResponseDto createProduct(String memberUUID, ProductCreateRequestDto productCreateRequestDto) {
+    public ProductCreateResponseDto createProduct(String memberUUID, ProductCreateRequestDto dto) {
 
 		ProductMember seller = productSupport.verifyValidateMember(memberUUID);
 
-		Product product = confirmImages(productCreateRequestDto.toEntity(seller),
-			productCreateRequestDto.productImageRequestDto());
+		Product product = confirmImages(Product.createProduct(seller, dto.name(), dto.category(), dto.description()),
+			dto.productImageRequestDto());
 
         // 부모만 저장 (CascadeType.PERSIST에 의해 자식인 ProductImage들도 자동으로 INSERT됨)
         Product savedProduct = productRepository.save(product);
 
         //경매정보 생성 요청하는 api
         Long auctionId = auctionApiClient.createAuction(savedProduct.getId(), memberUUID,
-                productCreateRequestDto.productAuctionRequestDto());
+                dto.productAuctionRequestDto());
 
 		return ProductCreateResponseDto.builder()
 			.productId(savedProduct.getId())

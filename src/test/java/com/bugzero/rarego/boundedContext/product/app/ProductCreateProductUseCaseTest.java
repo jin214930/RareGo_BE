@@ -18,12 +18,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.bugzero.rarego.boundedContext.product.domain.Product;
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
 import com.bugzero.rarego.boundedContext.product.domain.dto.ProductCreateResponseDto;
-import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageRequestDto;
 import com.bugzero.rarego.boundedContext.product.out.ProductRepository;
 import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
 import com.bugzero.rarego.shared.product.event.S3ImageConfirmEvent;
 import com.bugzero.rarego.shared.product.type.Category;
 

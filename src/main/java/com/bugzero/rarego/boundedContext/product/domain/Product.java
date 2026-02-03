@@ -8,10 +8,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.bugzero.rarego.boundedContext.product.domain.dto.ProductImageUpdateDto;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.jpa.entity.BaseIdAndTime;
 import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.shared.product.dto.ProductImageUpdateDto;
 import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
@@ -79,6 +79,19 @@ public class Product extends BaseIdAndTime {
 	//검수가 이미 승인되었는지 확인
 	public boolean isApproved() {
 		return this.inspectionStatus == InspectionStatus.APPROVED;
+	}
+
+	//Product 객체 생성
+	public static Product createProduct(ProductMember seller, String name, Category category, String description) {
+		return Product.builder()
+			.seller(seller)
+			.name(name)
+			.category(category)
+			.description(description)
+			.productCondition(ProductCondition.INSPECTION) // 기본값 설정
+			.inspectionStatus(InspectionStatus.PENDING)    // 기본값 설정
+			.images(new ArrayList<>())
+			.build();
 	}
 
 	public void updateBasicInfo(String name, Category category, String description) {
