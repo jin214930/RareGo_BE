@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import com.bugzero.rarego.boundedContext.product.domain.Inspection;
-import com.bugzero.rarego.boundedContext.product.domain.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
 
 public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 	Optional<Inspection> findByProductId(Long id);

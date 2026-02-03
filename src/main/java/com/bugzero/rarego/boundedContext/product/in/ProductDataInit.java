@@ -6,13 +6,13 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import com.bugzero.rarego.boundedContext.product.domain.Category;
-import com.bugzero.rarego.boundedContext.product.domain.InspectionStatus;
 import com.bugzero.rarego.boundedContext.product.domain.Product;
-import com.bugzero.rarego.boundedContext.product.domain.ProductCondition;
 import com.bugzero.rarego.boundedContext.product.domain.ProductMember;
 import com.bugzero.rarego.boundedContext.product.out.ProductMemberRepository;
 import com.bugzero.rarego.boundedContext.product.out.ProductRepository;
+import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

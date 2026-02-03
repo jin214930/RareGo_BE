@@ -30,18 +30,18 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 import com.bugzero.rarego.boundedContext.product.app.ProductFacade;
-import com.bugzero.rarego.boundedContext.product.domain.Category;
-import com.bugzero.rarego.boundedContext.product.domain.InspectionStatus;
-import com.bugzero.rarego.boundedContext.product.domain.ProductCondition;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductInspectionRequestDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductInspectionResponseDto;
+import com.bugzero.rarego.boundedContext.product.domain.dto.ProductResponseForInspectionDto;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.exception.GlobalExceptionHandler;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.global.security.MemberPrincipal;
-import com.bugzero.rarego.shared.product.dto.ProductInspectionRequestDto;
-import com.bugzero.rarego.shared.product.dto.ProductInspectionResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductResponseForInspectionDto;
+import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 import tools.jackson.databind.ObjectMapper;
 

@@ -1,7 +1,5 @@
 package com.bugzero.rarego.shared.product.dto;
 
-import com.bugzero.rarego.boundedContext.auction.domain.Auction;
-
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -16,12 +14,4 @@ public record ProductAuctionRequestDto(
 	@Max(value = 30, message = "경매기간은 최대 30일까지만 가능합니다.")
 	Integer durationDays
 ) {
-	public Auction toEntity(Long productId, Long sellerId) {
-		return Auction.builder()
-			.productId(productId)
-			.sellerId(sellerId)
-			.startPrice(startPrice)
-			.durationDays(durationDays)
-			.build();
-	}
 }
