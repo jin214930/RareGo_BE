@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
+import com.bugzero.rarego.shared.product.type.Category;
 
 public interface ProductApiClient {
 	// 상품 ID로 단건 조회 (존재하지 않을 수 있음)
