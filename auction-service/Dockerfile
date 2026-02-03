@@ -7,7 +7,7 @@ COPY . .
 
 # 실행 권한을 부여하고 'payment-service' 모듈만 bootJar로 빌드합니다.
 RUN chmod +x ./gradlew
-RUN ./gradlew :payment-service:bootJar --no-daemon
+RUN ./gradlew :auction-service:bootJar --no-daemon
 
 # Run stage
 FROM eclipse-temurin:21-jre-jammy
@@ -17,7 +17,7 @@ WORKDIR /app
 COPY --from=build /app/payment-service/build/libs/payment-service-*.jar app.jar
 
 # 애플리케이션 포트 노출 (docker-compose에서 설정할 포트와 맞춤)
-EXPOSE 8082
+EXPOSE 8083
 
 # 애플리케이션 실행
 ENTRYPOINT ["java", "-jar", "app.jar"]
