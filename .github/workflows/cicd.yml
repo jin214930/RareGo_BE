@@ -31,7 +31,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,9 +69,13 @@ jobs:
           - name: payment-service
             dockerfile: payment-service/Dockerfile
             image_suffix: "-payment-service"
+          - name: notification-service
+            dockerfile: notification-service/Dockerfile
+            image_suffix: "-notification-service"
           - name: auction-service
             dockerfile: auction-service/Dockerfile
             image_suffix: "-auction-service"
+          
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -107,7 +111,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: [build-test, build-images]
+    needs: [ build-test, build-images ]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     steps:
       - name: Checkout
@@ -151,6 +155,7 @@ jobs:
             # .env.deploy 파일 초기화 및 환경 변수 주입
             echo "DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):${{ github.ref_name }}" > .env.deploy
             echo "PAYMENT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-payment-service:${{ github.ref_name }}" >> .env.deploy
+            echo "NOTIFICATION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-notification-service:${{ github.ref_name }}" >> .env.deploy
             echo "AUCTION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auction-service:${{ github.ref_name }}" >> .env.deploy
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.deploy
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env.deploy
