@@ -17,7 +17,7 @@ WORKDIR /app
 COPY --from=build /app/auth-service/build/libs/auth-service-*.jar app.jar
 
 # 애플리케이션 포트 노출 (docker-compose에서 설정할 포트와 맞춤)
-EXPOSE 8080
+EXPOSE 8089
 
 # 애플리케이션 실행
 ENTRYPOINT ["java", "-jar", "app.jar"]
