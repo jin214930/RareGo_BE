@@ -19,7 +19,7 @@ import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderClient;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderApiClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PaymentAuctionTimeoutUseCase {
-    private final AuctionOrderClient auctionOrderClient;
+    private final AuctionOrderApiClient auctionOrderApiClient;
     private final DepositRepository depositRepository;
     private final PaymentTransactionRepository transactionRepository;
     private final SettlementRepository settlementRepository;
@@ -41,19 +41,19 @@ public class PaymentAuctionTimeoutUseCase {
         // 1. 주문 조회 및 검증 (PROCESSING 상태만)
         AuctionOrderDto order = findAndValidateOrder(auctionId);
 
-        // 2. 보증금 조회 (HOLD 상태만)
+        // 2. 주문 실패 처리 (경매 서비스에서 상태 전이 확정)
+        auctionOrderApiClient.failOrder(auctionId);
+
+        // 3. 보증금 조회 (HOLD 상태만)
         Deposit deposit = findDeposit(order.bidderId(), auctionId);
 
-        // 3. 보증금 몰수 처리
+        // 4. 보증금 몰수 처리
         deposit.forfeit();
         Wallet buyerWallet = paymentSupport.findWalletByMemberIdForUpdate(order.bidderId());
         PaymentMember buyer = paymentSupport.findMemberById(order.bidderId());
         buyerWallet.forfeitDeposit(deposit.getAmount());
         recordTransaction(buyer, buyerWallet,
             -deposit.getAmount(), -deposit.getAmount(), deposit.getId());
-
-        // 4. 주문 실패 처리
-        auctionOrderClient.failOrder(auctionId);
 
         // 5. 판매자 정산 생성 (보증금 기반)
         PaymentMember seller = paymentSupport.findMemberById(order.sellerId());
@@ -72,7 +72,7 @@ public class PaymentAuctionTimeoutUseCase {
     }
 
     private AuctionOrderDto findAndValidateOrder(Long auctionId) {
-        AuctionOrderDto order = auctionOrderClient.getOrder(auctionId);
+        AuctionOrderDto order = auctionOrderApiClient.getOrder(auctionId);
 
         if (!"PROCESSING".equals(order.status())) {
             throw new CustomException(ErrorType.INVALID_ORDER_STATUS);

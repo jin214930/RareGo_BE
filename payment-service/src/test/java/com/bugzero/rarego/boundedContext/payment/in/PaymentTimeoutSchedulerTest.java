@@ -15,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.bugzero.rarego.bounded_context.payment.app.PaymentAuctionTimeoutUseCase;
-import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderClient;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderApiClient;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,7 +25,7 @@ class PaymentTimeoutSchedulerTest {
         private PaymentTimeoutScheduler paymentTimeoutScheduler;
 
         @Mock
-        private AuctionOrderClient auctionOrderClient;
+        private AuctionOrderApiClient auctionOrderApiClient;
 
         @Mock
         private PaymentAuctionTimeoutUseCase paymentAuctionTimeoutUseCase;
@@ -41,8 +41,10 @@ class PaymentTimeoutSchedulerTest {
                 AuctionOrderDto order2 = new AuctionOrderDto(2L, 200L, 11L, 21L, 60000, "PROCESSING",
                                 LocalDateTime.now().minusDays(4));
 
-                given(auctionOrderClient.findTimeoutOrders(any(LocalDateTime.class), any()))
-                                .willReturn(new AuctionOrderClient.AuctionOrderSlice(List.of(order1, order2), false));
+                given(auctionOrderApiClient.findTimeoutOrders(any(LocalDateTime.class), any()))
+                                .willReturn(
+                                                new AuctionOrderApiClient.AuctionOrderSlice(List.of(order1, order2), true),
+                                                new AuctionOrderApiClient.AuctionOrderSlice(List.of(), false));
 
                 // when
                 paymentTimeoutScheduler.checkPaymentTimeout();
@@ -58,8 +60,8 @@ class PaymentTimeoutSchedulerTest {
                 // given
                 ReflectionTestUtils.setField(paymentTimeoutScheduler, "paymentTimeoutDays", 3);
 
-                given(auctionOrderClient.findTimeoutOrders(any(LocalDateTime.class), any()))
-                                .willReturn(new AuctionOrderClient.AuctionOrderSlice(List.of(), false));
+                given(auctionOrderApiClient.findTimeoutOrders(any(LocalDateTime.class), any()))
+                                .willReturn(new AuctionOrderApiClient.AuctionOrderSlice(List.of(), false));
 
                 // when
                 paymentTimeoutScheduler.checkPaymentTimeout();
@@ -81,9 +83,11 @@ class PaymentTimeoutSchedulerTest {
                 AuctionOrderDto order3 = new AuctionOrderDto(3L, 300L, 12L, 22L, 70000, "PROCESSING",
                                 LocalDateTime.now().minusDays(4));
 
-                given(auctionOrderClient.findTimeoutOrders(any(LocalDateTime.class), any()))
-                                .willReturn(new AuctionOrderClient.AuctionOrderSlice(List.of(order1, order2, order3),
-                                                false));
+                given(auctionOrderApiClient.findTimeoutOrders(any(LocalDateTime.class), any()))
+                                .willReturn(
+                                                new AuctionOrderApiClient.AuctionOrderSlice(List.of(order1, order2, order3),
+                                                                true),
+                                                new AuctionOrderApiClient.AuctionOrderSlice(List.of(), false));
 
                 // order2 처리 시 예외 발생
                 doNothing().when(paymentAuctionTimeoutUseCase).processTimeout(100L);

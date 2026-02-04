@@ -25,7 +25,7 @@ import com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus;
 import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
 import com.bugzero.rarego.bounded_context.payment.domain.WalletTransactionType;
 import com.bugzero.rarego.bounded_context.payment.in.dto.RefundResponseDto;
-import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderClient;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderApiClient;
 import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
 import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
 import com.bugzero.rarego.global.exception.CustomException;
@@ -39,7 +39,7 @@ class PaymentRefundUseCaseTest {
 	private PaymentRefundUseCase paymentRefundUseCase;
 
 	@Mock
-	private AuctionOrderClient auctionOrderClient;
+	private AuctionOrderApiClient auctionOrderApiClient;
 
 	@Mock
 	private SettlementRepository settlementRepository;
@@ -67,7 +67,7 @@ class PaymentRefundUseCaseTest {
 		Settlement settlement = Settlement.create(AUCTION_ID, createMockMember(SELLER_ID), FINAL_PRICE);
 		// Settlement 상태는 READY (환불 가능)
 
-		given(auctionOrderClient.refundOrder(AUCTION_ID)).willReturn(order);
+		given(auctionOrderApiClient.refundOrder(AUCTION_ID)).willReturn(order);
 		given(settlementRepository.findByAuctionIdForUpdate(AUCTION_ID)).willReturn(Optional.of(settlement));
 		given(paymentSupport.findWalletByMemberIdForUpdate(BIDDER_ID)).willReturn(wallet);
 		given(paymentSupport.findMemberById(BIDDER_ID)).willReturn(buyer);
@@ -96,7 +96,7 @@ class PaymentRefundUseCaseTest {
 	@DisplayName("실패: 정산 정보가 없으면 환불 실패")
 	void processRefund_Fail_SettlementNotFound() {
 		// given
-		given(auctionOrderClient.refundOrder(AUCTION_ID))
+		given(auctionOrderApiClient.refundOrder(AUCTION_ID))
 			.willReturn(new AuctionOrderDto(1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS",
 				LocalDateTime.now()));
 		given(settlementRepository.findByAuctionIdForUpdate(AUCTION_ID)).willReturn(Optional.empty());
@@ -112,7 +112,7 @@ class PaymentRefundUseCaseTest {
 	@DisplayName("실패: 주문 상태가 SUCCESS가 아님")
 	void processRefund_Fail_InvalidOrderStatus() {
 		// given
-		given(auctionOrderClient.refundOrder(AUCTION_ID))
+		given(auctionOrderApiClient.refundOrder(AUCTION_ID))
 			.willThrow(new CustomException(ErrorType.INVALID_ORDER_STATUS));
 
 		// when & then
@@ -132,7 +132,7 @@ class PaymentRefundUseCaseTest {
 		Settlement settlement = Settlement.create(AUCTION_ID, createMockMember(SELLER_ID), FINAL_PRICE);
 		settlement.complete(); // DONE 상태 - 환불 불가
 
-		given(auctionOrderClient.refundOrder(AUCTION_ID)).willReturn(order);
+		given(auctionOrderApiClient.refundOrder(AUCTION_ID)).willReturn(order);
 		given(settlementRepository.findByAuctionIdForUpdate(AUCTION_ID)).willReturn(Optional.of(settlement));
 
 		// when & then
@@ -146,7 +146,7 @@ class PaymentRefundUseCaseTest {
 	@DisplayName("실패: 주문을 찾을 수 없음")
 	void processRefund_Fail_OrderNotFound() {
 		// given
-		given(auctionOrderClient.refundOrder(AUCTION_ID))
+		given(auctionOrderApiClient.refundOrder(AUCTION_ID))
 			.willThrow(new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
 
 		// when & then

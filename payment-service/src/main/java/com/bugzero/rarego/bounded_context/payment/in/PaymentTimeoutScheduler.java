@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.bugzero.rarego.bounded_context.payment.app.PaymentAuctionTimeoutUseCase;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderClient;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderApiClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentTimeoutScheduler {
     private static final int BATCH_SIZE = 100;
 
-    private final AuctionOrderClient auctionOrderClient;
+    private final AuctionOrderApiClient auctionOrderApiClient;
     private final PaymentAuctionTimeoutUseCase paymentAuctionTimeoutUseCase;
 
     @Value("${auction.payment-timeout-days:3}")
@@ -36,11 +36,13 @@ public class PaymentTimeoutScheduler {
         int failCount = 0;
         int totalProcessed = 0;
 
-        // 페이징 처리
-        int page = 0;
-        AuctionOrderClient.AuctionOrderSlice timeoutOrders;
-        do {
-            timeoutOrders = auctionOrderClient.findTimeoutOrders(deadline, PageRequest.of(page, BATCH_SIZE));
+        // 처리 중 상태가 변경되므로 항상 0페이지를 조회
+        AuctionOrderApiClient.AuctionOrderSlice timeoutOrders;
+        while (true) {
+            timeoutOrders = auctionOrderApiClient.findTimeoutOrders(deadline, PageRequest.of(0, BATCH_SIZE));
+            if (timeoutOrders.content().isEmpty()) {
+                break;
+            }
 
             for (AuctionOrderDto order : timeoutOrders.content()) {
                 try {
@@ -53,8 +55,7 @@ public class PaymentTimeoutScheduler {
                 }
                 totalProcessed++;
             }
-            page++;
-        } while (timeoutOrders.hasNext());
+        }
 
         if (totalProcessed == 0) {
             log.info("타임아웃 대상 주문 없음");
