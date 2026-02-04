@@ -69,13 +69,21 @@ jobs:
           - name: payment-service
             dockerfile: payment-service/Dockerfile
             image_suffix: "-payment-service"
+          - name: member-service
+            dockerfile: member-service/Dockerfile
+            image_suffix: "-member-service"
           - name: notification-service
             dockerfile: notification-service/Dockerfile
             image_suffix: "-notification-service"
           - name: auction-service
             dockerfile: auction-service/Dockerfile
             image_suffix: "-auction-service"
-
+          - name: product-service
+          - dockerfile: product-service/Dockerfile
+          - image_suffix: "-product-service"
+          - name: auth-service
+            dockerfile: auth-service/Dockerfile
+            image_suffix: "-auth-service"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -155,8 +163,11 @@ jobs:
             # .env.deploy 파일 초기화 및 환경 변수 주입
             echo "DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):${{ github.ref_name }}" > .env.deploy
             echo "PAYMENT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-payment-service:${{ github.ref_name }}" >> .env.deploy
+            echo "MEMBER_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-member-service:${{ github.ref_name }}" >> .env.deploy
             echo "NOTIFICATION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-notification-service:${{ github.ref_name }}" >> .env.deploy
             echo "AUCTION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auction-service:${{ github.ref_name }}" >> .env.deploy
+            echo "PRODUCT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-product-service:${{ github.ref_name }}" >> .env.deploy
+            echo "AUTH_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auth-service:${{ github.ref_name }}" >> .env.deploy
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.deploy
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env.deploy
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.deploy
