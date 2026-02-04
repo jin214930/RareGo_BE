@@ -1,4 +1,4 @@
-package bugzero.productservice.shared.auction.type;
+package com.bugzero.rarego.shared.product.type;
 
 public enum AuctionStatus {
     // 예정됨

@@ -1,7 +1,7 @@
 package com.bugzero.rarego.product.out;
 
-import bugzero.productservice.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.product.domain.ProductSearchDocument;
+import com.bugzero.rarego.shared.product.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.type.Category;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;

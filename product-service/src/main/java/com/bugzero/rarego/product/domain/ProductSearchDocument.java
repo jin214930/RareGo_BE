@@ -1,6 +1,6 @@
 package com.bugzero.rarego.product.domain;
 
-import bugzero.productservice.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
 import lombok.Getter;
