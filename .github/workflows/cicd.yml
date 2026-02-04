@@ -79,11 +79,14 @@ jobs:
             dockerfile: auction-service/Dockerfile
             image_suffix: "-auction-service"
           - name: product-service
-          - dockerfile: product-service/Dockerfile
-          - image_suffix: "-product-service"
+            dockerfile: product-service/Dockerfile
+            image_suffix: "-product-service"
           - name: auth-service
             dockerfile: auth-service/Dockerfile
             image_suffix: "-auth-service"
+          - name: product-elasticsearch
+            dockerfile: docker/elasticsearch/Dockerfile
+            image_suffix: "-product-elasticsearch"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -167,6 +170,7 @@ jobs:
             echo "NOTIFICATION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-notification-service:${{ github.ref_name }}" >> .env.deploy
             echo "AUCTION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auction-service:${{ github.ref_name }}" >> .env.deploy
             echo "PRODUCT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-product-service:${{ github.ref_name }}" >> .env.deploy
+            echo "PRODUCT_ELASTICSEARCH_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-product-elasticsearch:${{ github.ref_name }}" >> .env.deploy
             echo "AUTH_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auth-service:${{ github.ref_name }}" >> .env.deploy
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.deploy
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env.deploy
@@ -203,6 +207,6 @@ jobs:
             
             # if/else 문을 제거하고 항상 모든 서비스를 pull 하고 up 시킵니다.
             docker compose --env-file .env.deploy pull
-            docker compose --env-file .env.deploy up -d --build
+            docker compose --env-file .env.deploy up -d
             
             docker image prune -f

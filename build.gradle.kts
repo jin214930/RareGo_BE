@@ -55,6 +55,11 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
 
+    // Elasticsearch 연동
+    implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
+    // 테스트용 Testcontainers
+    testImplementation("org.testcontainers:elasticsearch:1.19.0")
+
     // Swagger/OpenAPI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
 }
