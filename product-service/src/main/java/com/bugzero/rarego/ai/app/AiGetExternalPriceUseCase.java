@@ -19,9 +19,9 @@ public class AiGetExternalPriceUseCase {
 	public Flux<String> execute(AiExternalPriceRequestDto dto) {
 		// 사용자의 입력값을 프롬프트에 주입
 		String userPrompt = String.format(
-			"상품 정보:\n- 카테고리: %s\n- 모델명: %s\n- 상태: %s\n- 상세설명: %s\n\n" +
+			"상품 정보:\n- 카테고리: %s\n- 모델명: %s\n- 상태: %s\n" +
 				"위 정보를 바탕으로 현재 이 레고의 시장 가치를 평가하고, 근거와 참조 링크를 포함해 답변해줘.",
-			dto.category(), dto.name(), dto.condition().getDescription(), dto.description()
+			dto.category(), dto.name(), dto.condition().getDescription()
 		);
 
 		return chatClient.prompt()
