@@ -15,8 +15,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import bugzero.productservice.product.domain.dto.PresignedUrlRequestDto;
-import bugzero.productservice.product.domain.dto.PresignedUrlResponseDto;
+import com.bugzero.rarego.product.app.ProductImageS3UseCase;
+import com.bugzero.rarego.product.domain.dto.PresignedUrlRequestDto;
+import com.bugzero.rarego.product.domain.dto.PresignedUrlResponseDto;
+
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;

@@ -14,9 +14,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import bugzero.productservice.global.aspect.ResponseAspect;
-import bugzero.productservice.product.app.ProductImageS3UseCase;
-import bugzero.productservice.product.domain.dto.PresignedUrlRequestDto;
+import com.bugzero.rarego.global.aspect.ResponseAspect;
+import com.bugzero.rarego.product.app.ProductImageS3UseCase;
+import com.bugzero.rarego.product.domain.dto.PresignedUrlRequestDto;
+import com.bugzero.rarego.product.in.ProductImageController;
+
 import tools.jackson.databind.ObjectMapper;
 
 @WebMvcTest(ProductImageController.class)

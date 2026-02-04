@@ -15,13 +15,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import bugzero.productservice.global.exception.CustomException;
-import bugzero.productservice.global.response.ErrorType;
-import bugzero.productservice.product.domain.Inspection;
-import bugzero.productservice.product.domain.dto.ProductInspectionResponseDto;
-import bugzero.productservice.product.out.InspectionRepository;
-import bugzero.productservice.shared.product.type.InspectionStatus;
-import bugzero.productservice.shared.product.type.ProductCondition;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.product.app.ProductReadInspectionUseCase;
+import com.bugzero.rarego.product.domain.Inspection;
+import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
+import com.bugzero.rarego.product.out.InspectionRepository;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 @ExtendWith(MockitoExtension.class)
 class ProductReadInspectionUseCaseTest {

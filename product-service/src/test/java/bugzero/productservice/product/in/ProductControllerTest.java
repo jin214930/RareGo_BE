@@ -26,20 +26,22 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import bugzero.productservice.global.aspect.ResponseAspect;
-import bugzero.productservice.global.exception.GlobalExceptionHandler;
-import bugzero.productservice.global.security.MemberPrincipal;
-import bugzero.productservice.product.app.ProductFacade;
-import bugzero.productservice.product.domain.dto.ProductCreateResponseDto;
-import bugzero.productservice.product.domain.dto.ProductUpdateResponseDto;
-import bugzero.productservice.shared.product.dto.ProductAuctionRequestDto;
-import bugzero.productservice.shared.product.dto.ProductAuctionUpdateDto;
-import bugzero.productservice.shared.product.dto.ProductCreateRequestDto;
-import bugzero.productservice.shared.product.dto.ProductImageRequestDto;
-import bugzero.productservice.shared.product.dto.ProductImageUpdateDto;
-import bugzero.productservice.shared.product.dto.ProductUpdateDto;
-import bugzero.productservice.shared.product.type.Category;
-import bugzero.productservice.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.global.aspect.ResponseAspect;
+import com.bugzero.rarego.global.exception.GlobalExceptionHandler;
+import com.bugzero.rarego.global.security.MemberPrincipal;
+import com.bugzero.rarego.product.app.ProductFacade;
+import com.bugzero.rarego.product.domain.dto.ProductCreateResponseDto;
+import com.bugzero.rarego.product.domain.dto.ProductUpdateResponseDto;
+import com.bugzero.rarego.product.in.ProductController;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
+import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductImageUpdateDto;
+import com.bugzero.rarego.shared.product.dto.ProductUpdateDto;
+import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+
 import tools.jackson.databind.ObjectMapper;
 
 @WebMvcTest(ProductController.class)

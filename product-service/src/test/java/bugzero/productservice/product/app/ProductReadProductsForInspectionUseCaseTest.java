@@ -13,13 +13,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
-import bugzero.productservice.product.domain.Product;
-import bugzero.productservice.product.domain.ProductImage;
-import bugzero.productservice.product.domain.ProductMember;
-import bugzero.productservice.product.domain.dto.ProductResponseForInspectionDto;
-import bugzero.productservice.product.out.ProductRepository;
-import bugzero.productservice.shared.product.type.Category;
-import bugzero.productservice.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.product.domain.Product;
+import com.bugzero.rarego.product.domain.ProductImage;
+import com.bugzero.rarego.product.domain.ProductMember;
+import com.bugzero.rarego.product.domain.dto.ProductResponseForInspectionDto;
+import com.bugzero.rarego.product.out.ProductRepository;
+import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
 
 @DataJpaTest
 class ProductReadProductsForInspectionUseCaseTest {

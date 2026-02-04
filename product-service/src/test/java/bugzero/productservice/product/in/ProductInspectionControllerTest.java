@@ -29,19 +29,21 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import bugzero.productservice.global.aspect.ResponseAspect;
-import bugzero.productservice.global.exception.CustomException;
-import bugzero.productservice.global.exception.GlobalExceptionHandler;
-import bugzero.productservice.global.response.ErrorType;
-import bugzero.productservice.global.response.PagedResponseDto;
-import bugzero.productservice.global.security.MemberPrincipal;
-import bugzero.productservice.product.app.ProductFacade;
-import bugzero.productservice.product.domain.dto.ProductInspectionRequestDto;
-import bugzero.productservice.product.domain.dto.ProductInspectionResponseDto;
-import bugzero.productservice.product.domain.dto.ProductResponseForInspectionDto;
-import bugzero.productservice.shared.product.type.Category;
-import bugzero.productservice.shared.product.type.InspectionStatus;
-import bugzero.productservice.shared.product.type.ProductCondition;
+import com.bugzero.rarego.global.aspect.ResponseAspect;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.exception.GlobalExceptionHandler;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.global.response.PagedResponseDto;
+import com.bugzero.rarego.global.security.MemberPrincipal;
+import com.bugzero.rarego.product.app.ProductFacade;
+import com.bugzero.rarego.product.domain.dto.ProductInspectionRequestDto;
+import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
+import com.bugzero.rarego.product.domain.dto.ProductResponseForInspectionDto;
+import com.bugzero.rarego.product.in.ProductInspectionController;
+import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
+
 import tools.jackson.databind.ObjectMapper;
 
 @WebMvcTest(ProductInspectionController.class)

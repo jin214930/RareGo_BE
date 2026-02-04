@@ -16,14 +16,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import bugzero.productservice.global.event.EventPublisher;
-import bugzero.productservice.global.exception.CustomException;
-import bugzero.productservice.global.response.ErrorType;
-import bugzero.productservice.product.domain.Product;
-import bugzero.productservice.product.domain.ProductImage;
-import bugzero.productservice.product.domain.ProductMember;
-import bugzero.productservice.shared.auction.out.AuctionApiClient;
-import bugzero.productservice.shared.product.event.S3ImageDeleteEvent;
+import com.bugzero.rarego.global.event.EventPublisher;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.product.app.ProductDeleteProductUseCase;
+import com.bugzero.rarego.product.app.ProductSupport;
+import com.bugzero.rarego.product.domain.Product;
+import com.bugzero.rarego.product.domain.ProductImage;
+import com.bugzero.rarego.product.domain.ProductMember;
+import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
+import com.bugzero.rarego.shared.product.event.S3ImageDeleteEvent;
 
 @ExtendWith(MockitoExtension.class)
 class ProductDeleteProductUseCaseTest {
