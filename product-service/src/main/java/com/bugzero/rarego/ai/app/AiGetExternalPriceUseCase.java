@@ -1,19 +1,28 @@
 package com.bugzero.rarego.ai.app;
 
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
+
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.bugzero.rarego.ai.domain.dto.AiExternalPriceRequestDto;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
 @Service
+@Slf4j
 public class AiGetExternalPriceUseCase {
 
 	private final ChatClient chatClient;
+	private final Duration apiTimeout;
 
-	public AiGetExternalPriceUseCase(ChatClient chatClient) {
+	public AiGetExternalPriceUseCase(ChatClient chatClient,
+		@Value("${ai.api.timeout:30s}") Duration apiTimeout) {
 		this.chatClient = chatClient;
+		this.apiTimeout = apiTimeout;
 	}
 
 	public Flux<String> execute(AiExternalPriceRequestDto dto) {
@@ -27,7 +36,16 @@ public class AiGetExternalPriceUseCase {
 		return chatClient.prompt()
 			.user(userPrompt)
 			.stream()
-			.content();
+			.content()
+			.timeout(apiTimeout) // 주입받은 타임아웃 적용
+			.onErrorResume(TimeoutException.class, e -> {
+				log.error("AI 응답 타임아웃 발생 ({}): {}", apiTimeout, e.getMessage());
+				return Flux.just("응답 시간이 초과되었습니다. 다시 시도해주세요.");
+			})
+			.onErrorResume(e -> {
+				log.error("AI 분석 중 오류 발생: {}", e.getMessage());
+				return Flux.just("서비스 이용 중 오류가 발생했습니다.");
+			});
 	}
 
 }
