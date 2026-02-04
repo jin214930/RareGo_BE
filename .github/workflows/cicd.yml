@@ -66,8 +66,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Test + Coverage verify (JaCoCo)
-        run: ./gradlew test jacocoTestCoverageVerification --stacktrace
-        run: ./gradlew :payment-service:test :member-service:test :notification-service:test :auction-service:test :product-service:test :auth-service:test jacocoTestCoverageVerification
+        run: ./gradlew :payment-service:test :member-service:test :notification-service:test :auction-service:test :product-service:test :auth-service:test jacocoTestCoverageVerification --stacktrace
 
       - name: Build with Gradle
         run: ./gradlew :payment-service:build :member-service:build :notification-service:build :auction-service:build :product-service:build :auth-service:build -x test
