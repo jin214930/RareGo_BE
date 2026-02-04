@@ -99,3 +99,6 @@ springdoc:
 
 auction:
   payment-timeout-days: 3
+payment:
+  outbox:
+    retry-delay-ms: 300000
