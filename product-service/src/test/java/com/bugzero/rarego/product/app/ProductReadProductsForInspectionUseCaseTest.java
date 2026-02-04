@@ -1,4 +1,4 @@
-package bugzero.productservice.product.app;
+package com.bugzero.rarego.product.app;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
 

@@ -1,4 +1,4 @@
-package bugzero.productservice.product.app;
+package com.bugzero.rarego.product.app;
 
 import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,7 +17,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.product.app.ProductReadInspectionUseCase;
 import com.bugzero.rarego.product.domain.Inspection;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
 import com.bugzero.rarego.product.out.InspectionRepository;

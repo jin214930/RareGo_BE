@@ -1,4 +1,4 @@
-package bugzero.productservice.product.in;
+package com.bugzero.rarego.product.in;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -17,7 +17,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.product.app.ProductImageS3UseCase;
 import com.bugzero.rarego.product.domain.dto.PresignedUrlRequestDto;
-import com.bugzero.rarego.product.in.ProductImageController;
 
 import tools.jackson.databind.ObjectMapper;
 

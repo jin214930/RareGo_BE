@@ -1,4 +1,4 @@
-package bugzero.productservice.product.app;
+package com.bugzero.rarego.product.app;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -16,8 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.bugzero.rarego.global.event.EventPublisher;
-import com.bugzero.rarego.product.app.ProductCreateProductUseCase;
-import com.bugzero.rarego.product.app.ProductSupport;
 import com.bugzero.rarego.product.domain.Product;
 import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.dto.ProductCreateResponseDto;

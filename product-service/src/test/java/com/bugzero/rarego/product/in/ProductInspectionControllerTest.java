@@ -1,4 +1,4 @@
-package bugzero.productservice.product.in;
+package com.bugzero.rarego.product.in;
 
 import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -39,7 +39,6 @@ import com.bugzero.rarego.product.app.ProductFacade;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionRequestDto;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
 import com.bugzero.rarego.product.domain.dto.ProductResponseForInspectionDto;
-import com.bugzero.rarego.product.in.ProductInspectionController;
 import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;

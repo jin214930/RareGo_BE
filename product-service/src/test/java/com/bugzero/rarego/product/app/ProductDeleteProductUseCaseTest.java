@@ -1,4 +1,4 @@
-package bugzero.productservice.product.app;
+package com.bugzero.rarego.product.app;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
@@ -19,8 +19,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.product.app.ProductDeleteProductUseCase;
-import com.bugzero.rarego.product.app.ProductSupport;
 import com.bugzero.rarego.product.domain.Product;
 import com.bugzero.rarego.product.domain.ProductImage;
 import com.bugzero.rarego.product.domain.ProductMember;

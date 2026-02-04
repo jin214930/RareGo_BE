@@ -1,4 +1,4 @@
-package bugzero.productservice.product.app;
+package com.bugzero.rarego.product.app;
 
 import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.mockito.BDDMockito.*;
@@ -15,7 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.bugzero.rarego.product.app.ProductImageS3UseCase;
 import com.bugzero.rarego.product.domain.dto.PresignedUrlRequestDto;
 import com.bugzero.rarego.product.domain.dto.PresignedUrlResponseDto;
 
