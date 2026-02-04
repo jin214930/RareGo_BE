@@ -16,6 +16,8 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.exception.GlobalExceptionHandler;
 import com.bugzero.rarego.global.response.*;
 import com.bugzero.rarego.global.security.MemberPrincipal;
+import com.bugzero.rarego.shared.auction.dto.AuctionSortType;
+import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.support.WithMockMemberPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -248,14 +250,19 @@ class AuctionControllerTest {
         // when
         mockMvc.perform(get("/api/v1/auctions")
                         .param("keyword", "Lego")
-                        .param("category", "TOY")
-                        .param("sort", "CLOSING_SOON"))
+                        .param("category", Category.스타워즈.name())
+                        .param("sort", AuctionSortType.CLOSING_SOON.name()))
                 .andExpect(status().isOk());
 
         // then: 파라미터가 Condition 객체로 잘 변환되어 Facade로 전달되었는지 검증
-        verify(auctionFacade).getAuctions(argThat(condition -> condition.getKeyword().equals("Lego") &&
-                condition.getCategory().toString().equals("TOY") &&
-                condition.getSort().equals("CLOSING_SOON")), any(Pageable.class));
+        verify(auctionFacade).getAuctions(argThat(condition -> {
+            // [수정 2] 검증 로직을 입력값과 일치시킴 ("TOY" -> Category.스타워즈)
+            boolean keywordMatch = "Lego".equals(condition.getKeyword());
+            boolean categoryMatch = Category.스타워즈 == condition.getCategory();
+            boolean sortMatch = AuctionSortType.CLOSING_SOON == condition.getSort();
+
+            return keywordMatch && categoryMatch && sortMatch;
+        }), any(Pageable.class));
     }
 
     @Test

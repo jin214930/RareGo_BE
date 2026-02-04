@@ -18,7 +18,7 @@ import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.shared.auction.port.AuctionOrderPort;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderApiClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PaymentRefundUseCase {
-	private final AuctionOrderPort auctionOrderPort;
+	private final AuctionOrderApiClient auctionOrderApiClient;
 	private final SettlementRepository settlementRepository;
 	private final PaymentTransactionRepository transactionRepository;
 	private final PaymentSupport paymentSupport;
@@ -36,7 +36,7 @@ public class PaymentRefundUseCase {
 	@Transactional
 	public RefundResponseDto processRefund(Long auctionId) {
 		// 1. 주문 조회 및 검증 (SUCCESS 상태만)
-		AuctionOrderDto order = auctionOrderPort.refundOrderWithLock(auctionId);
+		AuctionOrderDto order = auctionOrderApiClient.refundOrder(auctionId);
 
 		// 2. 정산 상태 확인 및 락 (READY 상태만 환불 가능)
 		Settlement settlement = findAndValidateSettlement(auctionId);

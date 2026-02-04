@@ -63,9 +63,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: app
-            dockerfile: Dockerfile
-            image_suffix: ""
           - name: payment-service
             dockerfile: payment-service/Dockerfile
             image_suffix: "-payment-service"
@@ -79,8 +76,8 @@ jobs:
             dockerfile: auction-service/Dockerfile
             image_suffix: "-auction-service"
           - name: product-service
-          - dockerfile: product-service/Dockerfile
-          - image_suffix: "-product-service"
+            dockerfile: product-service/Dockerfile
+            image_suffix: "-product-service"
           - name: auth-service
             dockerfile: auth-service/Dockerfile
             image_suffix: "-auth-service"
@@ -161,8 +158,7 @@ jobs:
             cd ~/app
             
             # .env.deploy 파일 초기화 및 환경 변수 주입
-            echo "DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):${{ github.ref_name }}" > .env.deploy
-            echo "PAYMENT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-payment-service:${{ github.ref_name }}" >> .env.deploy
+            echo "PAYMENT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-payment-service:${{ github.ref_name }}" > .env.deploy
             echo "MEMBER_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-member-service:${{ github.ref_name }}" >> .env.deploy
             echo "NOTIFICATION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-notification-service:${{ github.ref_name }}" >> .env.deploy
             echo "AUCTION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auction-service:${{ github.ref_name }}" >> .env.deploy
@@ -205,6 +201,6 @@ jobs:
             
             # if/else 문을 제거하고 항상 모든 서비스를 pull 하고 up 시킵니다.
             docker compose --env-file .env.deploy pull
-            docker compose --env-file .env.deploy up -d --build
+            docker compose --env-file .env.deploy up -d
             
             docker image prune -f
