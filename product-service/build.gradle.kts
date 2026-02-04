@@ -52,7 +52,7 @@ dependencies {
     // Elasticsearch 연동
     implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
     // 테스트용 Testcontainers
-    // testImplementation("org.testcontainers:elasticsearch:1.19.0")
+    testImplementation("org.testcontainers:elasticsearch:1.19.0")
 
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
