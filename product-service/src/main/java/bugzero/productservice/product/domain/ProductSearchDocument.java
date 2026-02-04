@@ -13,10 +13,6 @@ import org.springframework.data.elasticsearch.annotations.Setting;
 
 import java.time.LocalDateTime;
 
-/**
- * Elasticsearch 통합 검색 문서
- * Product와 Auction 데이터를 결합하여 RAG 기반 추천에 사용
- */
 @Getter
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 @Document(indexName = "product_search")
