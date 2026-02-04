@@ -2,14 +2,10 @@ package com.bugzero.rarego.boundedContext.auction.in;
 
 import com.bugzero.rarego.boundedContext.auction.app.AuctionFacade;
 import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrderStatus;
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
-import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionBookmarkListResponseDto;
+import com.bugzero.rarego.boundedContext.auction.in.dto.*;
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.global.security.MemberPrincipal;
-import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionFilterType;
-import com.bugzero.rarego.boundedContext.auction.in.dto.MyAuctionOrderListResponseDto;
-import com.bugzero.rarego.boundedContext.auction.in.dto.MyBidResponseDto;
-import com.bugzero.rarego.boundedContext.auction.in.dto.MySaleResponseDto;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;

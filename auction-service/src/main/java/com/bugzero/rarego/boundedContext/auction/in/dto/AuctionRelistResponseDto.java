@@ -1,13 +1,13 @@
 package com.bugzero.rarego.boundedContext.auction.in.dto;
 
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
-
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import lombok.Builder;
 
 @Builder
-public record AuctionRelistResponseDto (
-	Long newAuctionId,
-	Long productId,
-	AuctionStatus status,
-	String message
-) { }
+public record AuctionRelistResponseDto(
+        Long newAuctionId,
+        Long productId,
+        AuctionStatus status,
+        String message
+) {
+}

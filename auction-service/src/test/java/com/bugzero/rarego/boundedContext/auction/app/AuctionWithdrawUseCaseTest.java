@@ -1,11 +1,12 @@
 package com.bugzero.rarego.boundedContext.auction.app;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
-
+import com.bugzero.rarego.boundedContext.auction.domain.Auction;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionMember;
+import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrder;
+import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionWithdrawResponseDto;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,13 +14,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.boundedContext.auction.domain.Auction;
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionMember;
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrder;
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
-import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionWithdrawResponseDto;
-import com.bugzero.rarego.global.exception.CustomException;
-import com.bugzero.rarego.global.response.ErrorType;
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionWithdrawUseCaseTest {
@@ -59,7 +59,7 @@ class AuctionWithdrawUseCaseTest {
                 .finalPrice(0)
                 .build();
         failedOrder.fail();
-        
+
         given(auctionSupport.getPublicMember(PUBLIC_ID)).willReturn(seller);
         given(auctionSupport.findAuctionById(AUCTION_ID)).willReturn(auction);
         given(auctionSupport.findOrderByAuctionId(AUCTION_ID)).willReturn(Optional.of(failedOrder));

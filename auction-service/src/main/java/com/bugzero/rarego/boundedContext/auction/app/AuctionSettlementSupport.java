@@ -2,7 +2,6 @@ package com.bugzero.rarego.boundedContext.auction.app;
 
 import com.bugzero.rarego.boundedContext.auction.domain.Auction;
 import com.bugzero.rarego.boundedContext.auction.domain.AuctionOrder;
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
 import com.bugzero.rarego.boundedContext.auction.domain.Bid;
 import com.bugzero.rarego.boundedContext.auction.event.AuctionFailedEvent;
 import com.bugzero.rarego.boundedContext.auction.out.AuctionOrderRepository;
@@ -11,6 +10,7 @@ import com.bugzero.rarego.boundedContext.auction.out.BidRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;

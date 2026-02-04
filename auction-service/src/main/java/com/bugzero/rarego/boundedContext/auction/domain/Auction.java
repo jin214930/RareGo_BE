@@ -4,12 +4,8 @@ package com.bugzero.rarego.boundedContext.auction.domain;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.jpa.entity.BaseIdAndTime;
 import com.bugzero.rarego.global.response.ErrorType;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;

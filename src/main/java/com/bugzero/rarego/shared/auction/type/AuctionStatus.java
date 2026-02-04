@@ -1,4 +1,4 @@
-package com.bugzero.rarego.boundedContext.auction.domain;
+package com.bugzero.rarego.shared.auction.type;
 
 public enum AuctionStatus {
     // 예정됨
