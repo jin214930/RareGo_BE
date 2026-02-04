@@ -117,7 +117,7 @@ services:
     restart: always
     networks:
       - rarego-network
-  
+
   auction-service:
     image: ${AUCTION_DOCKER_IMAGE:-rarego-auction-service:latest}
     container_name: rarego-auction-service

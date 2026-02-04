@@ -34,11 +34,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 	@Query("""
 		    SELECT p.id FROM Product p
 		    WHERE (:keyword IS NULL OR :keyword = '' OR p.name LIKE %:keyword%)
-		    AND (:category IS NULL OR :category = '' OR p.category = :category)
+		    AND (:category IS NULL OR p.category = :category)
 		""")
 	List<Long> findIdsBySearchCondition(
 		@Param("keyword") String keyword,
-		@Param("category") String category
+		@Param("category") Category category
 	);
 
 	@Query("""

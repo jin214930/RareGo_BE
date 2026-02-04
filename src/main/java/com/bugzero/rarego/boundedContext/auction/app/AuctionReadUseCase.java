@@ -33,6 +33,7 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.PageDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;
+import com.bugzero.rarego.shared.auction.dto.AuctionSortType;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.out.ProductApiClient;
 
@@ -181,7 +182,9 @@ public class AuctionReadUseCase {
 		Pageable sortedPageable = applySorting(pageable, condition.getSort());
 		List<Long> matchedProductIds = null;
 
-		// [변경] 검색 조건이 있을 경우 Client를 통해 Product ID 검색
+		// 검색 조건이 있을 경우 Client를 통해 Product ID 검색
+		// AuctionSearchCondition의 category가 Enum으로 변경되었다면, ProductApiClient의 파라미터 타입에 맞게 처리 필요
+		// 예: condition.getCategory()가 Category Enum이면 그대로 전달
 		if (condition.getKeyword() != null || condition.getCategory() != null) {
 			matchedProductIds = productApiClient.searchProductIds(condition.getKeyword(), condition.getCategory());
 			if (matchedProductIds.isEmpty()) {
@@ -189,7 +192,7 @@ public class AuctionReadUseCase {
 			}
 		}
 
-		// [변경] 검수 승인된 상품 ID 목록 조회
+		// 검수 승인된 상품 ID 목록 조회
 		List<Long> approvedProductIds = productApiClient.getApprovedProductIds();
 
 		// 검색된 Product ID로 Auction 조회
@@ -241,7 +244,7 @@ public class AuctionReadUseCase {
 
 		Set<Long> productIds = auctionMap.values().stream().map(Auction::getProductId).collect(Collectors.toSet());
 
-		// [변경] 상품 정보 Bulk 조회
+		// 상품 정보 Bulk 조회
 		Map<Long, ProductAuctionResponseDto> productMap = productApiClient.getProducts(productIds).stream()
 			.collect(Collectors.toMap(ProductAuctionResponseDto::id, Function.identity()));
 
@@ -346,12 +349,16 @@ public class AuctionReadUseCase {
 		return GUEST;
 	}
 
-	private Pageable applySorting(Pageable pageable, String sortStr) {
-		if (sortStr == null) return pageable;
-		Sort sort = Sort.unsorted();
-		if ("CLOSING_SOON".equalsIgnoreCase(sortStr)) sort = Sort.by(Sort.Direction.ASC, "endTime");
-		else if ("NEWEST".equalsIgnoreCase(sortStr)) sort = Sort.by(Sort.Direction.DESC, "createdAt");
-		else sort = Sort.by(Sort.Direction.DESC, "id");
-		return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+	private Pageable applySorting(Pageable pageable, AuctionSortType sortType) {
+		if (sortType == null) {
+			// 클라이언트 요청에 정렬 조건이 없고, 기본 정렬도 정렬되지 않은 상태라면
+			// 기본 정책(마감임박순) 적용. 만약 Pageable에 이미 정렬이 있다면 유지.
+			if (pageable.getSort().isSorted()) {
+				return pageable;
+			}
+			sortType = AuctionSortType.CLOSING_SOON;
+		}
+
+		return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sortType.getSort());
 	}
 }
