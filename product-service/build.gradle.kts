@@ -42,7 +42,12 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("com.h2database:h2")
     testImplementation("org.springframework.kafka:spring-kafka-test")
-//    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+    //    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+
+    // Elasticsearch 연동
+    implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
+    // 테스트용 Testcontainers
+    testImplementation("org.testcontainers:elasticsearch:1.19.0")
 
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
