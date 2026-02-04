@@ -51,10 +51,10 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Test + Coverage verify (JaCoCo)
-        run: ./gradlew test jacocoTestCoverageVerification
+        run: ./gradlew :payment-service:test :member-service:test :notification-service:test :auction-service:test :product-service:test :auth-service:test jacocoTestCoverageVerification
 
       - name: Build with Gradle
-        run: ./gradlew build -x test
+        run: ./gradlew :payment-service:build :member-service:build :notification-service:build :auction-service:build :product-service:build :auth-service:build -x test
 
   build-images:
     runs-on: ubuntu-latest
