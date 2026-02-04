@@ -13,8 +13,6 @@ COPY notification-service/build.gradle.kts notification-service/build.gradle.kts
 COPY auction-service/build.gradle.kts auction-service/build.gradle.kts
 COPY auth-service/build.gradle.kts auth-service/build.gradle.kts
 
-
-
 # Grant execute permission and download dependencies
 RUN chmod +x ./gradlew
 
