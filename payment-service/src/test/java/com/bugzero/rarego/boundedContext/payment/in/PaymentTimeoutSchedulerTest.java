@@ -12,13 +12,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.SliceImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.bugzero.rarego.bounded_context.payment.app.PaymentAuctionTimeoutUseCase;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderApiClient;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.shared.auction.port.AuctionOrderPort;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentTimeoutSchedulerTest {
@@ -27,7 +25,7 @@ class PaymentTimeoutSchedulerTest {
         private PaymentTimeoutScheduler paymentTimeoutScheduler;
 
         @Mock
-        private AuctionOrderPort auctionOrderPort;
+        private AuctionOrderApiClient auctionOrderApiClient;
 
         @Mock
         private PaymentAuctionTimeoutUseCase paymentAuctionTimeoutUseCase;
@@ -43,8 +41,10 @@ class PaymentTimeoutSchedulerTest {
                 AuctionOrderDto order2 = new AuctionOrderDto(2L, 200L, 11L, 21L, 60000, "PROCESSING",
                                 LocalDateTime.now().minusDays(4));
 
-                given(auctionOrderPort.findTimeoutOrders(any(LocalDateTime.class), any(Pageable.class)))
-                                .willReturn(new SliceImpl<>(List.of(order1, order2), Pageable.ofSize(100), false));
+                given(auctionOrderApiClient.findTimeoutOrders(any(LocalDateTime.class), any()))
+                                .willReturn(
+                                                new AuctionOrderApiClient.AuctionOrderSlice(List.of(order1, order2), true),
+                                                new AuctionOrderApiClient.AuctionOrderSlice(List.of(), false));
 
                 // when
                 paymentTimeoutScheduler.checkPaymentTimeout();
@@ -60,8 +60,8 @@ class PaymentTimeoutSchedulerTest {
                 // given
                 ReflectionTestUtils.setField(paymentTimeoutScheduler, "paymentTimeoutDays", 3);
 
-                given(auctionOrderPort.findTimeoutOrders(any(LocalDateTime.class), any(Pageable.class)))
-                                .willReturn(new SliceImpl<>(List.of(), Pageable.ofSize(100), false));
+                given(auctionOrderApiClient.findTimeoutOrders(any(LocalDateTime.class), any()))
+                                .willReturn(new AuctionOrderApiClient.AuctionOrderSlice(List.of(), false));
 
                 // when
                 paymentTimeoutScheduler.checkPaymentTimeout();
@@ -83,9 +83,11 @@ class PaymentTimeoutSchedulerTest {
                 AuctionOrderDto order3 = new AuctionOrderDto(3L, 300L, 12L, 22L, 70000, "PROCESSING",
                                 LocalDateTime.now().minusDays(4));
 
-                given(auctionOrderPort.findTimeoutOrders(any(LocalDateTime.class), any(Pageable.class)))
-                                .willReturn(new SliceImpl<>(List.of(order1, order2, order3), Pageable.ofSize(100),
-                                                false));
+                given(auctionOrderApiClient.findTimeoutOrders(any(LocalDateTime.class), any()))
+                                .willReturn(
+                                                new AuctionOrderApiClient.AuctionOrderSlice(List.of(order1, order2, order3),
+                                                                true),
+                                                new AuctionOrderApiClient.AuctionOrderSlice(List.of(), false));
 
                 // order2 처리 시 예외 발생
                 doNothing().when(paymentAuctionTimeoutUseCase).processTimeout(100L);
