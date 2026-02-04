@@ -23,7 +23,7 @@ spring:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
     elasticsearch:
-      uris: localhost:9200
+      uris: http://localhost:9200
       username: elastic
       password: changeme
   ai:
