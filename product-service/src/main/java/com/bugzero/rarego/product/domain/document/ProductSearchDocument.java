@@ -1,0 +1,73 @@
+package com.bugzero.rarego.product.domain.document;
+
+import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.Setting;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Getter
+@NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
+@Document(indexName = "product_search")
+@Setting(settingPath = "elasticsearch-settings.json")
+public class ProductSearchDocument {
+
+	@Id
+	private String id;
+
+	@Field(type = FieldType.Long)
+	private Long productId; // 원본 참조
+
+	@Field(type = FieldType.Long)
+	// 경매 이력 추적이 중요한가?
+	private Long auctionId; // 원본 참조
+
+	@Field(type = FieldType.Text, analyzer = "nori")
+	private String productName;
+
+	@Field(type = FieldType.Text, analyzer = "nori")
+	private String description;
+
+	@Field(type = FieldType.Keyword)
+	private ProductCondition productCondition;
+
+	@Field(type = FieldType.Keyword)
+	private Category category;
+
+	@Field(type = FieldType.Keyword)
+	private AuctionStatus auctionStatus;
+
+	@Field(type = FieldType.Long)
+	private Long startPrice;
+
+	@Field(type = FieldType.Long)
+	private Long finalPrice;
+
+	@Field(type = FieldType.Date)
+	private LocalDateTime startedAt;
+
+	@Field(type = FieldType.Date)
+	private LocalDateTime closedAt;
+
+	@Field(type = FieldType.Long)
+	private Long sellerId;
+
+	@Field(type = FieldType.Keyword)
+	private InspectionStatus inspectionStatus;
+
+	@Field(type = FieldType.Keyword)
+	private List<String> imageUrls;
+
+	// 상품명+설명 벡터
+	@Field(type = FieldType.Dense_Vector, dims = 1536)
+	private List<Double> embedding;
+}
+
