@@ -97,7 +97,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://localhost:8080}
+      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://auction-service:8083}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -132,7 +132,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://localhost:8080}
+      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://member-service:8081}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -167,7 +167,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://localhost:8080}
+      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://auth-service:8089}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -202,7 +202,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://localhost:8080}
+      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://member-service:8081}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -237,7 +237,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://localhost:8080}
+      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://auction-service:8083}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -252,7 +252,6 @@ services:
     restart: always
     networks:
       - rarego-network
-
 
   auth-service:
     # 모듈 분리 후 8089 => 8080으로 변경
@@ -270,7 +269,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-have-to-change-abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://localhost:8080}
+      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://member-service:8081}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -394,7 +393,6 @@ services:
       - ./docker/letsencrypt:/etc/letsencrypt
       - ./docker/letsencrypt-lib:/var/lib/letsencrypt
     depends_on:
-      - app
       - grafana
       - prometheus
     extra_hosts:
