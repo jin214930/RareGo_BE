@@ -33,7 +33,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-kafka")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.ai:spring-ai-starter-model-openai")
-    implementation("org.springframework.ai:spring-ai-starter-model-ollama")
     testImplementation("io.projectreactor:reactor-test")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 //    testImplementation("org.springframework.batch:spring-batch-test")
