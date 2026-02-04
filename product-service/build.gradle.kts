@@ -60,3 +60,12 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+val elasticsearchVersion = "8.15.3"
+
+configurations.all {
+    resolutionStrategy {
+        force("co.elastic.clients:elasticsearch-java:$elasticsearchVersion")
+        force("org.elasticsearch.client:elasticsearch-rest-client:$elasticsearchVersion")
+    }
+}

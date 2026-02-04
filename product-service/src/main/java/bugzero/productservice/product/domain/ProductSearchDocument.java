@@ -35,11 +35,11 @@ public class ProductSearchDocument {
     @Field(type = FieldType.Text, analyzer = "nori")
     private String productName;
 
-    @Field(type = FieldType.Text, analyzer = "nori")
+    @Field(type = FieldType.Keyword)
     private ProductCondition productCondition;
 
     @Field(type = FieldType.Dense_Vector, dims = 1536)
-    private float[] descriptionVector; // 유사도 검색 (RAG 핵심)
+    private float[] descriptionVector; // 유사도 검색
 
     @Field(type = FieldType.Keyword)
     private Category category;
