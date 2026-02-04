@@ -203,6 +203,6 @@ jobs:
             
             # if/else 문을 제거하고 항상 모든 서비스를 pull 하고 up 시킵니다.
             docker compose --env-file .env.deploy pull
-            docker compose --env-file .env.deploy up -d
+            docker compose --env-file .env.deploy up -d --build
             
             docker image prune -f
