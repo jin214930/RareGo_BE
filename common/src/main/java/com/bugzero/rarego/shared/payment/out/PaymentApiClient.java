@@ -20,7 +20,7 @@ public class PaymentApiClient {
 	private final InternalApiErrorHandler errorHandler;
 
 	public PaymentApiClient(
-		@Value("${custom.global.internalBackUrl}") String internalBackUrl,
+		@Value("${custom.services.payment-url}") String internalBackUrl,
 		InternalApiErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 		this.restClient = RestClient.builder()
