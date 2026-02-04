@@ -1,5 +1,6 @@
 package com.bugzero.rarego.global.config;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -44,7 +45,7 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http, JwtParser jwtParser,
 		CustomAuthenticationEntryPoint authenticationEntryPoint,
 		CustomAccessDeniedHandler accessDeniedHandler,
-		OAuth2SecurityConfigurer oauth2SecurityConfigurer) throws Exception {
+		ObjectProvider<OAuth2SecurityConfigurer> oauth2ConfigurerProvider) throws Exception {
 		http.authorizeHttpRequests(
 			auth -> auth
 				.requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
@@ -55,7 +56,7 @@ public class SecurityConfig {
 		http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 		http.csrf(AbstractHttpConfigurer::disable);
 		http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
-		oauth2SecurityConfigurer.configure(http);
+		applyOAuth2IfPresent(http, oauth2ConfigurerProvider);
 		http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 		http.exceptionHandling(ex -> ex
 			.authenticationEntryPoint(authenticationEntryPoint)
@@ -81,5 +82,16 @@ public class SecurityConfig {
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", configuration);
 		return source;
+	}
+
+	// auth-service에서 구현체가 있으면 적용, 다른 모듈에서 없으면 skip
+	private void applyOAuth2IfPresent(HttpSecurity http, ObjectProvider<OAuth2SecurityConfigurer> provider) {
+		OAuth2SecurityConfigurer cfg = provider.getIfAvailable();
+		if (cfg == null) return;
+		try {
+			cfg.configure(http);
+		} catch (Exception e) {
+			throw new IllegalStateException("인증 서버에 문제가 발생했습니다.", e);
+		}
 	}
 }
