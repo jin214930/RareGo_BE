@@ -20,11 +20,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import com.bugzero.rarego.bounded_context.payment.domain.Deposit;
 import com.bugzero.rarego.bounded_context.payment.domain.DepositStatus;
 import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
+import com.bugzero.rarego.bounded_context.payment.domain.PaymentOutbox;
 import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
 import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderApiClient;
 import com.bugzero.rarego.bounded_context.payment.out.DepositRepository;
+import com.bugzero.rarego.bounded_context.payment.out.PaymentOutboxRepository;
 import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
 import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
+import com.bugzero.rarego.bounded_context.payment.app.PaymentOutboxProcessor;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
@@ -56,6 +59,12 @@ class PaymentAuctionTimeoutUseCaseTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private PaymentOutboxRepository paymentOutboxRepository;
+
+    @Mock
+    private PaymentOutboxProcessor paymentOutboxProcessor;
+
     private static final Long AUCTION_ID = 100L;
     private static final Long BIDDER_ID = 1L;
     private static final Long SELLER_ID = 2L;
@@ -79,6 +88,8 @@ class PaymentAuctionTimeoutUseCaseTest {
         given(paymentSupport.findWalletByMemberIdForUpdate(BIDDER_ID)).willReturn(wallet);
         given(paymentSupport.findMemberById(BIDDER_ID)).willReturn(buyer);
         given(paymentSupport.findMemberById(SELLER_ID)).willReturn(seller);
+        given(paymentOutboxRepository.save(any(PaymentOutbox.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
 
         // when
         paymentAuctionTimeoutUseCase.processTimeout(AUCTION_ID);
@@ -111,6 +122,8 @@ class PaymentAuctionTimeoutUseCaseTest {
         given(paymentSupport.findWalletByMemberIdForUpdate(BIDDER_ID)).willReturn(wallet);
         given(paymentSupport.findMemberById(BIDDER_ID)).willReturn(buyer);
         given(paymentSupport.findMemberById(SELLER_ID)).willReturn(seller);
+        given(paymentOutboxRepository.save(any(PaymentOutbox.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
 
         // when
         paymentAuctionTimeoutUseCase.processTimeout(AUCTION_ID);
@@ -118,7 +131,7 @@ class PaymentAuctionTimeoutUseCaseTest {
         // then
         assertThat(deposit.getStatus()).isEqualTo(DepositStatus.FORFEITED);
         assertThat(wallet.getHoldingAmount()).isEqualTo(0);
-        verify(auctionOrderApiClient).failOrder(AUCTION_ID);
+        verify(paymentOutboxProcessor).process(any());
         verify(settlementRepository).save(any());
     }
 

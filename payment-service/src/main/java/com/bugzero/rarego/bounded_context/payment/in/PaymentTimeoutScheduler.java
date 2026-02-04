@@ -44,16 +44,23 @@ public class PaymentTimeoutScheduler {
                 break;
             }
 
+            int batchSuccess = 0;
             for (AuctionOrderDto order : timeoutOrders.content()) {
                 try {
                     paymentAuctionTimeoutUseCase.processTimeout(order.auctionId());
                     successCount++;
+                    batchSuccess++;
                     log.info("타임아웃 처리 성공: auctionId={}", order.auctionId());
                 } catch (Exception e) {
                     failCount++;
                     log.error("타임아웃 처리 실패: auctionId={}, error={}", order.auctionId(), e.getMessage());
                 }
                 totalProcessed++;
+            }
+
+            if (batchSuccess == 0) {
+                log.warn("타임아웃 처리 진행 없음. 반복을 중단합니다.");
+                break;
             }
         }
 
