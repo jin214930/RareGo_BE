@@ -13,42 +13,30 @@ import com.bugzero.rarego.boundedContext.auction.out.AuctionOrderRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.shared.auction.port.AuctionOrderPort;
-
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class AuctionOrderPortAdapter implements AuctionOrderPort {
+public class AuctionOrderService {
     private final AuctionOrderRepository auctionOrderRepository;
 
-    @Override
     public Optional<AuctionOrderDto> findByAuctionId(Long auctionId) {
         return auctionOrderRepository.findByAuctionId(auctionId)
                 .map(this::from);
     }
 
-    @Override
-    public Optional<AuctionOrderDto> findByAuctionIdForUpdate(Long auctionId) {
-        return auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
-                .map(this::from);
-    }
-
-    @Override
     public void completeOrder(Long auctionId) {
-        AuctionOrder order = auctionOrderRepository.findByAuctionId(auctionId)
+        AuctionOrder order = auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
         order.complete();
     }
 
-    @Override
     public void failOrder(Long auctionId) {
-        AuctionOrder order = auctionOrderRepository.findByAuctionId(auctionId)
+        AuctionOrder order = auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
         order.fail();
     }
 
-    @Override
     public AuctionOrderDto refundOrderWithLock(Long auctionId) {
         AuctionOrder order = auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
@@ -57,7 +45,6 @@ public class AuctionOrderPortAdapter implements AuctionOrderPort {
         return from(order);
     }
 
-    @Override
     public Slice<AuctionOrderDto> findTimeoutOrders(LocalDateTime deadline, Pageable pageable) {
         return auctionOrderRepository.findByStatusAndCreatedAtBefore(AuctionOrderStatus.PROCESSING, deadline, pageable)
                 .map(this::from);

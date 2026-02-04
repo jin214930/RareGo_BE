@@ -43,47 +43,10 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
-    # 모듈 분리 후 common으로 변경
-    image: ${DOCKER_IMAGE:-rarego-app:latest}
-    container_name: rarego-app
-    ports:
-      - "8080:8080"
-    environment:
-      # DB 연결 정보 (서비스 이름 'db' 사용)
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-
-      # 애플리케이션 환경 변수
-      TOSS_PAYMENTS_SECRET_KEY: ${TOSS_PAYMENTS_SECRET_KEY}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-have-to-change-abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz}
-      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
-      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://localhost:8080}
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
-      TZ: Asia/Seoul
-
-      # Infra endpoints
-      SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
-      SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
-      SPRING_ELASTICSEARCH_URIS: ${ELASTICSEARCH_URIS:-http://elasticsearch:9200}
-
-      # Social Login (OAuth2)
-      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT}
-      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET: ${GOOGLE_SECRET}
-      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID: ${KAKAO_CLIENT}
-      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_ID: ${NAVER_CLIENT}
-      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_SECRET: ${NAVER_SECRET}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: always
-    networks:
-      - rarego-network
-
   payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
     image: ${PAYMENT_DOCKER_IMAGE:-rarego-payment-service:latest}
     container_name: rarego-payment-service
     ports:
@@ -117,8 +80,11 @@ services:
     restart: always
     networks:
       - rarego-network
-  
+
   auction-service:
+    build:
+      context: .
+      dockerfile: auction-service/Dockerfile
     image: ${AUCTION_DOCKER_IMAGE:-rarego-auction-service:latest}
     container_name: rarego-auction-service
     ports:
@@ -154,6 +120,9 @@ services:
       - rarego-network
 
   member-service:
+    build:
+      context: .
+      dockerfile: member-service/Dockerfile
     image: ${MEMBER_DOCKER_IMAGE:-rarego-member-service:latest}
     container_name: rarego-member-service
     ports:
@@ -189,6 +158,9 @@ services:
       - rarego-network
 
   notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
     image: ${NOTIFICATION_DOCKER_IMAGE:-rarego-notification-service:latest}
     container_name: rarego-notification-service
     ports:
@@ -224,6 +196,9 @@ services:
       - rarego-network
 
   product-service:
+    build:
+      context: .
+      dockerfile: product-service/Dockerfile
     image: ${PRODUCT_DOCKER_IMAGE:-rarego-product-service:latest}
     container_name: rarego-product-service
     ports:
@@ -255,7 +230,9 @@ services:
 
 
   auth-service:
-    # 모듈 분리 후 8089 => 8080으로 변경
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
     image: ${AUTH_DOCKER_IMAGE:-rarego-auth-service:latest}
     container_name: rarego-auth-service
     ports:
