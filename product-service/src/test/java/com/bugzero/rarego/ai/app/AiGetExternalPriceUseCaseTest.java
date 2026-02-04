@@ -3,6 +3,7 @@ package com.bugzero.rarego.ai.app;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -32,13 +33,16 @@ class AiGetExternalPriceUseCaseTest {
 	@Mock
 	private ChatModel chatModel; // ChatClient가 사용하는 핵심 엔진만 모킹
 
+	Duration apiTimeout;
+
 	@Test
 	@DisplayName("단위 테스트: ChatClient를 직접 생성하여 검증")
 	void executeTest() {
 		// 1. 실제 ChatClient.Builder를 사용하여 ChatClient를 직접 만듭니다.
 		// 이 방식은 내부 인터페이스를 모킹할 필요가 없어 오류가 나지 않습니다.
+		apiTimeout = Duration.ofSeconds(30);
 		ChatClient chatClient = ChatClient.builder(chatModel).build();
-		useCase = new AiGetExternalPriceUseCase(chatClient);
+		useCase = new AiGetExternalPriceUseCase(chatClient, apiTimeout);
 
 		// 2. 가짜 응답 설정
 		String mockResponse = "4,500,000원";
