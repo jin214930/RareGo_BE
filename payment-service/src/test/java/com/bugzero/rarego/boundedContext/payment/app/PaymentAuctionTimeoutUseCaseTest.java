@@ -23,13 +23,13 @@ import com.bugzero.rarego.bounded_context.payment.domain.Deposit;
 import com.bugzero.rarego.bounded_context.payment.domain.DepositStatus;
 import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
 import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderClient;
 import com.bugzero.rarego.bounded_context.payment.out.DepositRepository;
 import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
 import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.shared.auction.port.AuctionOrderPort;
 import com.bugzero.rarego.shared.payment.event.PaymentTimeoutEvent;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,7 +41,7 @@ class PaymentAuctionTimeoutUseCaseTest {
     private PaymentAuctionTimeoutUseCase paymentAuctionTimeoutUseCase;
 
     @Mock
-    private AuctionOrderPort auctionOrderPort;
+    private AuctionOrderClient auctionOrderClient;
 
     @Mock
     private DepositRepository depositRepository;
@@ -76,7 +76,7 @@ class PaymentAuctionTimeoutUseCaseTest {
         Deposit deposit = createMockDeposit(buyer, AUCTION_ID, DEPOSIT_AMOUNT);
         Wallet wallet = Wallet.builder().balance(50000).holdingAmount(DEPOSIT_AMOUNT).build();
 
-        given(auctionOrderPort.findByAuctionIdForUpdate(AUCTION_ID)).willReturn(Optional.of(order));
+        given(auctionOrderClient.getOrder(AUCTION_ID)).willReturn(order);
         given(depositRepository.findByMemberIdAndAuctionId(BIDDER_ID, AUCTION_ID)).willReturn(Optional.of(deposit));
         given(paymentSupport.findWalletByMemberIdForUpdate(BIDDER_ID)).willReturn(wallet);
         given(paymentSupport.findMemberById(BIDDER_ID)).willReturn(buyer);
@@ -108,7 +108,7 @@ class PaymentAuctionTimeoutUseCaseTest {
         Deposit deposit = createMockDeposit(buyer, AUCTION_ID, DEPOSIT_AMOUNT);
         Wallet wallet = Wallet.builder().balance(50000).holdingAmount(DEPOSIT_AMOUNT).build();
 
-        given(auctionOrderPort.findByAuctionIdForUpdate(AUCTION_ID)).willReturn(Optional.of(order));
+        given(auctionOrderClient.getOrder(AUCTION_ID)).willReturn(order);
         given(depositRepository.findByMemberIdAndAuctionId(BIDDER_ID, AUCTION_ID)).willReturn(Optional.of(deposit));
         given(paymentSupport.findWalletByMemberIdForUpdate(BIDDER_ID)).willReturn(wallet);
         given(paymentSupport.findMemberById(BIDDER_ID)).willReturn(buyer);
@@ -120,7 +120,7 @@ class PaymentAuctionTimeoutUseCaseTest {
         // then
         assertThat(deposit.getStatus()).isEqualTo(DepositStatus.FORFEITED);
         assertThat(wallet.getHoldingAmount()).isEqualTo(0);
-        verify(auctionOrderPort).failOrder(AUCTION_ID);
+        verify(auctionOrderClient).failOrder(AUCTION_ID);
         verify(settlementRepository).save(any());
     }
 
@@ -128,7 +128,8 @@ class PaymentAuctionTimeoutUseCaseTest {
     @DisplayName("실패: 주문을 찾을 수 없음")
     void processTimeout_Fail_OrderNotFound() {
         // given
-        given(auctionOrderPort.findByAuctionIdForUpdate(AUCTION_ID)).willReturn(Optional.empty());
+        given(auctionOrderClient.getOrder(AUCTION_ID))
+                .willThrow(new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
 
         // when & then
         assertThatThrownBy(() -> paymentAuctionTimeoutUseCase.processTimeout(AUCTION_ID))
@@ -144,7 +145,7 @@ class PaymentAuctionTimeoutUseCaseTest {
         AuctionOrderDto order = new AuctionOrderDto(
                 1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now().minusDays(4));
 
-        given(auctionOrderPort.findByAuctionIdForUpdate(AUCTION_ID)).willReturn(Optional.of(order));
+        given(auctionOrderClient.getOrder(AUCTION_ID)).willReturn(order);
 
         // when & then
         assertThatThrownBy(() -> paymentAuctionTimeoutUseCase.processTimeout(AUCTION_ID))

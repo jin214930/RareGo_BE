@@ -24,12 +24,12 @@ import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
 import com.bugzero.rarego.bounded_context.payment.in.dto.AuctionFinalPaymentRequestDto;
 import com.bugzero.rarego.bounded_context.payment.in.dto.AuctionFinalPaymentResponseDto;
 import com.bugzero.rarego.bounded_context.payment.out.DepositRepository;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderClient;
 import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
 import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.shared.auction.port.AuctionOrderPort;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentAuctionFinalUseCaseTest {
@@ -38,7 +38,7 @@ class PaymentAuctionFinalUseCaseTest {
 	private PaymentAuctionFinalUseCase paymentAuctionFinalUseCase;
 
 	@Mock
-	private AuctionOrderPort auctionOrderPort;
+	private AuctionOrderClient auctionOrderClient;
 
 	@Mock
 	private DepositRepository depositRepository;
@@ -89,7 +89,7 @@ class PaymentAuctionFinalUseCaseTest {
 		given(paymentSupport.findMemberByPublicId(memberPublicId)).willReturn(buyer);
 
 		// 이후 로직은 memberId(Long)를 사용하므로 기존 Mock 유지
-		given(auctionOrderPort.findByAuctionId(auctionId)).willReturn(Optional.of(order));
+		given(auctionOrderClient.getOrder(auctionId)).willReturn(order);
 		given(depositRepository.findByMemberIdAndAuctionId(memberId, auctionId))
 			.willReturn(Optional.of(deposit));
 		given(paymentSupport.findWalletByMemberIdForUpdate(memberId)).willReturn(wallet);
@@ -119,7 +119,7 @@ class PaymentAuctionFinalUseCaseTest {
 
 		// 트랜잭션 이력 2건 (보증금 사용, 잔금 결제)
 		verify(transactionRepository, times(2)).save(any(PaymentTransaction.class));
-		verify(auctionOrderPort).completeOrder(auctionId);
+		verify(auctionOrderClient).completeOrder(auctionId);
 	}
 
 	@Test
@@ -138,7 +138,8 @@ class PaymentAuctionFinalUseCaseTest {
 		// [중요] Public ID -> Member 매핑
 		given(paymentSupport.findMemberByPublicId(memberPublicId)).willReturn(buyer);
 
-		given(auctionOrderPort.findByAuctionId(auctionId)).willReturn(Optional.empty());
+		given(auctionOrderClient.getOrder(auctionId))
+			.willThrow(new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
 
 		// when & then
 		assertThatThrownBy(() -> paymentAuctionFinalUseCase.finalPayment(memberPublicId, auctionId, request))
@@ -165,7 +166,7 @@ class PaymentAuctionFinalUseCaseTest {
 		given(buyer.getId()).willReturn(memberId);
 		given(paymentSupport.findMemberByPublicId(memberPublicId)).willReturn(buyer);
 
-		given(auctionOrderPort.findByAuctionId(auctionId)).willReturn(Optional.of(order));
+		given(auctionOrderClient.getOrder(auctionId)).willReturn(order);
 
 		// when & then
 		assertThatThrownBy(() -> paymentAuctionFinalUseCase.finalPayment(memberPublicId, auctionId, request))
@@ -191,7 +192,7 @@ class PaymentAuctionFinalUseCaseTest {
 		given(buyer.getId()).willReturn(memberId);
 		given(paymentSupport.findMemberByPublicId(memberPublicId)).willReturn(buyer);
 
-		given(auctionOrderPort.findByAuctionId(auctionId)).willReturn(Optional.of(order));
+		given(auctionOrderClient.getOrder(auctionId)).willReturn(order);
 
 		// when & then
 		assertThatThrownBy(() -> paymentAuctionFinalUseCase.finalPayment(memberPublicId, auctionId, request))
@@ -217,7 +218,7 @@ class PaymentAuctionFinalUseCaseTest {
 		given(buyer.getId()).willReturn(memberId);
 		given(paymentSupport.findMemberByPublicId(memberPublicId)).willReturn(buyer);
 
-		given(auctionOrderPort.findByAuctionId(auctionId)).willReturn(Optional.of(order));
+		given(auctionOrderClient.getOrder(auctionId)).willReturn(order);
 		given(depositRepository.findByMemberIdAndAuctionId(memberId, auctionId)).willReturn(Optional.empty());
 
 		// when & then
@@ -249,7 +250,7 @@ class PaymentAuctionFinalUseCaseTest {
 		Deposit deposit = Deposit.create(buyer, auctionId, depositAmount);
 		Wallet wallet = Wallet.builder().balance(50000).holdingAmount(depositAmount).build(); // 잔액 부족
 
-		given(auctionOrderPort.findByAuctionId(auctionId)).willReturn(Optional.of(order));
+		given(auctionOrderClient.getOrder(auctionId)).willReturn(order);
 		given(depositRepository.findByMemberIdAndAuctionId(memberId, auctionId))
 			.willReturn(Optional.of(deposit));
 		given(paymentSupport.findWalletByMemberIdForUpdate(memberId)).willReturn(wallet);

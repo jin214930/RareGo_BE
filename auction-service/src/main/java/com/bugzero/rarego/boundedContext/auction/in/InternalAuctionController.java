@@ -1,10 +1,22 @@
 package com.bugzero.rarego.boundedContext.auction.in;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+
 import com.bugzero.rarego.boundedContext.auction.app.AuctionFacade;
+import com.bugzero.rarego.boundedContext.auction.app.AuctionOrderService;
 import com.bugzero.rarego.boundedContext.auction.app.AuctionSettleAuctionFacade;
 import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionAutoSettleResponseDto;
+import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
 import com.bugzero.rarego.global.response.SuccessType;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -23,6 +35,7 @@ public class InternalAuctionController {
 
     private final AuctionSettleAuctionFacade facade;
     private final AuctionFacade auctionFacade;
+    private final AuctionOrderService auctionOrderService;
 
     @Operation(summary = "경매 정산", description = "종료된 경매를 정산합니다")
     @PostMapping("/settle")
@@ -45,6 +58,48 @@ public class InternalAuctionController {
     @GetMapping("/members/{publicId}/orders/processing")
     public SuccessResponseDto<Boolean> hasProcessingOrders(@PathVariable String publicId) {
         return SuccessResponseDto.from(SuccessType.OK, auctionFacade.hasProcessingOrders(publicId));
+    }
+
+    @Operation(summary = "경매 주문 조회", description = "auctionId 기준 주문 정보를 조회합니다.")
+    @GetMapping("/orders/{auctionId}")
+    public SuccessResponseDto<AuctionOrderDto> getOrder(@PathVariable Long auctionId) {
+        AuctionOrderDto order = auctionOrderService.findByAuctionId(auctionId)
+                .orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
+        return SuccessResponseDto.from(SuccessType.OK, order);
+    }
+
+    @Operation(summary = "경매 주문 완료 처리", description = "auctionId 기준 주문을 완료 처리합니다.")
+    @PostMapping("/orders/{auctionId}/complete")
+    public SuccessResponseDto<Void> completeOrder(@PathVariable Long auctionId) {
+        auctionOrderService.completeOrder(auctionId);
+        return SuccessResponseDto.from(SuccessType.OK);
+    }
+
+    @Operation(summary = "경매 주문 실패 처리", description = "auctionId 기준 주문을 실패 처리합니다.")
+    @PostMapping("/orders/{auctionId}/fail")
+    public SuccessResponseDto<Void> failOrder(@PathVariable Long auctionId) {
+        auctionOrderService.failOrder(auctionId);
+        return SuccessResponseDto.from(SuccessType.OK);
+    }
+
+    @Operation(summary = "경매 주문 환불 처리", description = "auctionId 기준 주문을 환불 처리합니다.")
+    @PostMapping("/orders/{auctionId}/refund")
+    public SuccessResponseDto<AuctionOrderDto> refundOrder(@PathVariable Long auctionId) {
+        AuctionOrderDto order = auctionOrderService.refundOrderWithLock(auctionId);
+        return SuccessResponseDto.from(SuccessType.OK, order);
+    }
+
+    @Operation(summary = "결제 타임아웃 주문 조회", description = "deadline 이전 생성된 PROCESSING 주문을 조회합니다.")
+    @GetMapping("/orders/timeout")
+    public ResponseEntity<SuccessResponseDto<List<AuctionOrderDto>>> findTimeoutOrders(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime deadline,
+        @RequestParam int page,
+        @RequestParam int size
+    ) {
+        Slice<AuctionOrderDto> slice = auctionOrderService.findTimeoutOrders(deadline, PageRequest.of(page, size));
+        return ResponseEntity.ok()
+            .header("X-Has-Next", Boolean.toString(slice.hasNext()))
+            .body(SuccessResponseDto.from(SuccessType.OK, slice.getContent()));
     }
 
     @Operation(summary = "경매정보 생성", description = "신규 상품 경매 정보를 생성합니다.")

@@ -22,7 +22,7 @@ import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.shared.auction.port.AuctionOrderPort;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PaymentAuctionFinalUseCase {
-	private final AuctionOrderPort auctionOrderPort;
+	private final AuctionOrderClient auctionOrderClient;
 	private final DepositRepository depositRepository;
 	private final PaymentTransactionRepository transactionRepository;
 	private final SettlementRepository settlementRepository;
@@ -74,7 +74,7 @@ public class PaymentAuctionFinalUseCase {
 			-paymentAmount, 0, ReferenceType.AUCTION_ORDER, order.orderId());
 
 		// 7. 주문 완료 처리 (Port를 통해 Auction 모듈에 요청)
-		auctionOrderPort.completeOrder(auctionId);
+		auctionOrderClient.completeOrder(auctionId);
 
 		// 8. 정산 정보 생성 (status = READY)
 		PaymentMember seller = paymentSupport.findMemberById(order.sellerId());
@@ -95,8 +95,7 @@ public class PaymentAuctionFinalUseCase {
 	}
 
 	private AuctionOrderDto findAndValidateOrder(Long auctionId, Long memberId) {
-		AuctionOrderDto order = auctionOrderPort.findByAuctionId(auctionId)
-			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
+		AuctionOrderDto order = auctionOrderClient.getOrder(auctionId);
 
 		if (!order.bidderId().equals(memberId)) {
 			throw new CustomException(ErrorType.NOT_AUCTION_WINNER);

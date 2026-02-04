@@ -4,13 +4,12 @@ import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.bugzero.rarego.bounded_context.payment.app.PaymentAuctionTimeoutUseCase;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.shared.auction.port.AuctionOrderPort;
+import com.bugzero.rarego.bounded_context.payment.out.AuctionOrderClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentTimeoutScheduler {
     private static final int BATCH_SIZE = 100;
 
-    private final AuctionOrderPort auctionOrderPort;
+    private final AuctionOrderClient auctionOrderClient;
     private final PaymentAuctionTimeoutUseCase paymentAuctionTimeoutUseCase;
 
     @Value("${auction.payment-timeout-days:3}")
@@ -38,11 +37,12 @@ public class PaymentTimeoutScheduler {
         int totalProcessed = 0;
 
         // 페이징 처리
-        Slice<AuctionOrderDto> timeoutOrders;
+        int page = 0;
+        AuctionOrderClient.AuctionOrderSlice timeoutOrders;
         do {
-            timeoutOrders = auctionOrderPort.findTimeoutOrders(deadline, PageRequest.of(0, BATCH_SIZE));
+            timeoutOrders = auctionOrderClient.findTimeoutOrders(deadline, PageRequest.of(page, BATCH_SIZE));
 
-            for (AuctionOrderDto order : timeoutOrders) {
+            for (AuctionOrderDto order : timeoutOrders.content()) {
                 try {
                     paymentAuctionTimeoutUseCase.processTimeout(order.auctionId());
                     successCount++;
@@ -53,6 +53,7 @@ public class PaymentTimeoutScheduler {
                 }
                 totalProcessed++;
             }
+            page++;
         } while (timeoutOrders.hasNext());
 
         if (totalProcessed == 0) {
