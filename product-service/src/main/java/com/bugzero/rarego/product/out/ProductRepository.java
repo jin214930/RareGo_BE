@@ -42,7 +42,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 	);
 
 	@Query("""
-		SELECT new bugzero.productservice.product.domain.dto.ProductResponseForInspectionDto (
+		SELECT new com.bugzero.rarego.product.domain.dto.ProductResponseForInspectionDto (
 		    p.id, 
 		    p.name, 
 		    s.email, 
