@@ -1,8 +1,5 @@
 package com.bugzero.rarego.app;
 
-import com.bugzero.rarego.boundedContext.auction.domain.*;
-import com.bugzero.rarego.boundedContext.auction.in.dto.*;
-import com.bugzero.rarego.boundedContext.auction.out.*;
 import com.bugzero.rarego.domain.*;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
@@ -10,6 +7,7 @@ import com.bugzero.rarego.global.response.PageDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.in.dto.*;
 import com.bugzero.rarego.out.*;
+import com.bugzero.rarego.shared.auction.dto.AuctionSortType;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.out.ProductApiClient;
@@ -335,12 +333,8 @@ public class AuctionReadUseCase {
         return GUEST;
     }
 
-    private Pageable applySorting(Pageable pageable, String sortStr) {
-        if (sortStr == null) return pageable;
-        Sort sort = Sort.unsorted();
-        if ("CLOSING_SOON".equalsIgnoreCase(sortStr)) sort = Sort.by(Sort.Direction.ASC, "endTime");
-        else if ("NEWEST".equalsIgnoreCase(sortStr)) sort = Sort.by(Sort.Direction.DESC, "createdAt");
-        else sort = Sort.by(Sort.Direction.DESC, "id");
+    private Pageable applySorting(Pageable pageable, AuctionSortType sortType) {
+        Sort sort = (sortType != null) ? sortType.getSort() : Sort.unsorted();
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 }

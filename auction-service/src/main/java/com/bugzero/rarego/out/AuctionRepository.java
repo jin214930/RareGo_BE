@@ -1,6 +1,6 @@
 package com.bugzero.rarego.out;
 
-import domain.com.bugzero.rarego.Auction;
+import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;

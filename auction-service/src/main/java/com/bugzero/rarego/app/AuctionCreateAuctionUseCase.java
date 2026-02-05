@@ -1,5 +1,6 @@
 package com.bugzero.rarego.app;
 
+import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
@@ -13,11 +14,18 @@ public class AuctionCreateAuctionUseCase {
     private final AuctionSupport auctionSupport;
 
     // 신규상품 경매 정보 생성
-    public long createAuction(Long productId, String publicId, ProductAuctionRequestDto productAuctionRequestDto) {
+    public long createAuction(Long productId, String publicId, ProductAuctionRequestDto dto) {
         AuctionMember seller = auctionSupport.getPublicMember(publicId);
 
-        return auctionRepository
-                .save(productAuctionRequestDto.toEntity(productId, seller.getId()))
-                .getId();
+        Auction auction = Auction.builder()
+                .productId(productId)
+                .sellerId(seller.getId())
+                .startPrice(dto.startPrice())
+                .durationDays(dto.durationDays())
+                .startTime(null)
+                .endTime(null)
+                .build();
+
+        return auctionRepository.save(auction).getId();
     }
 }

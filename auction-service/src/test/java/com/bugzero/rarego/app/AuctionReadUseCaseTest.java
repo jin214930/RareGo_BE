@@ -1,17 +1,16 @@
 package com.bugzero.rarego.app;
 
-import com.bugzero.rarego.boundedContext.auction.domain.*;
-import com.bugzero.rarego.boundedContext.auction.in.dto.*;
 import com.bugzero.rarego.domain.*;
+import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.in.dto.*;
 import com.bugzero.rarego.out.AuctionBookmarkRepository;
 import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.out.BidRepository;
-import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.out.ProductApiClient;
+import com.bugzero.rarego.shared.product.type.Category;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -138,7 +137,7 @@ class AuctionReadUseCaseTest {
         Pageable pageable = PageRequest.of(0, 10);
 
         // 1. 키워드로 상품 ID 검색
-        given(productApiClient.searchProductIds("키워드", "카테고리")).willReturn(List.of(productId));
+        given(productApiClient.searchProductIds("키워드", Category.스타워즈)).willReturn(List.of(productId));
 
         // 2. 검수 승인된 상품 ID 목록 조회
         given(productApiClient.getApprovedProductIds()).willReturn(List.of(productId));
@@ -157,7 +156,7 @@ class AuctionReadUseCaseTest {
         // then
         assertThat(result.data()).hasSize(1);
         assertThat(result.data().get(0).productName()).isEqualTo("검색 상품");
-        verify(productApiClient).searchProductIds("키워드", "카테고리");
+        verify(productApiClient).searchProductIds("키워드", Category.스타워즈);
         verify(productApiClient).getApprovedProductIds();
     }
 
