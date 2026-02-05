@@ -15,8 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.bounded_context.auth.domain.AuthRole;
-import com.bugzero.rarego.bounded_context.auth.app.AuthIssueTokenUseCase;
+import com.bugzero.rarego.domain.AuthRole;
+import com.bugzero.rarego.app.AuthIssueTokenUseCase;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.security.JwtProvider;
