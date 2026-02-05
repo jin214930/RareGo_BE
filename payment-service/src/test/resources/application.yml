@@ -16,14 +16,10 @@ spring:
     job:
       enabled: false
 
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: test
-            client-secret: test
-
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
 
 logging:
   level:
@@ -33,15 +29,6 @@ toss:
   payments:
     secretKey: ${TOSS_PAYMENTS_SECRET_KEY:test}
     url: "https://api.tosspayments.com/v1/payments"
-
-aws:
-  s3:
-    bucket: rarego-auction-product-images
-    expiration-minutes: 5
-  credentials:
-    access-key: ${AWS_ACCESS_KEY:test}
-    secret-key: ${AWS_SECRET_KEY:test}
-  region: ap-northeast-2
 
 jwt:
   secret: ${JWT_SECRET:dev-secret-key-have-to-change-abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz}
