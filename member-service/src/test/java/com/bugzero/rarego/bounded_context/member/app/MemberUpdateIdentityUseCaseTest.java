@@ -11,10 +11,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.bounded_context.member.domain.Member;
-import com.bugzero.rarego.bounded_context.member.domain.MemberUpdateIdentityRequestDto;
-import com.bugzero.rarego.bounded_context.member.domain.MemberUpdateResponseDto;
-import com.bugzero.rarego.bounded_context.member.out.MemberRepository;
+import com.bugzero.rarego.app.MemberSupport;
+import com.bugzero.rarego.app.MemberUpdateIdentityUseCase;
+import com.bugzero.rarego.domain.Member;
+import com.bugzero.rarego.domain.MemberUpdateIdentityRequestDto;
+import com.bugzero.rarego.domain.MemberUpdateResponseDto;
+import com.bugzero.rarego.out.MemberRepository;
 import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
