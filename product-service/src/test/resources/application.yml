@@ -70,3 +70,7 @@ custom:
     settlement:
       holdDays: 0
     systemMemberId: 2
+
+rarego:
+  s3:
+    enabled: true

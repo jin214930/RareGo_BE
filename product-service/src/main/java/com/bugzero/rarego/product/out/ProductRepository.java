@@ -38,7 +38,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 		""")
 	List<Long> findIdsBySearchCondition(
 		@Param("keyword") String keyword,
-		@Param("category") String category
+		@Param("category") Category category
 	);
 
 	@Query("""
