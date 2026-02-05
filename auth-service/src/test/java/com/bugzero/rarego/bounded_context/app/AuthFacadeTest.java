@@ -10,16 +10,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.bounded_context.auth.domain.Account;
-import com.bugzero.rarego.bounded_context.auth.domain.AuthRole;
-import com.bugzero.rarego.bounded_context.auth.domain.Provider;
-import com.bugzero.rarego.bounded_context.auth.domain.TokenPairDto;
-import com.bugzero.rarego.bounded_context.auth.app.AuthFacade;
-import com.bugzero.rarego.bounded_context.auth.app.AuthIssueTokenUseCase;
-import com.bugzero.rarego.bounded_context.auth.app.AuthLoginAccountFacade;
-import com.bugzero.rarego.bounded_context.auth.app.AuthLogoutAccountUseCase;
-import com.bugzero.rarego.bounded_context.auth.app.AuthRefreshTokenFacade;
-import com.bugzero.rarego.bounded_context.auth.app.AuthStoreRefreshTokenUseCase;
+import com.bugzero.rarego.domain.Account;
+import com.bugzero.rarego.domain.AuthRole;
+import com.bugzero.rarego.domain.Provider;
+import com.bugzero.rarego.domain.TokenPairDto;
+import com.bugzero.rarego.app.AuthFacade;
+import com.bugzero.rarego.app.AuthIssueTokenUseCase;
+import com.bugzero.rarego.app.AuthLoginAccountFacade;
+import com.bugzero.rarego.app.AuthLogoutAccountUseCase;
+import com.bugzero.rarego.app.AuthRefreshTokenFacade;
+import com.bugzero.rarego.app.AuthStoreRefreshTokenUseCase;
 
 @ExtendWith(MockitoExtension.class)
 class AuthFacadeTest {
