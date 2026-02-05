@@ -46,11 +46,6 @@ spring:
     listener:
       ack-mode: batch
 
-toss:
-  payments:
-    secretKey: ${TOSS_PAYMENTS_SECRET_KEY}
-    url: "https://api.tosspayments.com/v1/payments"
-
 aws:
   s3:
     bucket: rarego-auction-product-images
