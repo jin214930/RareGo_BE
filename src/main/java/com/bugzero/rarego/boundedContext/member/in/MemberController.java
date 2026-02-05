@@ -1,7 +1,5 @@
 package com.bugzero.rarego.boundedContext.member.in;
 
-import com.bugzero.rarego.boundedContext.auction.app.AuctionFacade;
-
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -18,8 +16,6 @@ import com.bugzero.rarego.boundedContext.member.domain.MemberUpdateResponseDto;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
 import com.bugzero.rarego.global.response.SuccessType;
 import com.bugzero.rarego.global.security.MemberPrincipal;
-import com.bugzero.rarego.shared.member.domain.MemberJoinRequestDto;
-import com.bugzero.rarego.shared.member.domain.MemberJoinResponseDto;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

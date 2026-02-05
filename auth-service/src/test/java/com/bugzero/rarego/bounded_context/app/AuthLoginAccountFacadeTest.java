@@ -13,12 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.bounded_context.auth.domain.Account;
-import com.bugzero.rarego.bounded_context.auth.domain.AuthRole;
-import com.bugzero.rarego.bounded_context.auth.domain.Provider;
-import com.bugzero.rarego.bounded_context.auth.out.AccountRepository;
-import com.bugzero.rarego.bounded_context.auth.app.AuthJoinAccountUseCase;
-import com.bugzero.rarego.bounded_context.auth.app.AuthLoginAccountFacade;
+import com.bugzero.rarego.domain.Account;
+import com.bugzero.rarego.domain.AuthRole;
+import com.bugzero.rarego.domain.Provider;
+import com.bugzero.rarego.out.AccountRepository;
+import com.bugzero.rarego.app.AuthJoinAccountUseCase;
+import com.bugzero.rarego.app.AuthLoginAccountFacade;
 
 @ExtendWith(MockitoExtension.class)
 class AuthLoginAccountFacadeTest {

@@ -27,6 +27,8 @@ spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:empty}
+    api:
+      timeout: 30s
 
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
@@ -43,11 +45,6 @@ spring:
         spring.json.trusted.packages: "*" # 모듈 분리 전까지 모든 패키지 허용 -> 추후 수정
     listener:
       ack-mode: batch
-
-toss:
-  payments:
-    secretKey: ${TOSS_PAYMENTS_SECRET_KEY}
-    url: "https://api.tosspayments.com/v1/payments"
 
 aws:
   s3:

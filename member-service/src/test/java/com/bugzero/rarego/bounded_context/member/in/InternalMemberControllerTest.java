@@ -15,11 +15,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.bugzero.rarego.bounded_context.member.app.MemberFacade;
+import com.bugzero.rarego.app.MemberFacade;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessType;
+import com.bugzero.rarego.in.InternalMemberController;
 import com.bugzero.rarego.shared.member.domain.MemberJoinRequestDto;
 import com.bugzero.rarego.shared.member.domain.MemberJoinResponseDto;
 import com.bugzero.rarego.shared.member.domain.MemberWithdrawRequestDto;

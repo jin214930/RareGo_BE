@@ -22,11 +22,11 @@ public class MemberApiClient {
 	private final InternalApiErrorHandler errorHandler;
 
 	public MemberApiClient(
-		@Value("${custom.global.internalBackUrl}") String internalMemberUrl,
+		@Value("${custom.global.internalBackUrl}") String internalBackUrl,
 		InternalApiErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 		this.internalRestClient = RestClient.builder()
-			.baseUrl(internalMemberUrl + "/api/v1/internal/members")
+			.baseUrl(internalBackUrl + "/api/v1/internal/members")
 			.build();
 	}
 
