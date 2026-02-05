@@ -1,11 +1,8 @@
 package com.bugzero.rarego.product.app;
 
-import static com.bugzero.rarego.global.config.GlobalConfig.*;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.product.domain.Inspection;
@@ -13,19 +10,24 @@ import com.bugzero.rarego.product.domain.Product;
 import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionRequestDto;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
-import com.bugzero.rarego.product.domain.event.ProductInspectionEvent;
 import com.bugzero.rarego.product.out.InspectionRepository;
+import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
 import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductCreateInspectionUseCase {
+
 	private final InspectionRepository inspectionRepository;
 	private final ProductSupport productSupport;
+	private final AuctionApiClient auctionApiClient;
+	private final ProductSearchService productSearchService;
 
 	@Transactional
 	public ProductInspectionResponseDto createInspection(String inspectorId, ProductInspectionRequestDto dto) {
@@ -50,6 +52,8 @@ public class ProductCreateInspectionUseCase {
 		//상품데이터의 상품상태도 동기화
 		product.determineProductCondition(dto.productCondition());
 
+		synchronizeElasticsearch(product, dto.status());
+
 		return ProductInspectionResponseDto.builder()
 			.inspectionId(inspection.getId())
 			.productId(inspection.getProduct().getId())
@@ -64,7 +68,7 @@ public class ProductCreateInspectionUseCase {
 	private void synchronizeElasticsearch(Product product, InspectionStatus status) {
 		try {
 			if (status == InspectionStatus.APPROVED) {
-				// 승인됨 -> 경매 정보 조회(API) -> ES 적재
+				// 승인됨 -> 경매 정보 조회 -> ES 적재
 				AuctionInfoResponseDto auctionInfo = auctionApiClient.getAuctionInfo(product.getId());
 
 				productSearchService.save(
@@ -82,9 +86,6 @@ public class ProductCreateInspectionUseCase {
 			}
 		} catch (Exception e) {
 			log.error("ES 동기화 실패 (Transaction Rollback): productId={}", product.getId(), e);
-			// ★ 중요: 여기서 예외를 던져야 DB 트랜잭션도 같이 롤백됩니다.
-			// 만약 ES 실패해도 DB는 저장하고 싶다면 catch만 하고 throw를 안 하면 됩니다.
-			// 하지만 '데이터 정합성'이 중요하다면 throw 하는 것이 맞습니다.
 			throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
 		}
 	}

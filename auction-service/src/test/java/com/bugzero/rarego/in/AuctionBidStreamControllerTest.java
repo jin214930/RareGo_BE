@@ -6,8 +6,6 @@ import com.bugzero.rarego.global.config.JacksonConfig;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.exception.GlobalExceptionHandler;
 import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.in.AuctionBidStreamController;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

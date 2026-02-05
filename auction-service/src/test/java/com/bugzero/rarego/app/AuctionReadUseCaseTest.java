@@ -1,16 +1,16 @@
 package com.bugzero.rarego.app;
 
 import com.bugzero.rarego.domain.*;
+import com.bugzero.rarego.global.response.PagedResponseDto;
+import com.bugzero.rarego.in.dto.*;
 import com.bugzero.rarego.out.AuctionBookmarkRepository;
 import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.out.BidRepository;
-import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.out.ProductApiClient;
 import com.bugzero.rarego.shared.product.type.Category;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,7 +59,7 @@ class AuctionReadUseCaseTest {
     @Mock
     private AuctionSupport support;
 
-    private com.bugzero.rarego.domain.Auction auction;
+    private Auction auction;
     private Long auctionId = 1L;
     private Long productId = 10L;
     private Long sellerId = 100L;
@@ -67,7 +67,7 @@ class AuctionReadUseCaseTest {
     @BeforeEach
     void setUp() {
         // Auction 생성 - 빌더에서 지원하는 필드만 사용
-        auction = com.bugzero.rarego.domain.Auction.builder()
+        auction = Auction.builder()
                 .productId(productId)
                 .sellerId(sellerId)
                 .startPrice(10000)
@@ -86,7 +86,7 @@ class AuctionReadUseCaseTest {
         // given
         String memberPublicId = "member_pub_id";
         Long memberId = 50L;
-        com.bugzero.rarego.domain.AuctionMember member = com.bugzero.rarego.domain.AuctionMember.builder().publicId(memberPublicId).build();
+        AuctionMember member = AuctionMember.builder().publicId(memberPublicId).build();
         ReflectionTestUtils.setField(member, "id", memberId);
 
         // Product DTO Mocking
@@ -99,13 +99,13 @@ class AuctionReadUseCaseTest {
                 .build();
 
         // Bid Mocking
-        com.bugzero.rarego.domain.Bid highestBid = com.bugzero.rarego.domain.Bid.builder()
+        Bid highestBid = Bid.builder()
                 .auctionId(auctionId)
                 .bidderId(99L) // 다른 사람이 최고 입찰자
                 .bidAmount(15000)
                 .build();
 
-        com.bugzero.rarego.domain.Bid myLastBid = com.bugzero.rarego.domain.Bid.builder()
+        Bid myLastBid = Bid.builder()
                 .auctionId(auctionId)
                 .bidderId(memberId)
                 .bidAmount(12000)
@@ -118,7 +118,7 @@ class AuctionReadUseCaseTest {
         given(bidRepository.findTopByAuctionIdAndBidderIdOrderByBidAmountDesc(auctionId, memberId)).willReturn(Optional.of(myLastBid));
 
         // when
-        com.bugzero.rarego.in.dto.AuctionDetailResponseDto result = auctionReadUseCase.getAuctionDetail(auctionId, memberPublicId);
+        AuctionDetailResponseDto result = auctionReadUseCase.getAuctionDetail(auctionId, memberPublicId);
 
         // then
         assertThat(result.myParticipation().hasBid()).isTrue();
@@ -131,9 +131,9 @@ class AuctionReadUseCaseTest {
     @DisplayName("경매 목록 조회 - 검색 조건(키워드+상태)이 있을 때 상품 검색 후 경매 조회 수행")
     void getAuctions_with_search_condition() {
         // given
-        com.bugzero.rarego.in.dto.AuctionSearchCondition condition = new com.bugzero.rarego.in.dto.AuctionSearchCondition();
-        ReflectionTestUtils.setField(condition, "keyword", "키워드");
-        ReflectionTestUtils.setField(condition, "category", Category.스타워즈);
+        AuctionSearchCondition condition = new AuctionSearchCondition();
+        condition.setKeyword("키워드");
+        condition.setCategory(Category.스타워즈);
         Pageable pageable = PageRequest.of(0, 10);
 
         // 1. 키워드로 상품 ID 검색
@@ -142,7 +142,7 @@ class AuctionReadUseCaseTest {
         // 2. 검수 승인된 상품 ID 목록 조회
         given(productApiClient.getApprovedProductIds()).willReturn(List.of(productId));
 
-        Page<com.bugzero.rarego.domain.Auction> auctionPage = new PageImpl<>(List.of(auction), pageable, 1);
+        Page<Auction> auctionPage = new PageImpl<>(List.of(auction), pageable, 1);
         given(auctionRepository.findAllBySearchConditions(any(), any(), eq(List.of(productId)), eq(List.of(productId)), any())).willReturn(auctionPage);
 
         // 3. 목록 조립을 위한 상품 정보 일괄 조회 Mocking
@@ -151,7 +151,7 @@ class AuctionReadUseCaseTest {
         given(productApiClient.getProducts(anySet())).willReturn(List.of(pDto));
 
         // when
-        PagedResponseDto<com.bugzero.rarego.in.dto.AuctionListResponseDto> result = auctionReadUseCase.getAuctions(condition, pageable);
+        PagedResponseDto<AuctionListResponseDto> result = auctionReadUseCase.getAuctions(condition, pageable);
 
         // then
         assertThat(result.data()).hasSize(1);
@@ -166,12 +166,12 @@ class AuctionReadUseCaseTest {
         // given
         String publicId = "user_1";
         Pageable pageable = PageRequest.of(0, 10);
-        com.bugzero.rarego.domain.AuctionMember member = com.bugzero.rarego.domain.AuctionMember.builder().publicId(publicId).build();
+        AuctionMember member = AuctionMember.builder().publicId(publicId).build();
         ReflectionTestUtils.setField(member, "id", 1L);
 
-        com.bugzero.rarego.domain.AuctionBookmark bookmark = com.bugzero.rarego.domain.AuctionBookmark.builder().memberId(1L).auctionId(auctionId).build();
+        AuctionBookmark bookmark = AuctionBookmark.builder().memberId(1L).auctionId(auctionId).build();
         ReflectionTestUtils.setField(bookmark, "id", 1L);
-        Page<com.bugzero.rarego.domain.AuctionBookmark> bookmarkPage = new PageImpl<>(List.of(bookmark), pageable, 1);
+        Page<AuctionBookmark> bookmarkPage = new PageImpl<>(List.of(bookmark), pageable, 1);
 
         // 상품 DTO 준비
         ProductAuctionResponseDto productDto = ProductAuctionResponseDto.builder()
@@ -188,7 +188,7 @@ class AuctionReadUseCaseTest {
         given(productApiClient.getProducts(anySet())).willReturn(List.of(productDto));
 
         // when
-        PagedResponseDto<com.bugzero.rarego.in.dto.AuctionBookmarkListResponseDto> result = auctionReadUseCase.getMyBookmarks(publicId, pageable);
+        PagedResponseDto<AuctionBookmarkListResponseDto> result = auctionReadUseCase.getMyBookmarks(publicId, pageable);
 
         // then
         assertThat(result.data()).hasSize(1);
@@ -200,11 +200,11 @@ class AuctionReadUseCaseTest {
     void getMyAuctionOrders_success() {
         // given
         String memberPublicId = "bidder_id";
-        com.bugzero.rarego.domain.AuctionMember member = com.bugzero.rarego.domain.AuctionMember.builder().publicId(memberPublicId).build();
+        AuctionMember member = AuctionMember.builder().publicId(memberPublicId).build();
         ReflectionTestUtils.setField(member, "id", 20L);
 
         // AuctionOrder 생성 - status는 빌더에서 지원하지 않음 (생성자에서 PROCESSING으로 설정됨)
-        com.bugzero.rarego.domain.AuctionOrder order = com.bugzero.rarego.domain.AuctionOrder.builder()
+        AuctionOrder order = AuctionOrder.builder()
                 .auctionId(auctionId)
                 .sellerId(sellerId)
                 .bidderId(20L)
@@ -220,7 +220,7 @@ class AuctionReadUseCaseTest {
                 .thumbnailUrl("thumb.jpg")
                 .build();
 
-        Page<com.bugzero.rarego.domain.AuctionOrder> orderPage = new PageImpl<>(List.of(order), PageRequest.of(0, 10), 1);
+        Page<AuctionOrder> orderPage = new PageImpl<>(List.of(order), PageRequest.of(0, 10), 1);
 
         given(support.getPublicMember(memberPublicId)).willReturn(member);
         given(auctionOrderRepository.findAllByBidderIdAndStatus(eq(20L), any(), any())).willReturn(orderPage);
@@ -228,7 +228,7 @@ class AuctionReadUseCaseTest {
         given(productApiClient.getProducts(anySet())).willReturn(List.of(productDto));
 
         // when
-        PagedResponseDto<com.bugzero.rarego.in.dto.MyAuctionOrderListResponseDto> result = auctionReadUseCase.getMyAuctionOrders(memberPublicId, null, PageRequest.of(0, 10));
+        PagedResponseDto<MyAuctionOrderListResponseDto> result = auctionReadUseCase.getMyAuctionOrders(memberPublicId, null, PageRequest.of(0, 10));
 
         // then
         assertThat(result.data().get(0).productName()).isEqualTo("Lego Titanic");
@@ -242,17 +242,17 @@ class AuctionReadUseCaseTest {
         String memberPublicId = "user_pub_id";
         Pageable pageable = PageRequest.of(0, 10);
 
-        com.bugzero.rarego.domain.AuctionMember member = com.bugzero.rarego.domain.AuctionMember.builder().publicId(memberPublicId).build();
+        AuctionMember member = AuctionMember.builder().publicId(memberPublicId).build();
         ReflectionTestUtils.setField(member, "id", 10L);
 
-        Page<com.bugzero.rarego.domain.AuctionOrder> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+        Page<AuctionOrder> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
         given(support.getPublicMember(memberPublicId)).willReturn(member);
         given(auctionOrderRepository.findAllByBidderIdAndStatus(eq(10L), isNull(), any(Pageable.class)))
                 .willReturn(emptyPage);
 
         // when
-        PagedResponseDto<com.bugzero.rarego.in.dto.MyAuctionOrderListResponseDto> result =
+        PagedResponseDto<MyAuctionOrderListResponseDto> result =
                 auctionReadUseCase.getMyAuctionOrders(memberPublicId, null, pageable);
 
         // then
@@ -265,9 +265,9 @@ class AuctionReadUseCaseTest {
     @DisplayName("경매 목록 조회 - 성공 (조건 없음)")
     void getAuctions_success() {
         // given
-        com.bugzero.rarego.in.dto.AuctionSearchCondition condition = new com.bugzero.rarego.in.dto.AuctionSearchCondition();
+        AuctionSearchCondition condition = new AuctionSearchCondition();
         Pageable pageable = PageRequest.of(0, 10);
-        Page<com.bugzero.rarego.domain.Auction> auctionPage = new PageImpl<>(List.of(auction), pageable, 1);
+        Page<Auction> auctionPage = new PageImpl<>(List.of(auction), pageable, 1);
 
         // 검수 승인된 상품 ID 목록 조회
         given(productApiClient.getApprovedProductIds()).willReturn(List.of(productId));
@@ -279,7 +279,7 @@ class AuctionReadUseCaseTest {
         given(productApiClient.getProducts(anySet())).willReturn(List.of(pDto));
 
         // when
-        PagedResponseDto<com.bugzero.rarego.in.dto.AuctionListResponseDto> result = auctionReadUseCase.getAuctions(condition, pageable);
+        PagedResponseDto<AuctionListResponseDto> result = auctionReadUseCase.getAuctions(condition, pageable);
 
         // then
         assertThat(result.data()).hasSize(1);

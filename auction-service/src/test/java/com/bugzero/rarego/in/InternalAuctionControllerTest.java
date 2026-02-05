@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.bugzero.rarego.app.AuctionFacade;
 import com.bugzero.rarego.app.AuctionOrderService;
 import com.bugzero.rarego.app.AuctionSettleAuctionFacade;
-import com.bugzero.rarego.in.InternalAuctionController;
 import com.bugzero.rarego.in.dto.AuctionAutoSettleResponseDto;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.global.response.SuccessType;

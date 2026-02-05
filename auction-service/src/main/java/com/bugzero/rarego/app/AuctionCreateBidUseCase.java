@@ -5,12 +5,10 @@ import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.domain.Bid;
 import com.bugzero.rarego.event.AuctionBidCreatedEvent;
 import com.bugzero.rarego.event.AuctionUpdatedEvent;
-import com.bugzero.rarego.in.dto.BidResponseDto;
-import com.bugzero.rarego.out.AuctionMemberRepository;
-import com.bugzero.rarego.out.AuctionRepository;
-import com.bugzero.rarego.out.BidRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.in.dto.BidResponseDto;
+import com.bugzero.rarego.out.BidRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +24,7 @@ import java.util.Optional;
 public class AuctionCreateBidUseCase {
 
     private final AuctionSupport support;
-    private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
-    private final AuctionMemberRepository auctionMemberRepository;
     private final PaymentApiClient paymentApiClient;
     private final ApplicationEventPublisher eventPublisher;
 

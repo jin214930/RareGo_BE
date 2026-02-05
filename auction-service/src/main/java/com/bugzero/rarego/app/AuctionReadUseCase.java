@@ -1,16 +1,13 @@
 package com.bugzero.rarego.app;
 
-import com.bugzero.rarego.out.AuctionBookmarkRepository;
-import com.bugzero.rarego.out.AuctionMemberRepository;
-import com.bugzero.rarego.out.AuctionOrderRepository;
-import com.bugzero.rarego.out.AuctionRepository;
-import com.bugzero.rarego.out.BidRepository;
 import com.bugzero.rarego.domain.*;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.PageDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;
-import com.bugzero.rarego.in.dto.AuctionBookmarkListResponseDto;import com.bugzero.rarego.in.dto.AuctionDetailResponseDto;import com.bugzero.rarego.in.dto.AuctionFilterType;import com.bugzero.rarego.in.dto.AuctionListResponseDto;import com.bugzero.rarego.in.dto.AuctionOrderResponseDto;import com.bugzero.rarego.in.dto.AuctionSearchCondition;import com.bugzero.rarego.in.dto.BidLogResponseDto;import com.bugzero.rarego.in.dto.MyAuctionOrderListResponseDto;import com.bugzero.rarego.in.dto.MyBidResponseDto;import com.bugzero.rarego.in.dto.MySaleResponseDto;import com.bugzero.rarego.shared.auction.dto.AuctionSortType;
+import com.bugzero.rarego.in.dto.*;
+import com.bugzero.rarego.out.*;
+import com.bugzero.rarego.shared.auction.dto.AuctionSortType;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.out.ProductApiClient;
@@ -19,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -336,15 +334,7 @@ public class AuctionReadUseCase {
     }
 
     private Pageable applySorting(Pageable pageable, AuctionSortType sortType) {
-        if (sortType == null) {
-            // 클라이언트 요청에 정렬 조건이 없고, 기본 정렬도 정렬되지 않은 상태라면
-            // 기본 정책(마감임박순) 적용. 만약 Pageable에 이미 정렬이 있다면 유지.
-            if (pageable.getSort().isSorted()) {
-                return pageable;
-            }
-            sortType = AuctionSortType.CLOSING_SOON;
-        }
-
-        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sortType.getSort());
+        Sort sort = (sortType != null) ? sortType.getSort() : Sort.unsorted();
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 }

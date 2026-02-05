@@ -3,8 +3,6 @@ package com.bugzero.rarego.in;
 import com.bugzero.rarego.app.AuctionSettleAuctionFacade;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.in.AuctionScheduler;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +34,7 @@ class AuctionSchedulerTest {
     AuctionSettleAuctionFacade facade;
 
     @InjectMocks
-	AuctionScheduler scheduler;
+    AuctionScheduler scheduler;
 
     private Map<Long, ScheduledFuture<?>> scheduledTasks;
 
