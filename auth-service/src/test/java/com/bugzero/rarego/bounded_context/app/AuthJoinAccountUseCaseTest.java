@@ -15,11 +15,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
-import com.bugzero.rarego.bounded_context.auth.domain.Account;
-import com.bugzero.rarego.bounded_context.auth.domain.AuthRole;
-import com.bugzero.rarego.bounded_context.auth.domain.Provider;
-import com.bugzero.rarego.bounded_context.auth.out.AccountRepository;
-import com.bugzero.rarego.bounded_context.auth.app.AuthJoinAccountUseCase;
+import com.bugzero.rarego.domain.Account;
+import com.bugzero.rarego.domain.AuthRole;
+import com.bugzero.rarego.domain.Provider;
+import com.bugzero.rarego.out.AccountRepository;
+import com.bugzero.rarego.app.AuthJoinAccountUseCase;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.member.domain.MemberJoinResponseDto;
