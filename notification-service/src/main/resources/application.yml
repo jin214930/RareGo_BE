@@ -74,10 +74,5 @@ springdoc:
     operations-sorter: alpha
 
 custom:
-  services:
-    auth-url: http://rarego-nginx
-    member-url: http://rarego-nginx
-    payment-url: http://rarego-nginx
-    auction-url: http://rarego-nginx
-    product-url: http://rarego-nginx
-    notification-url: http://rarego-nginx
+  global:
+    internalBackUrl: ${INTERNAL_BACK_URL:http://rarego-nginx}
