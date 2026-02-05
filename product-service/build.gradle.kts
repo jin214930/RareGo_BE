@@ -35,6 +35,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.ai:spring-ai-starter-model-openai")
     testImplementation("io.projectreactor:reactor-test")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 //    testImplementation("org.springframework.batch:spring-batch-test")
     compileOnly("org.projectlombok:lombok")
