@@ -1,11 +1,7 @@
 package com.bugzero.rarego.in.dto;
 
-<<<<<<<< HEAD:auction-service/src/main/java/com/bugzero/rarego/in/dto/AuctionSearchCondition.java
-========
 import com.bugzero.rarego.domain.AuctionStatus;
->>>>>>>> a0f7c824e9a4a956c315d473f7b5543dafc00080:src/main/java/com/bugzero/rarego/in/dto/AuctionSearchCondition.java
 import com.bugzero.rarego.shared.auction.dto.AuctionSortType;
-import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.type.Category;
 
 import lombok.Data;
