@@ -13,6 +13,7 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.exception.InternalApiErrorHandler;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
@@ -114,5 +115,18 @@ public class AuctionApiClient {
             .onStatus(HttpStatusCode::isError,
                 (httpRequest, httpResponse) -> errorHandler.handleWithDefault(httpRequest, httpResponse, ErrorType.AUCTION_DELETE_FAILED))
             .toBodilessEntity();
+    }
+
+    public AuctionInfoResponseDto getAuctionInfo(Long productId) {
+        SuccessResponseDto<AuctionInfoResponseDto> response = restClient.get()
+            .uri("/products/{productId}", productId) // Auction Service에 해당 API 필요
+            .retrieve()
+            .onStatus(HttpStatusCode::isError, (req, res) ->
+                errorHandler.handleWithDefault(req, res, ErrorType.AUCTION_NOT_FOUND))
+            .body(new ParameterizedTypeReference<>() {});
+
+        return Optional.ofNullable(response)
+            .map(SuccessResponseDto::data)
+            .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
     }
 }

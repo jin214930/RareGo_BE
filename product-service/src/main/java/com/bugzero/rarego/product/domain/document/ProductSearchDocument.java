@@ -1,8 +1,12 @@
 package com.bugzero.rarego.product.domain.document;
 
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -15,6 +19,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
+@AllArgsConstructor
+@Builder
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 @Document(indexName = "product_search")
 @Setting(settingPath = "elasticsearch-settings.json")
@@ -45,11 +51,11 @@ public class ProductSearchDocument {
 	@Field(type = FieldType.Keyword)
 	private AuctionStatus auctionStatus;
 
-	@Field(type = FieldType.Long)
-	private Long startPrice;
+	@Field(type = FieldType.Integer)
+	private int startPrice;
 
-	@Field(type = FieldType.Long)
-	private Long finalPrice;
+	@Field(type = FieldType.Integer)
+	private int finalPrice;
 
 	@Field(type = FieldType.Date)
 	private LocalDateTime startedAt;
@@ -59,9 +65,6 @@ public class ProductSearchDocument {
 
 	@Field(type = FieldType.Long)
 	private Long sellerId;
-
-	@Field(type = FieldType.Keyword)
-	private InspectionStatus inspectionStatus;
 
 	@Field(type = FieldType.Keyword)
 	private List<String> imageUrls;

@@ -1,6 +1,6 @@
 package com.bugzero.rarego.boundedContext.auction.in.dto;
 
-import com.bugzero.rarego.boundedContext.auction.domain.AuctionStatus;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 
 public record AuctionWithdrawResponseDto(
         Long auctionId,

@@ -1,8 +1,11 @@
 package com.bugzero.rarego.product.app;
 
+import static com.bugzero.rarego.global.config.GlobalConfig.*;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.product.domain.Inspection;
@@ -10,6 +13,7 @@ import com.bugzero.rarego.product.domain.Product;
 import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionRequestDto;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
+import com.bugzero.rarego.product.domain.event.ProductInspectionEvent;
 import com.bugzero.rarego.product.out.InspectionRepository;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
@@ -21,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class ProductCreateInspectionUseCase {
 	private final InspectionRepository inspectionRepository;
 	private final ProductSupport productSupport;
+	private final EventPublisher eventPublisher;
 
 	@Transactional
 	public ProductInspectionResponseDto createInspection(String inspectorId, ProductInspectionRequestDto dto) {
@@ -44,6 +49,12 @@ public class ProductCreateInspectionUseCase {
 		product.determineInspection(dto.status());
 		//상품데이터의 상품상태도 동기화
 		product.determineProductCondition(dto.productCondition());
+
+		eventPublisher.publish(new ProductInspectionEvent(
+			product.getId(),
+			dto.status(),
+			dto.productCondition()
+		));
 
 		return ProductInspectionResponseDto.builder()
 			.inspectionId(inspection.getId())
@@ -69,4 +80,6 @@ public class ProductCreateInspectionUseCase {
 			throw new CustomException(ErrorType.INSPECTION_ALREADY_COMPLETED);
 		}
 	}
+
+
 }

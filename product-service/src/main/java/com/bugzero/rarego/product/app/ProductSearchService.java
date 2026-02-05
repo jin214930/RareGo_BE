@@ -1,0 +1,229 @@
+package com.bugzero.rarego.product.app;
+
+import com.bugzero.rarego.product.domain.Product;
+import com.bugzero.rarego.product.domain.ProductImage;
+import com.bugzero.rarego.product.domain.document.ProductSearchDocument;
+import com.bugzero.rarego.product.out.ProductSearchRepository;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.IntStream;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ProductSearchService {
+
+	private final ProductSearchRepository searchRepository;
+	private final ElasticsearchClient elasticsearchClient;
+	@Qualifier("ollamaEmbeddingModel") private final EmbeddingModel embeddingModel;
+
+	// 초기 데이터 적재
+	@Transactional
+	public void save(
+		Product product,
+		List<ProductImage> images,
+		Long auctionId,
+		int startPrice,
+		LocalDateTime startedAt
+	) {
+		// 1. 임베딩 생성
+		String textToEmbed = String.format("%s %s %s %s",
+			product.getCategory(), product.getName(), product.getProductCondition(), product.getDescription());
+		List<Float> vector = generateEmbeddingToFloat(textToEmbed);
+		// ES Document의 vector 타입에 맞춰 Double 변환 필요 시:
+		List<Double> doubleVector = vector.stream().map(Float::doubleValue).toList();
+
+		// 2. 이미지 정렬
+		List<String> imageUrls = images.stream()
+			.sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+			.map(ProductImage::getImageUrl)
+			.toList();
+
+		// 3. Document 빌드
+		ProductSearchDocument doc = ProductSearchDocument.builder()
+			.id(product.getId().toString())
+			.productId(product.getId())
+			.productName(product.getName())
+			.description(product.getDescription())
+			.productCondition(product.getProductCondition())
+			.category(product.getCategory())
+			.sellerId(product.getSeller().getId())
+			.imageUrls(imageUrls)
+			.embedding(doubleVector)
+
+			// 경매 정보 매핑
+			.auctionId(auctionId)
+			.startPrice(startPrice)
+			.startedAt(startedAt)
+			.auctionStatus(AuctionStatus.SCHEDULED)
+			.finalPrice(0)
+			.closedAt(null)
+			.build();
+
+		searchRepository.save(doc);
+		log.info("Product Indexed (APPROVED): productId={}, auctionId={}", product.getId(), auctionId);
+	}
+
+	public void delete(Long productId) {
+		searchRepository.findByProductId(productId).ifPresent(doc -> {
+			searchRepository.delete(doc);
+			log.info("Product Deleted from ES: productId={}", productId);
+		});
+	}
+
+	// 상태 업데이트(낙찰 시)
+	public void updateSoldPrice(Long productId, int finalPrice) {
+		ProductSearchDocument doc = searchRepository.findByProductId(productId)
+			.orElseThrow(() -> new RuntimeException("ES Document Not Found: " + productId));
+
+		ProductSearchDocument updatedDoc = ProductSearchDocument.builder()
+			.id(doc.getId())
+			.productId(doc.getProductId())
+			.auctionId(doc.getAuctionId())
+			.productName(doc.getProductName())
+			.description(doc.getDescription())
+			.productCondition(doc.getProductCondition())
+			.category(doc.getCategory())
+			.auctionStatus(AuctionStatus.ENDED)
+			.startPrice(doc.getStartPrice())
+			.finalPrice(finalPrice)
+			.startedAt(doc.getStartedAt())
+			.closedAt(LocalDateTime.now())
+			.sellerId(doc.getSellerId())
+			.imageUrls(doc.getImageUrls())
+			.embedding(doc.getEmbedding())
+			.build();
+
+		searchRepository.save(updatedDoc);
+		log.info("Product Sold Updated: {} -> {} won", productId, finalPrice);
+	}
+
+	// 경매 시작/종료 등 상태만 변경할 때 사용
+	public void updateAuctionStatus(Long productId, AuctionStatus newStatus) {
+		searchRepository.findByProductId(productId).ifPresent(doc -> {
+			ProductSearchDocument updated = ProductSearchDocument.builder()
+				.id(doc.getId())
+				.productId(doc.getProductId())
+				.auctionId(doc.getAuctionId())
+				.productName(doc.getProductName())
+				.description(doc.getDescription())
+				.productCondition(doc.getProductCondition())
+				.category(doc.getCategory())
+				.sellerId(doc.getSellerId())
+				.imageUrls(doc.getImageUrls())
+				.embedding(doc.getEmbedding())
+				.startPrice(doc.getStartPrice())
+				.finalPrice(doc.getFinalPrice())
+				.startedAt(doc.getStartedAt())
+				.closedAt(doc.getClosedAt())
+				// 새로운 상태 적용
+				.auctionStatus(newStatus)
+				.build();
+
+			searchRepository.save(updated);
+			log.info("Auction Status Updated: productId={}, status={}", productId, newStatus);
+		});
+	}
+
+	/**
+	 * 하이브리드 검색 -> 키워드(BM25) + 벡터(KNN) + 필터링
+	 */
+	public Page<ProductSearchDocument> searchProducts(
+		String keyword,
+		Category category,
+		AuctionStatus auctionStatus,
+		Pageable pageable
+	) {
+		try {
+			// 1. 공통 필터 생성 (Query 객체 리스트)
+			List<Query> filters = new ArrayList<>();
+			if (category != null) {
+				filters.add(Query.of(q -> q.term(t -> t.field("category").value(category.name()))));
+			}
+			if (auctionStatus != null) {
+				filters.add(Query.of(q -> q.term(t -> t.field("auctionStatus").value(auctionStatus.name()))));
+			}
+
+			// 2. 검색 요청 빌드 (ElasticsearchClient 사용)
+			SearchResponse<ProductSearchDocument> response = elasticsearchClient.search(s -> {
+				// (A) 기본 설정: 인덱스, 페이징
+				s.index("product_search")
+					.from((int) pageable.getOffset())
+					.size(pageable.getPageSize());
+
+				// (B) 텍스트 쿼리 구성 (Boolean Query)
+				if (StringUtils.hasText(keyword)) {
+					s.query(q -> q.bool(b -> b
+						.should(sh -> sh.match(m -> m.field("productName").query(keyword).boost(0.7f)))
+						.should(sh -> sh.match(m -> m.field("description").query(keyword).boost(0.5f)))
+						.filter(filters) // 공통 필터 적용
+					));
+
+					// (C) 벡터(KNN) 쿼리 구성 - 하이브리드 핵심
+					List<Float> queryVector = generateEmbeddingToFloat(keyword); // float 변환 필요
+
+					s.knn(k -> k
+						.field("embedding")
+						.queryVector(queryVector)
+						.k(10)
+						.numCandidates(100)
+						.filter(f -> f.bool(b -> b.filter(filters))) // ★ KNN에도 동일 필터 적용
+						.boost(0.3f) // 벡터 점수 비중 (텍스트와 합쳐서 1.0 되도록 조절 추천)
+					);
+				} else {
+					// 키워드 없을 땐 필터만 적용
+					s.query(q -> q.bool(b -> b.filter(filters)));
+				}
+
+				return s;
+			}, ProductSearchDocument.class);
+
+			// 3. 결과 변환 (SearchResponse -> Page)
+			List<ProductSearchDocument> content = response.hits().hits().stream()
+				.map(Hit::source)
+				.toList();
+
+			// total hits 계산 (정확한 페이징을 위해)
+			long total = response.hits().total() != null ? response.hits().total().value() : 0;
+
+			return new PageImpl<>(content, pageable, total);
+
+		} catch (IOException e) {
+			log.error("Elasticsearch Search Error", e);
+			throw new RuntimeException("Search failed", e);
+		}
+	}
+
+	// [Helper] 임베딩 생성 (Float 리스트로 변환)
+	// ES Client의 KNN은 List<Float>를 요구하는 경우가 많습니다.
+	private List<Float> generateEmbeddingToFloat(String text) {
+		float[] embeddingArray = embeddingModel.embed(text);
+		List<Float> floatList = new ArrayList<>();
+		for (float v : embeddingArray) {
+			floatList.add(v);
+		}
+		return floatList;
+	}
+}

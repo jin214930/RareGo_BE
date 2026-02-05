@@ -32,7 +32,13 @@ public class PaymentHoldDepositUseCase {
 
 		// 1. 멱등성 체크 (memberId로 조회)
 		return depositRepository.findByMemberIdAndAuctionId(memberId, request.auctionId())
-			.map(DepositHoldResponseDto::from)
+			.map(deposit -> new DepositHoldResponseDto(
+				deposit.getId(),
+				deposit.getAuctionId(),
+				deposit.getAmount(),
+				deposit.getStatus().name(),
+				deposit.getCreatedAt()
+			))
 			.orElseGet(() -> executeHold(member, request));
 	}
 
@@ -58,6 +64,12 @@ public class PaymentHoldDepositUseCase {
 			.build();
 		transactionRepository.save(transaction);
 
-		return DepositHoldResponseDto.from(deposit);
+		return new DepositHoldResponseDto(
+			deposit.getId(),
+			deposit.getAuctionId(),
+			deposit.getAmount(),
+			deposit.getStatus().name(),
+			deposit.getCreatedAt()
+		);
 	}
 }

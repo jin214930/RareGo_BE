@@ -21,6 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.bugzero.rarego.boundedContext.auction.app.AuctionFacade;
+import com.bugzero.rarego.boundedContext.auction.app.AuctionOrderService;
 import com.bugzero.rarego.boundedContext.auction.app.AuctionSettleAuctionFacade;
 import com.bugzero.rarego.boundedContext.auction.in.dto.AuctionAutoSettleResponseDto;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
@@ -44,6 +45,9 @@ class InternalAuctionControllerTest {
 
     @MockitoBean
     private AuctionFacade auctionFacade;
+
+    @MockitoBean
+    private AuctionOrderService auctionOrderService;
 
     @Autowired
     private ObjectMapper objectMapper;
