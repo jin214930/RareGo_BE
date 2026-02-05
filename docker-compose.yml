@@ -313,6 +313,8 @@ services:
       - rarego-network
 
   elasticsearch:
+    build:
+      context: ./docker/elasticsearch
     image: ${PRODUCT_ELASTICSEARCH_IMAGE:-rarego-product-elasticsearch:latest}
     container_name: rarego-elasticsearch
     ports:
