@@ -25,11 +25,11 @@ public class AuctionOrderApiClient {
 	private final InternalApiErrorHandler errorHandler;
 
 	public AuctionOrderApiClient(
-		@Value("${custom.services.auction-url}") String internalAuctionUrl,
+		@Value("${custom.global.internalBackUrl}") String internalBackUrl,
 		InternalApiErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 		this.restClient = RestClient.builder()
-			.baseUrl(internalAuctionUrl + "/api/v1/internal/auctions")
+			.baseUrl(internalBackUrl + "/api/v1/internal/auctions")
 			.build();
 	}
 
