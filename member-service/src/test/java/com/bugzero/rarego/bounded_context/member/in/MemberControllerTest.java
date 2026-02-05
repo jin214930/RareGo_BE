@@ -23,17 +23,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.bugzero.rarego.bounded_context.member.app.MemberFacade;
-import com.bugzero.rarego.bounded_context.member.domain.MemberClearField;
-import com.bugzero.rarego.bounded_context.member.domain.MemberMeResponseDto;
-import com.bugzero.rarego.bounded_context.member.domain.MemberUpdateIdentityRequestDto;
-import com.bugzero.rarego.bounded_context.member.domain.MemberUpdateRequestDto;
-import com.bugzero.rarego.bounded_context.member.domain.MemberUpdateResponseDto;
+import com.bugzero.rarego.app.MemberFacade;
+import com.bugzero.rarego.domain.MemberClearField;
+import com.bugzero.rarego.domain.MemberMeResponseDto;
+import com.bugzero.rarego.domain.MemberUpdateIdentityRequestDto;
+import com.bugzero.rarego.domain.MemberUpdateRequestDto;
+import com.bugzero.rarego.domain.MemberUpdateResponseDto;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessType;
 import com.bugzero.rarego.global.security.MemberPrincipal;
+import com.bugzero.rarego.in.MemberController;
 
 import tools.jackson.databind.ObjectMapper;
 
