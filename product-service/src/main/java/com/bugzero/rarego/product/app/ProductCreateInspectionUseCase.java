@@ -15,6 +15,7 @@ import com.bugzero.rarego.product.domain.dto.ProductInspectionRequestDto;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
 import com.bugzero.rarego.product.domain.event.ProductInspectionEvent;
 import com.bugzero.rarego.product.out.InspectionRepository;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
 
@@ -25,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 public class ProductCreateInspectionUseCase {
 	private final InspectionRepository inspectionRepository;
 	private final ProductSupport productSupport;
-	private final EventPublisher eventPublisher;
 
 	@Transactional
 	public ProductInspectionResponseDto createInspection(String inspectorId, ProductInspectionRequestDto dto) {
@@ -50,12 +50,6 @@ public class ProductCreateInspectionUseCase {
 		//상품데이터의 상품상태도 동기화
 		product.determineProductCondition(dto.productCondition());
 
-		eventPublisher.publish(new ProductInspectionEvent(
-			product.getId(),
-			dto.status(),
-			dto.productCondition()
-		));
-
 		return ProductInspectionResponseDto.builder()
 			.inspectionId(inspection.getId())
 			.productId(inspection.getProduct().getId())
@@ -65,6 +59,34 @@ public class ProductCreateInspectionUseCase {
 			.createdAt(inspection.getCreatedAt())
 			.updatedAt(inspection.getUpdatedAt())
 			.build();
+	}
+
+	private void synchronizeElasticsearch(Product product, InspectionStatus status) {
+		try {
+			if (status == InspectionStatus.APPROVED) {
+				// 승인됨 -> 경매 정보 조회(API) -> ES 적재
+				AuctionInfoResponseDto auctionInfo = auctionApiClient.getAuctionInfo(product.getId());
+
+				productSearchService.save(
+					product,
+					product.getImages(),
+					auctionInfo.auctionId(),
+					auctionInfo.startPrice(),
+					auctionInfo.startedAt()
+				);
+				log.info("검수 승인 및 ES 적재 완료 (Sync): productId={}", product.getId());
+			} else {
+				// 반려/삭제 등 -> ES에서 제거
+				productSearchService.delete(product.getId());
+				log.info("검수 반려/삭제로 인한 ES 제거 (Sync): productId={}", product.getId());
+			}
+		} catch (Exception e) {
+			log.error("ES 동기화 실패 (Transaction Rollback): productId={}", product.getId(), e);
+			// ★ 중요: 여기서 예외를 던져야 DB 트랜잭션도 같이 롤백됩니다.
+			// 만약 ES 실패해도 DB는 저장하고 싶다면 catch만 하고 throw를 안 하면 됩니다.
+			// 하지만 '데이터 정합성'이 중요하다면 throw 하는 것이 맞습니다.
+			throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
+		}
 	}
 
 	private void checkedReason(ProductInspectionRequestDto dto) {

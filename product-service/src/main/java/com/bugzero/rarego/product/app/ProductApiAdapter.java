@@ -1,3 +1,4 @@
+/*
 package com.bugzero.rarego.product.app;
 
 import com.bugzero.rarego.product.domain.document.ProductSearchDocument;
@@ -105,3 +106,4 @@ public class ProductApiAdapter implements ProductApiClient {
 			.build();
 	}
 }
+ */
