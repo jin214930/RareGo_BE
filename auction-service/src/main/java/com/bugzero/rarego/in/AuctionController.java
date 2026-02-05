@@ -11,7 +11,7 @@ import com.bugzero.rarego.in.dto.AuctionRemoveBookmarkResponseDto;
 import com.bugzero.rarego.in.dto.AuctionSearchCondition;
 import com.bugzero.rarego.in.dto.AuctionWithdrawResponseDto;
 import com.bugzero.rarego.in.dto.BidLogResponseDto;
-import com.bugzero.rarego.bounded_context.auction.in.dto.BidRequestDto;
+import com.bugzero.rarego.in.dto.BidRequestDto;
 import com.bugzero.rarego.in.dto.BidResponseDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.global.response.SuccessResponseDto;

@@ -1,7 +1,12 @@
 package com.bugzero.rarego.app;
 
-import com.bugzero.rarego.out.AuctionBookmarkRepository;import com.bugzero.rarego.out.AuctionMemberRepository;import com.bugzero.rarego.out.AuctionOrderRepository;import com.bugzero.rarego.out.AuctionRepository;import com.bugzero.rarego.out.BidRepository;import com.bugzero.rarego.bounded_context.auction.domain.*;
-import com.bugzero.rarego.domain.Auction;import com.bugzero.rarego.domain.AuctionBookmark;import com.bugzero.rarego.domain.AuctionMember;import com.bugzero.rarego.domain.AuctionOrder;import com.bugzero.rarego.domain.AuctionOrderStatus;import com.bugzero.rarego.domain.AuctionViewerRoleStatus;import com.bugzero.rarego.domain.Bid;import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.out.AuctionBookmarkRepository;
+import com.bugzero.rarego.out.AuctionMemberRepository;
+import com.bugzero.rarego.out.AuctionOrderRepository;
+import com.bugzero.rarego.out.AuctionRepository;
+import com.bugzero.rarego.out.BidRepository;
+import com.bugzero.rarego.domain.*;
+import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.PageDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;

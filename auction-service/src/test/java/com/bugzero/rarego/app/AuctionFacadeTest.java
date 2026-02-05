@@ -2,9 +2,10 @@ package com.bugzero.rarego.app;
 
 import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.domain.AuctionOrderStatus;
-import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.*;
+import com.bugzero.rarego.in.dto.*;
+import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,11 +61,11 @@ class AuctionFacadeTest {
         int bidAmount = 50000;
 
         BidResponseDto bidResponse = new BidResponseDto(
-                1L, auctionId, "public-id", LocalDateTime.now(), (long) bidAmount, (long) bidAmount
+            1L, auctionId, "public-id", LocalDateTime.now(), (long) bidAmount, (long) bidAmount
         );
 
         given(auctionCreateBidUseCase.createBid(auctionId, memberPublicId, bidAmount))
-                .willReturn(bidResponse);
+            .willReturn(bidResponse);
 
         // when
         SuccessResponseDto<BidResponseDto> result = auctionFacade.createBid(auctionId, memberPublicId, bidAmount);
@@ -86,11 +87,11 @@ class AuctionFacadeTest {
 
         BidLogResponseDto logDto = new BidLogResponseDto(1L, "user_masked", LocalDateTime.now(), 50000);
         PagedResponseDto<BidLogResponseDto> expectedResponse = new PagedResponseDto<>(
-                List.of(logDto), new PageDto(1, 10, 1, 1, false, false)
+            List.of(logDto), new PageDto(1, 10, 1, 1, false, false)
         );
 
         given(auctionReadUseCase.getBidLogs(eq(auctionId), any(Pageable.class)))
-                .willReturn(expectedResponse);
+            .willReturn(expectedResponse);
 
         // when
         PagedResponseDto<BidLogResponseDto> result = auctionFacade.getBidLogs(auctionId, pageable);
@@ -112,14 +113,14 @@ class AuctionFacadeTest {
         Pageable pageable = PageRequest.of(0, 10);
 
         MyBidResponseDto myBidDto = new MyBidResponseDto(
-                1L, 10L, 50L, 15000, LocalDateTime.now(), AuctionStatus.IN_PROGRESS, 15000, LocalDateTime.now().plusDays(1)
+            1L, 10L, 50L, 15000, LocalDateTime.now(), AuctionStatus.IN_PROGRESS, 15000, LocalDateTime.now().plusDays(1)
         );
         PagedResponseDto<MyBidResponseDto> expectedResponse = new PagedResponseDto<>(
-                List.of(myBidDto), new PageDto(1, 10, 1, 1, false, false)
+            List.of(myBidDto), new PageDto(1, 10, 1, 1, false, false)
         );
 
         given(auctionReadUseCase.getMyBids(eq(memberPublicId), eq(null), any(Pageable.class)))
-                .willReturn(expectedResponse);
+            .willReturn(expectedResponse);
 
         // when
         PagedResponseDto<MyBidResponseDto> result = auctionFacade.getMyBids(memberPublicId, null, pageable);
@@ -144,27 +145,27 @@ class AuctionFacadeTest {
         Pageable pageable = PageRequest.of(0, 10);
 
         MySaleResponseDto saleDto1 = MySaleResponseDto.builder()
-                .auctionId(100L)
-                .title("Product 1")
-                .currentPrice(1000)
-                .bidCount(5)
-                .tradeStatus(AuctionOrderStatus.PROCESSING)
-                .build();
+            .auctionId(100L)
+            .title("Product 1")
+            .currentPrice(1000)
+            .bidCount(5)
+            .tradeStatus(AuctionOrderStatus.PROCESSING)
+            .build();
 
         MySaleResponseDto saleDto2 = MySaleResponseDto.builder()
-                .auctionId(200L)
-                .title("Product 2")
-                .currentPrice(2000)
-                .bidCount(0)
-                .tradeStatus(null)
-                .build();
+            .auctionId(200L)
+            .title("Product 2")
+            .currentPrice(2000)
+            .bidCount(0)
+            .tradeStatus(null)
+            .build();
 
         PagedResponseDto<MySaleResponseDto> expectedResponse = new PagedResponseDto<>(
-                List.of(saleDto1, saleDto2), new PageDto(1, 10, 2, 1, false, false)
+            List.of(saleDto1, saleDto2), new PageDto(1, 10, 2, 1, false, false)
         );
 
         given(auctionReadUseCase.getMySales(eq(sellerPublicId), eq(filter), any(Pageable.class)))
-                .willReturn(expectedResponse);
+            .willReturn(expectedResponse);
 
         // when
         PagedResponseDto<MySaleResponseDto> result = auctionFacade.getMySales(sellerPublicId, filter, pageable);
@@ -173,13 +174,13 @@ class AuctionFacadeTest {
         assertThat(result.data()).hasSize(2);
 
         MySaleResponseDto dto1 = result.data().stream()
-                .filter(d -> d.auctionId().equals(100L)).findFirst().orElseThrow();
+            .filter(d -> d.auctionId().equals(100L)).findFirst().orElseThrow();
         assertThat(dto1.title()).isEqualTo("Product 1");
         assertThat(dto1.bidCount()).isEqualTo(5);
         assertThat(dto1.tradeStatus()).isEqualTo(AuctionOrderStatus.PROCESSING);
 
         MySaleResponseDto dto2 = result.data().stream()
-                .filter(d -> d.auctionId().equals(200L)).findFirst().orElseThrow();
+            .filter(d -> d.auctionId().equals(200L)).findFirst().orElseThrow();
         assertThat(dto2.title()).isEqualTo("Product 2");
         assertThat(dto2.bidCount()).isEqualTo(0);
         assertThat(dto2.tradeStatus()).isNull();
@@ -197,18 +198,18 @@ class AuctionFacadeTest {
 
         // Mock Response
         MyAuctionOrderListResponseDto dto = new MyAuctionOrderListResponseDto(
-                1L, 100L, "Product", "img", 1000, status, "desc", LocalDateTime.now(), true
+            1L, 100L, "Product", "img", 1000, status, "desc", LocalDateTime.now(), true
         );
         PagedResponseDto<MyAuctionOrderListResponseDto> expectedResponse = new PagedResponseDto<>(
-                List.of(dto), new PageDto(1, 10, 1, 1, false, false)
+            List.of(dto), new PageDto(1, 10, 1, 1, false, false)
         );
 
         given(auctionReadUseCase.getMyAuctionOrders(eq(memberPublicId), eq(status), any(Pageable.class)))
-                .willReturn(expectedResponse);
+            .willReturn(expectedResponse);
 
         // when
         PagedResponseDto<MyAuctionOrderListResponseDto> result =
-                auctionFacade.getMyAuctionOrders(memberPublicId, status, pageable);
+            auctionFacade.getMyAuctionOrders(memberPublicId, status, pageable);
 
         // then
         assertThat(result.data()).hasSize(1);
@@ -227,7 +228,7 @@ class AuctionFacadeTest {
 
         AuctionAddBookmarkResponseDto responseDto = AuctionAddBookmarkResponseDto.of(true, auctionId);
         given(auctionBookmarkUseCase.addBookmark(publicId, auctionId))
-                .willReturn(responseDto);
+            .willReturn(responseDto);
 
         // when
         AuctionAddBookmarkResponseDto result = auctionFacade.addBookmark(publicId, auctionId);
@@ -247,7 +248,7 @@ class AuctionFacadeTest {
 
         AuctionAddBookmarkResponseDto responseDto = AuctionAddBookmarkResponseDto.of(false, auctionId);
         given(auctionBookmarkUseCase.addBookmark(publicId, auctionId))
-                .willReturn(responseDto);
+            .willReturn(responseDto);
 
         // when
         AuctionAddBookmarkResponseDto result = auctionFacade.addBookmark(publicId, auctionId);
@@ -269,12 +270,12 @@ class AuctionFacadeTest {
         ReflectionTestUtils.setField(member, "id", memberId);
 
         given(auctionBookmarkUseCase.addBookmark(publicId, auctionId))
-                .willThrow(new CustomException(ErrorType.AUCTION_NOT_FOUND));
+            .willThrow(new CustomException(ErrorType.AUCTION_NOT_FOUND));
 
         // when & then
         assertThatThrownBy(() -> auctionFacade.addBookmark(publicId, auctionId))
-                .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorType", ErrorType.AUCTION_NOT_FOUND);
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorType", ErrorType.AUCTION_NOT_FOUND);
     }
 
     @Test
@@ -286,18 +287,18 @@ class AuctionFacadeTest {
         AuctionRelistRequestDto request = new AuctionRelistRequestDto(20000L, 1000L, 3);
 
         AuctionRelistResponseDto responseDto = AuctionRelistResponseDto.builder()
-                .newAuctionId(2L)
-                .productId(50L)
-                .status(AuctionStatus.SCHEDULED)
-                .message("재경매 성공")
-                .build();
+            .newAuctionId(2L)
+            .productId(50L)
+            .status(AuctionStatus.SCHEDULED)
+            .message("재경매 성공")
+            .build();
 
         given(auctionRelistUseCase.relistAuction(auctionId, memberPublicId, request))
-                .willReturn(responseDto);
+            .willReturn(responseDto);
 
         // when
         SuccessResponseDto<AuctionRelistResponseDto> result =
-                auctionFacade.relistAuction(auctionId, memberPublicId, request);
+            auctionFacade.relistAuction(auctionId, memberPublicId, request);
 
         // then
         assertThat(result.status()).isEqualTo(SuccessType.OK.getHttpStatus());
@@ -312,7 +313,7 @@ class AuctionFacadeTest {
         // given
         String publicId = "member-public-id";
         given(auctionWithdrawUseCase.hasProcessingOrders(publicId))
-                .willReturn(true);
+            .willReturn(true);
 
         // when
         boolean result = auctionFacade.hasProcessingOrders(publicId);

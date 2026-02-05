@@ -41,16 +41,23 @@ class AuctionCreateAuctionUseCaseTest {
         Long productId = 1L;
         int durationDays = 24;
         ProductAuctionRequestDto requestDto = ProductAuctionRequestDto.builder()
-                .startPrice(10000)
-                .durationDays(durationDays)
-                .build();
+            .startPrice(10000)
+            .durationDays(durationDays)
+            .build();
         AuctionMember commonSeller = AuctionMember.builder()
-                .id(1L)
-                .publicId(PUBLIC_ID)
-                .build();
+            .id(1L)
+            .publicId(PUBLIC_ID)
+            .build();
 
         // Mocking: 저장 시 ID가 100인 객체가 반환된다고 가정
-        Auction mockAuction = requestDto.toEntity(productId, 1L);
+        Auction mockAuction = Auction.builder()
+            .productId(productId)
+            .sellerId(1L)
+            .startPrice(requestDto.startPrice())
+            .durationDays(requestDto.durationDays())
+            .startTime(null)
+            .endTime(null)
+            .build();
         ReflectionTestUtils.setField(mockAuction, "id", 100L);
         when(auctionRepository.save(any(Auction.class))).thenReturn(mockAuction);
         given(auctionSupport.getPublicMember(PUBLIC_ID)).willReturn(commonSeller);

@@ -6,8 +6,10 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.exception.GlobalExceptionHandler;
 import com.bugzero.rarego.global.response.*;
 import com.bugzero.rarego.global.security.MemberPrincipal;
-import com.bugzero.rarego.in.AuctionController;
+import com.bugzero.rarego.in.dto.*;
+import com.bugzero.rarego.shared.auction.dto.AuctionSortType;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.support.WithMockMemberPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,23 +60,23 @@ class AuctionControllerTest {
     @BeforeEach
     void setup() {
         mockMvc = MockMvcBuilders.standaloneSetup(auctionController)
-                .setCustomArgumentResolvers(
-                        new PageableHandlerMethodArgumentResolver(),
-                        new HandlerMethodArgumentResolver() {
-                            @Override
-                            public boolean supportsParameter(MethodParameter parameter) {
-                                return MemberPrincipal.class.isAssignableFrom(parameter.getParameterType());
-                            }
+            .setCustomArgumentResolvers(
+                new PageableHandlerMethodArgumentResolver(),
+                new HandlerMethodArgumentResolver() {
+                    @Override
+                    public boolean supportsParameter(MethodParameter parameter) {
+                        return MemberPrincipal.class.isAssignableFrom(parameter.getParameterType());
+                    }
 
-                            @Override
-                            public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-                                                          NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
-                                // Principal의 publicId를 "1"로 설정 (String)
-                                return new MemberPrincipal("1", "USER");
-                            }
-                        })
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
+                    @Override
+                    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
+                        NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
+                        // Principal의 publicId를 "1"로 설정 (String)
+                        return new MemberPrincipal("1", "USER");
+                    }
+                })
+            .setControllerAdvice(new GlobalExceptionHandler())
+            .build();
     }
 
     @Test
@@ -87,24 +89,24 @@ class AuctionControllerTest {
         BidRequestDto requestDto = new BidRequestDto(bidAmount);
 
         BidResponseDto bidResponse = new BidResponseDto(
-                100L, auctionId, memberPublicId, LocalDateTime.now(), bidAmount, 11000L);
+            100L, auctionId, memberPublicId, LocalDateTime.now(), bidAmount, 11000L);
 
         SuccessResponseDto<BidResponseDto> successResponse = SuccessResponseDto.from(
-                SuccessType.CREATED,
-                bidResponse);
+            SuccessType.CREATED,
+            bidResponse);
 
         // [수정] memberId(Long) -> memberPublicId(String)
         given(auctionFacade.createBid(eq(auctionId), eq(memberPublicId), eq(bidAmount.intValue())))
-                .willReturn(successResponse);
+            .willReturn(successResponse);
 
         // when & then
         mockMvc.perform(post("/api/v1/auctions/{auctionId}/bids", auctionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andDo(print())
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value(SuccessType.CREATED.getHttpStatus()))
-                .andExpect(jsonPath("$.data.bidAmount").value(bidAmount));
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestDto)))
+            .andDo(print())
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value(SuccessType.CREATED.getHttpStatus()))
+            .andExpect(jsonPath("$.data.bidAmount").value(bidAmount));
     }
 
     @Test
@@ -113,22 +115,22 @@ class AuctionControllerTest {
         // given
         Long auctionId = 1L;
         BidLogResponseDto logDto = new BidLogResponseDto(
-                10L, "user_***", LocalDateTime.now(), 50000);
+            10L, "user_***", LocalDateTime.now(), 50000);
 
         PagedResponseDto<BidLogResponseDto> response = new PagedResponseDto<>(
-                List.of(logDto), new PageDto(1, 10, 1, 1, false, false));
+            List.of(logDto), new PageDto(1, 10, 1, 1, false, false));
 
         given(auctionFacade.getBidLogs(eq(auctionId), any(Pageable.class)))
-                .willReturn(response);
+            .willReturn(response);
 
         // when & then
         mockMvc.perform(get("/api/v1/auctions/{auctionId}/bids", auctionId)
-                        .param("page", "0")
-                        .param("size", "10"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].publicId").value("user_***"))
-                .andExpect(jsonPath("$.data[0].bidAmount").value(50000));
+                .param("page", "0")
+                .param("size", "10"))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].publicId").value("user_***"))
+            .andExpect(jsonPath("$.data[0].bidAmount").value(50000));
     }
 
     @Test
@@ -140,12 +142,12 @@ class AuctionControllerTest {
 
         // when & then
         mockMvc.perform(post("/api/v1/auctions/{auctionId}/bids", auctionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andDo(print())
-                // GlobalExceptionHandler에서 ResponseEntity를 반환하므로 실제 상태코드 검증
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400));
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidRequest)))
+            .andDo(print())
+            // GlobalExceptionHandler에서 ResponseEntity를 반환하므로 실제 상태코드 검증
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.status").value(400));
     }
 
     @Test
@@ -159,16 +161,16 @@ class AuctionControllerTest {
 
         // [수정] memberId(Long) -> memberPublicId(String)
         given(auctionFacade.createBid(eq(auctionId), eq(memberPublicId), eq(bidAmount.intValue())))
-                .willThrow(new CustomException(ErrorType.AUCTION_NOT_FOUND));
+            .willThrow(new CustomException(ErrorType.AUCTION_NOT_FOUND));
 
         // when & then
         mockMvc.perform(post("/api/v1/auctions/{auctionId}/bids", auctionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andDo(print())
-                // GlobalExceptionHandler에서 ResponseEntity를 반환하므로 실제 상태코드 검증
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(ErrorType.AUCTION_NOT_FOUND.getHttpStatus()));
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestDto)))
+            .andDo(print())
+            // GlobalExceptionHandler에서 ResponseEntity를 반환하므로 실제 상태코드 검증
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(ErrorType.AUCTION_NOT_FOUND.getHttpStatus()));
     }
 
     @Test
@@ -179,30 +181,30 @@ class AuctionControllerTest {
         String memberPublicId = "1"; // [수정] String 타입
 
         AuctionDetailResponseDto responseDto = new AuctionDetailResponseDto(
-                auctionId,
-                50L,
-                "Lego Product",
-                "Description",
-                List.of("thumbnail.jpg"),
-                AuctionStatus.IN_PROGRESS,
-                LocalDateTime.now(),
-                LocalDateTime.now().plusDays(1),
-                3600L,
-                new AuctionDetailResponseDto.PriceInfo(10000, 20000, 1000),
-                new AuctionDetailResponseDto.BidInfo(true, 21000, null, false, false),
-                new AuctionDetailResponseDto.MyParticipationInfo(false, null));
+            auctionId,
+            50L,
+            "Lego Product",
+            "Description",
+            List.of("thumbnail.jpg"),
+            AuctionStatus.IN_PROGRESS,
+            LocalDateTime.now(),
+            LocalDateTime.now().plusDays(1),
+            3600L,
+            new AuctionDetailResponseDto.PriceInfo(10000, 20000, 1000),
+            new AuctionDetailResponseDto.BidInfo(true, 21000, null, false, false),
+            new AuctionDetailResponseDto.MyParticipationInfo(false, null));
 
         // [수정] memberId(Long) -> memberPublicId(String)
         given(auctionFacade.getAuctionDetail(eq(auctionId), eq(memberPublicId)))
-                .willReturn(SuccessResponseDto.from(SuccessType.OK, responseDto));
+            .willReturn(SuccessResponseDto.from(SuccessType.OK, responseDto));
 
         // when & then
         mockMvc.perform(get("/api/v1/auctions/{auctionId}", auctionId))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.auctionId").value(auctionId))
-                .andExpect(jsonPath("$.data.price.currentPrice").value(20000))
-                .andExpect(jsonPath("$.data.bid.canBid").value(true));
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.auctionId").value(auctionId))
+            .andExpect(jsonPath("$.data.price.currentPrice").value(20000))
+            .andExpect(jsonPath("$.data.bid.canBid").value(true));
     }
 
     @Test
@@ -213,23 +215,23 @@ class AuctionControllerTest {
         String memberPublicId = "1"; // [수정] String 타입
 
         AuctionOrderResponseDto responseDto = new AuctionOrderResponseDto(
-                7001L, auctionId, "BUYER", AuctionOrderStatus.PROCESSING, "결제 대기중",
-                LocalDateTime.now(),
-                new AuctionOrderResponseDto.ProductInfo("Lego Titanic", "img.jpg"),
-                new AuctionOrderResponseDto.PaymentInfo(150000, 15000, 135000),
-                new AuctionOrderResponseDto.TraderInfo("SellerNick", "010-1234-5678"),
-                new AuctionOrderResponseDto.ShippingInfo(null, null, null));
+            7001L, auctionId, "BUYER", AuctionOrderStatus.PROCESSING, "결제 대기중",
+            LocalDateTime.now(),
+            new AuctionOrderResponseDto.ProductInfo("Lego Titanic", "img.jpg"),
+            new AuctionOrderResponseDto.PaymentInfo(150000, 15000, 135000),
+            new AuctionOrderResponseDto.TraderInfo("SellerNick", "010-1234-5678"),
+            new AuctionOrderResponseDto.ShippingInfo(null, null, null));
 
         // [수정] memberId(Long) -> memberPublicId(String)
         given(auctionFacade.getAuctionOrder(eq(auctionId), eq(memberPublicId)))
-                .willReturn(SuccessResponseDto.from(SuccessType.OK, responseDto));
+            .willReturn(SuccessResponseDto.from(SuccessType.OK, responseDto));
 
         // when & then
         mockMvc.perform(get("/api/v1/auctions/{auctionId}/order", auctionId))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.orderId").value(7001L))
-                .andExpect(jsonPath("$.data.viewerRole").value("BUYER"));
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.orderId").value(7001L))
+            .andExpect(jsonPath("$.data.viewerRole").value("BUYER"));
     }
 
     @Test
@@ -239,15 +241,20 @@ class AuctionControllerTest {
 
         // when
         mockMvc.perform(get("/api/v1/auctions")
-                        .param("keyword", "Lego")
-                        .param("category", "TOY")
-                        .param("sort", "CLOSING_SOON"))
-                .andExpect(status().isOk());
+                .param("keyword", "Lego")
+                .param("category", "스타워즈")
+                .param("sort", "CLOSING_SOON"))
+            .andExpect(status().isOk());
 
         // then: 파라미터가 Condition 객체로 잘 변환되어 Facade로 전달되었는지 검증
-        verify(auctionFacade).getAuctions(argThat(condition -> condition.getKeyword().equals("Lego") &&
-                condition.getCategory().toString().equals("TOY") &&
-                condition.getSort().equals("CLOSING_SOON")), any(Pageable.class));
+        verify(auctionFacade).getAuctions(
+            argThat(condition ->
+                "Lego".equals(condition.getKeyword()) &&
+                    Category.스타워즈 == condition.getCategory() &&
+                    AuctionSortType.CLOSING_SOON == condition.getSort()
+            ),
+            any(Pageable.class)
+        );
     }
 
     @Test
@@ -259,16 +266,16 @@ class AuctionControllerTest {
         AuctionAddBookmarkResponseDto responseDto = AuctionAddBookmarkResponseDto.of(true, auctionId);
 
         given(auctionFacade.addBookmark(any(String.class), eq(auctionId)))
-                .willReturn(responseDto);
+            .willReturn(responseDto);
 
         // when & then
         mockMvc.perform(post("/api/v1/auctions/{auctionId}/bookmarks", auctionId)
-                        .with(csrf()))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.data.bookmarked").value(true))
-                .andExpect(jsonPath("$.data.auctionId").value(auctionId));
+                .with(csrf()))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value(200))
+            .andExpect(jsonPath("$.data.bookmarked").value(true))
+            .andExpect(jsonPath("$.data.auctionId").value(auctionId));
     }
 
     @Test
@@ -280,16 +287,16 @@ class AuctionControllerTest {
         AuctionAddBookmarkResponseDto responseDto = AuctionAddBookmarkResponseDto.of(false, auctionId);
 
         given(auctionFacade.addBookmark(any(String.class), eq(auctionId)))
-                .willReturn(responseDto);
+            .willReturn(responseDto);
 
         // when & then
         mockMvc.perform(post("/api/v1/auctions/{auctionId}/bookmarks", auctionId)
-                        .with(csrf()))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.data.bookmarked").value(false))
-                .andExpect(jsonPath("$.data.auctionId").value(auctionId));
+                .with(csrf()))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value(200))
+            .andExpect(jsonPath("$.data.bookmarked").value(false))
+            .andExpect(jsonPath("$.data.auctionId").value(auctionId));
     }
 
     @Test
@@ -300,14 +307,14 @@ class AuctionControllerTest {
         Long auctionId = 999L;
 
         given(auctionFacade.addBookmark(any(String.class), eq(auctionId)))
-                .willThrow(new CustomException(ErrorType.AUCTION_NOT_FOUND));
+            .willThrow(new CustomException(ErrorType.AUCTION_NOT_FOUND));
 
         // when & then
         mockMvc.perform(post("/api/v1/auctions/{auctionId}/bookmarks", auctionId)
-                        .with(csrf()))
-                .andDo(print())
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404));
+                .with(csrf()))
+            .andDo(print())
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
@@ -318,15 +325,15 @@ class AuctionControllerTest {
         AuctionRemoveBookmarkResponseDto responseDto = AuctionRemoveBookmarkResponseDto.of(true, auctionId);
 
         given(auctionFacade.removeBookmark(any(String.class), eq(auctionId)))
-                .willReturn(responseDto);
+            .willReturn(responseDto);
 
         // when & then
         mockMvc.perform(delete("/api/v1/auctions/{auctionId}/bookmarks", auctionId))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.data.removed").value(true))
-                .andExpect(jsonPath("$.data.auctionId").value(1L));
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value(200))
+            .andExpect(jsonPath("$.data.removed").value(true))
+            .andExpect(jsonPath("$.data.auctionId").value(1L));
     }
 
     @Test
@@ -336,13 +343,13 @@ class AuctionControllerTest {
         Long auctionId = 1L;
 
         given(auctionFacade.removeBookmark(any(String.class), eq(auctionId)))
-                .willThrow(new CustomException(ErrorType.BOOKMARK_NOT_FOUND));
+            .willThrow(new CustomException(ErrorType.BOOKMARK_NOT_FOUND));
 
         // when & then
         mockMvc.perform(delete("/api/v1/auctions/{auctionId}/bookmarks", auctionId))
-                .andDo(print())
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404));
+            .andDo(print())
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
@@ -353,13 +360,13 @@ class AuctionControllerTest {
         Long auctionId = 1L;
 
         given(auctionFacade.removeBookmark(any(String.class), eq(auctionId)))
-                .willThrow(new CustomException(ErrorType.BOOKMARK_UNAUTHORIZED_ACCESS));
+            .willThrow(new CustomException(ErrorType.BOOKMARK_UNAUTHORIZED_ACCESS));
 
         // when & then
         mockMvc.perform(delete("/api/v1/auctions/{auctionId}/bookmarks", auctionId))
-                .andDo(print())
-                .andExpect(status().isForbidden()) // 403 Forbidden
-                .andExpect(jsonPath("$.status").value(403));
+            .andDo(print())
+            .andExpect(status().isForbidden()) // 403 Forbidden
+            .andExpect(jsonPath("$.status").value(403));
     }
 
     @Test
@@ -371,23 +378,23 @@ class AuctionControllerTest {
         AuctionRelistRequestDto request = new AuctionRelistRequestDto(20000L, 1000L, 7);
 
         AuctionRelistResponseDto responseDto = AuctionRelistResponseDto.builder()
-                .newAuctionId(2L)
-                .productId(50L)
-                .status(AuctionStatus.SCHEDULED)
-                .message("성공")
-                .build();
+            .newAuctionId(2L)
+            .productId(50L)
+            .status(AuctionStatus.SCHEDULED)
+            .message("성공")
+            .build();
 
         given(auctionFacade.relistAuction(eq(auctionId), eq(memberPublicId), any(AuctionRelistRequestDto.class)))
-                .willReturn(SuccessResponseDto.from(SuccessType.OK, responseDto));
+            .willReturn(SuccessResponseDto.from(SuccessType.OK, responseDto));
 
         // when & then
         mockMvc.perform(post("/api/v1/auctions/{auctionId}/relist", auctionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.newAuctionId").value(2L))
-                .andExpect(jsonPath("$.data.status").value("SCHEDULED"));
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.newAuctionId").value(2L))
+            .andExpect(jsonPath("$.data.status").value("SCHEDULED"));
     }
 
     @Test
@@ -399,16 +406,16 @@ class AuctionControllerTest {
 
         // Facade가 예외를 던지도록 설정
         given(auctionFacade.relistAuction(anyLong(), anyString(), any()))
-                .willThrow(new CustomException(ErrorType.AUCTION_ALREADY_SOLD));
+            .willThrow(new CustomException(ErrorType.AUCTION_ALREADY_SOLD));
 
         // when & then
         mockMvc.perform(post("/api/v1/auctions/{auctionId}/relist", auctionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isConflict()) // 409
-                .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.message").value(ErrorType.AUCTION_ALREADY_SOLD.getMessage()));
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andDo(print())
+            .andExpect(status().isConflict()) // 409
+            .andExpect(jsonPath("$.status").value(409))
+            .andExpect(jsonPath("$.message").value(ErrorType.AUCTION_ALREADY_SOLD.getMessage()));
     }
 
     @Test
@@ -418,15 +425,15 @@ class AuctionControllerTest {
         Long productId = 1L;
 
         given(auctionFacade.determineStartAuction(eq(productId)))
-                .willReturn(productId);
+            .willReturn(productId);
 
         // when & then
         mockMvc.perform(patch("/api/v1/auctions/{auctionId}/startTime", productId) // 1. patch 사용 및 경로 수정
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()) // 2. isCreated() 대신 isOk() 사용
-                .andExpect(jsonPath("$.status").value(200)) // SuccessResponseDto 구조 검증
-                .andExpect(jsonPath("$.data").value(productId))
-                .andDo(print());
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk()) // 2. isCreated() 대신 isOk() 사용
+            .andExpect(jsonPath("$.status").value(200)) // SuccessResponseDto 구조 검증
+            .andExpect(jsonPath("$.data").value(productId))
+            .andDo(print());
     }
 
 }
