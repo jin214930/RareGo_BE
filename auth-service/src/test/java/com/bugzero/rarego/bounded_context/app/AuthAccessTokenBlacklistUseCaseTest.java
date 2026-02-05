@@ -13,9 +13,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.bounded_context.auth.domain.AccessTokenBlacklist;
-import com.bugzero.rarego.bounded_context.auth.out.AccessTokenBlacklistRepository;
-import com.bugzero.rarego.bounded_context.auth.app.AuthAccessTokenBlacklistUseCase;
+import com.bugzero.rarego.domain.AccessTokenBlacklist;
+import com.bugzero.rarego.out.AccessTokenBlacklistRepository;
+import com.bugzero.rarego.app.AuthAccessTokenBlacklistUseCase;
 import com.bugzero.rarego.global.security.JwtParser;
 
 @ExtendWith(MockitoExtension.class)
