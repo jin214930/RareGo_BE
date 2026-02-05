@@ -32,7 +32,7 @@ INSERT INTO member_member (id, deleted, email, nickname, public_id, real_name, c
                                                                                                                                                                     (1,  0, 'system@rare.go',      'system',        '00000000-0000-0000-0000-000000000001', NULL,          NULL,          NULL, NULL, NULL, 'System Administrator', NOW(), NOW()),
                                                                                                                                                                     (2,  0, 'admin@rare.go',       'admin_manager', '00000000-0000-0000-0000-000000000002', '관리자',      '01011112222', '서울 강남구', '테헤란로 123', '06234', 'Main Admin', NOW(), NOW()),
                                                                                                                                                                     (3,  0, 'seller_kim@rare.go',  'lego_master',   '00000000-0000-0000-0000-000000000003', '김판매',      '01033334444', '경기 성남시', '분당구 판교역로', '13494', '레고 전문 판매자', NOW(), NOW()),
-                                                                                                                                                                    (4,  0, 'seller_lee@rare.go',  'star_trader',   '00000000-0000-0000-0000-000000000004', '이셀러',      '01055556666', '서울 송파구', '올림픽로 300', '05551', ''스타워즈' 컬렉터', NOW(), NOW()),
+                                                                                                                                                                    (4,  0, 'seller_lee@rare.go',  'star_trader',   '00000000-0000-0000-0000-000000000004', '이셀러',      '01055556666', '서울 송파구', '올림픽로 300', '05551', '스타워즈 컬렉터', NOW(), NOW()),
                                                                                                                                                                     (5,  0, 'seller_park@rare.go', 'vintage_toy',   '00000000-0000-0000-0000-000000000005', '박상인',      '01077778888', '부산 해운대', '센텀중앙로 10', '48058', '빈티지 토이샵', NOW(), NOW()),
                                                                                                                                                                     (6,  0, 'seller_choi@rare.go', 'figure_shop',   '00000000-0000-0000-0000-000000000006', '최업자',      '01099990000', '대구 수성구', '달구벌대로 500', '42000', '피규어 전문', NOW(), NOW()),
                                                                                                                                                                     (7,  0, 'seller_jung@rare.go', 'brick_world',   '00000000-0000-0000-0000-000000000007', '정대표',      '01012341234', '인천 연수구', '송도과학로 100', '21999', '브릭 월드', NOW(), NOW()),
@@ -82,7 +82,7 @@ INSERT INTO product_product (id, deleted, created_at, updated_at, seller_id, cat
 (2, 0, NOW(), NOW(), 3, '스타워즈', '밀레니엄 팔콘 UCS', '조립 흔적 없는 새상품입니다.', 'PENDING', 'INSPECTION'),
 (3, 0, NOW(), NOW(), 4, '오리지널', '레고 아이디어 볼트론', '1980년대 향수, 작동 확인.', 'PENDING', 'INSPECTION'),
 (4, 0, NOW(), NOW(), 4, '스타워즈', '다스베이더 헬멧 피규어', '생활 기스 약간 있음.', 'PENDING', 'INSPECTION'),
-(5, 0, NOW(), NOW(), 5, '해리포터', ''해리포터' 호그와트 아이콘', '올리밴더 상점 정품.', 'PENDING', 'INSPECTION'),
+(5, 0, NOW(), NOW(), 5, '해리포터', '해리포터 호그와트 아이콘', '올리밴더 상점 정품.', 'PENDING', 'INSPECTION'),
 (6, 0, NOW(), NOW(), 5, '오리지널', '레고 호환 블럭 (벌크)', '정품 호환 블럭입니다.', 'REJECTED', 'INSPECTION'),
 (7, 0, NOW(), NOW(), 6, '스타워즈', '파손된 광선검 핸들', '불은 들어오는데 소리가 안나요.', 'REJECTED', 'INSPECTION'),
 (8, 0, NOW(), NOW(), 6, '해리포터', '오래된 도비 피규어', '너무 낡았습니다.', 'REJECTED', 'INSPECTION'),
@@ -124,8 +124,8 @@ INSERT INTO product_product (id, deleted, created_at, updated_at, seller_id, cat
 (36, 0, NOW(), NOW(), 7, '스타워즈', '레고 AT-AT (UCS)', '초대형 AT-AT.', 'APPROVED', 'USED'),
 (37, 0, NOW(), NOW(), 3, '스타워즈', '레고 스타 디스트로이어 (UCS)', '압도적인 크기.', 'APPROVED', 'MISB'),
 (38, 0, NOW(), NOW(), 4, '오리지널', '레고 모듈러 경찰서', '단종 직전 모델입니다.', 'APPROVED', 'MISB'),
-(39, 0, NOW(), NOW(), 5, '스타워즈', '레고 '스타워즈' AT-TE', '미니피규어 5개 포함.', 'APPROVED', 'USED'),
-(40, 0, NOW(), NOW(), 6, '해리포터', '레고 '해리포터' 다이애건 앨리', '확장판 포함 풀세트.', 'APPROVED', 'MISB'),
+(39, 0, NOW(), NOW(), 5, '스타워즈', '레고 스타워즈 AT-TE', '미니피규어 5개 포함.', 'APPROVED', 'USED'),
+(40, 0, NOW(), NOW(), 6, '해리포터', '레고 해리포터 다이애건 앨리', '확장판 포함 풀세트.', 'APPROVED', 'MISB'),
 (41, 0, NOW(), NOW(), 5, '오리지널', '레고 시티 경찰서', '부품 누락 없는 S급.', 'APPROVED', 'USED'),
 (42, 0, NOW(), NOW(), 3, '스타워즈', '레고 테크닉 부가티', '낙찰자가 도망간 매물입니다.', 'APPROVED', 'MISB'),
 (43, 0, NOW(), NOW(), 4, '오리지널', '레고 꽃다발', '선물용으로 좋습니다.', 'APPROVED', 'NISB');
@@ -196,62 +196,61 @@ FROM product_product p;
    [STEP 7] AUCTION_AUCTION 생성 (경매 상태)
    * 상태별로 그룹화하여 데이터 삽입
    ================================================================================== */
-INSERT INTO auction_auction (id, deleted, created_at, updated_at, product_id, seller_id, duration_days, start_price, tick_size, status, start_time, end_time, current_price) VALUES
+INSERT INTO auction_auction (id, deleted, created_at, updated_at, product_id, seller_id, duration_days, start_price, tick_size, status, start_time, end_time, current_price, extension_count) VALUES
 -- [PENDING] 검수 대기/미시작
-(1, 0, NOW(), NOW(), 1, 3, 7, 500000, 10000, 'SCHEDULED', NULL, NULL, NULL),
-(2, 0, NOW(), NOW(), 2, 3, 5, 1200000, 30000, 'SCHEDULED', NULL, NULL, NULL),
-(3, 0, NOW(), NOW(), 3, 4, 3, 80000, 2000, 'SCHEDULED', NULL, NULL, NULL),
-(4, 0, NOW(), NOW(), 4, 4, 3, 150000, 5000, 'SCHEDULED', NULL, NULL, NULL),
-(5, 0, NOW(), NOW(), 5, 5, 7, 45000, 1000, 'SCHEDULED', NULL, NULL, NULL),
+(1, 0, NOW(), NOW(), 1, 3, 7, 500000, 10000, 'SCHEDULED', NULL, NULL, NULL, 0),
+(2, 0, NOW(), NOW(), 2, 3, 5, 1200000, 30000, 'SCHEDULED', NULL, NULL, NULL, 0),
+(3, 0, NOW(), NOW(), 3, 4, 3, 80000, 2000, 'SCHEDULED', NULL, NULL, NULL, 0),
+(4, 0, NOW(), NOW(), 4, 4, 3, 150000, 5000, 'SCHEDULED', NULL, NULL, NULL, 0),
+(5, 0, NOW(), NOW(), 5, 5, 7, 45000, 1000, 'SCHEDULED', NULL, NULL, NULL, 0),
 
 -- [WITHDRAWN] 검수 거절
-(6, 0, NOW(), NOW(), 6, 5, 3, 10000, 1000, 'WITHDRAWN', NULL, NULL, NULL),
-(7, 0, NOW(), NOW(), 7, 6, 3, 20000, 1000, 'WITHDRAWN', NULL, NULL, NULL),
-(8, 0, NOW(), NOW(), 8, 6, 3, 5000, 500, 'WITHDRAWN', NULL, NULL, NULL),
+(6, 0, NOW(), NOW(), 6, 5, 3, 10000, 1000, 'WITHDRAWN', NULL, NULL, NULL, 0),
+(7, 0, NOW(), NOW(), 7, 6, 3, 20000, 1000, 'WITHDRAWN', NULL, NULL, NULL, 0),
+(8, 0, NOW(), NOW(), 8, 6, 3, 5000, 500, 'WITHDRAWN', NULL, NULL, NULL, 0),
 
 -- [SCHEDULED] 오픈 예정
-(9, 0, NOW(), NOW(), 9, 7, 7, 3500000, 30000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 10 MINUTE), DATE_ADD(NOW(), INTERVAL 7 DAY), NULL),
-(10, 0, NOW(), NOW(), 10, 7, 5, 800000, 10000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 30 MINUTE), DATE_ADD(NOW(), INTERVAL 5 DAY), NULL),
-(11, 0, NOW(), NOW(), 11, 3, 3, 60000, 2000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 1 HOUR), DATE_ADD(NOW(), INTERVAL 3 DAY), NULL),
-(12, 0, NOW(), NOW(), 12, 3, 5, 250000, 5000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 6 DAY), NULL),
-(13, 0, NOW(), NOW(), 13, 4, 7, 400000, 10000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 3 DAY), DATE_ADD(NOW(), INTERVAL 10 DAY), NULL),
-(14, 0, NOW(), NOW(), 14, 4, 3, 30000, 1000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 7 DAY), DATE_ADD(NOW(), INTERVAL 10 DAY), NULL),
-(15, 0, NOW(), NOW(), 15, 5, 5, 550000, 10000, 'SCHEDULED', NULL, NULL, NULL),
-(16, 0, NOW(), NOW(), 16, 5, 7, 1500000, 30000, 'SCHEDULED', NULL, NULL, NULL),
-(17, 0, NOW(), NOW(), 17, 6, 3, 45000, 1000, 'SCHEDULED', NULL, NULL, NULL),
-(18, 0, NOW(), NOW(), 18, 6, 5, 120000, 5000, 'SCHEDULED', NULL, NULL, NULL),
-(19, 0, NOW(), NOW(), 19, 7, 7, 900000, 10000, 'SCHEDULED', NULL, NULL, NULL),
-(20, 0, NOW(), NOW(), 20, 7, 5, 380000, 10000, 'SCHEDULED', NULL, NULL, NULL),
+(9, 0, NOW(), NOW(), 9, 7, 7, 3500000, 30000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 10 MINUTE), DATE_ADD(NOW(), INTERVAL 7 DAY), NULL, 0),
+(10, 0, NOW(), NOW(), 10, 7, 5, 800000, 10000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 30 MINUTE), DATE_ADD(NOW(), INTERVAL 5 DAY), NULL, 0),
+(11, 0, NOW(), NOW(), 11, 3, 3, 60000, 2000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 1 HOUR), DATE_ADD(NOW(), INTERVAL 3 DAY), NULL, 0),
+(12, 0, NOW(), NOW(), 12, 3, 5, 250000, 5000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 6 DAY), NULL, 0),
+(13, 0, NOW(), NOW(), 13, 4, 7, 400000, 10000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 3 DAY), DATE_ADD(NOW(), INTERVAL 10 DAY), NULL, 0),
+(14, 0, NOW(), NOW(), 14, 4, 3, 30000, 1000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 7 DAY), DATE_ADD(NOW(), INTERVAL 10 DAY), NULL, 0),
+(15, 0, NOW(), NOW(), 15, 5, 5, 550000, 10000, 'SCHEDULED', NULL, NULL, NULL, 0),
+(16, 0, NOW(), NOW(), 16, 5, 7, 1500000, 30000, 'SCHEDULED', NULL, NULL, NULL, 0),
+(17, 0, NOW(), NOW(), 17, 6, 3, 45000, 1000, 'SCHEDULED', NULL, NULL, NULL, 0),
+(18, 0, NOW(), NOW(), 18, 6, 5, 120000, 5000, 'SCHEDULED', NULL, NULL, NULL, 0),
+(19, 0, NOW(), NOW(), 19, 7, 7, 900000, 10000, 'SCHEDULED', NULL, NULL, NULL, 0),
+(20, 0, NOW(), NOW(), 20, 7, 5, 380000, 10000, 'SCHEDULED', NULL, NULL, NULL, 0),
 
 -- [IN_PROGRESS] 진행 중
-(21, 0, NOW(), NOW(), 21, 3, 3, 100000, 2000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 2 DAY), 150000),
-(22, 0, NOW(), NOW(), 22, 4, 7, 500000, 10000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(NOW(), INTERVAL 5 DAY), 550000),
-(23, 0, NOW(), NOW(), 23, 5, 1, 200000, 5000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 23 HOUR), DATE_ADD(NOW(), INTERVAL 10 MINUTE), 220000),
-(27, 0, NOW(), NOW(), 27, 4, 1, 40000, 1000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 60 MINUTE), DATE_ADD(NOW(), INTERVAL 1 MINUTE), 45000),
-(28, 0, NOW(), NOW(), 28, 5, 1, 50000, 1000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 60 MINUTE), DATE_ADD(NOW(), INTERVAL 5 MINUTE), 55000),
-(29, 0, NOW(), NOW(), 29, 6, 1, 10000, 1000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 60 MINUTE), DATE_ADD(NOW(), INTERVAL 10 MINUTE), 10000),
-(32, 0, NOW(), NOW(), 32, 3, 1, 150000, 5000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 1 HOUR), DATE_ADD(DATE_SUB(NOW(), INTERVAL 1 HOUR), INTERVAL 1 DAY), 150000),
-(33, 0, NOW(), NOW(), 33, 4, 3, 300000, 10000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 24 HOUR), DATE_ADD(DATE_SUB(NOW(), INTERVAL 24 HOUR), INTERVAL 3 DAY), 320000),
-(34, 0, NOW(), NOW(), 34, 5, 5, 250000, 5000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 2 HOUR), DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 HOUR), INTERVAL 5 DAY), 255000),
-(35, 0, NOW(), NOW(), 35, 6, 7, 50000, 2000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 3 DAY), INTERVAL 7 DAY), 82000),
-(36, 0, NOW(), NOW(), 36, 7, 3, 1200000, 30000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 DAY), INTERVAL 3 DAY), 1350000),
-(37, 0, NOW(), NOW(), 37, 3, 7, 3500000, 30000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 10 MINUTE), DATE_ADD(DATE_SUB(NOW(), INTERVAL 10 MINUTE), INTERVAL 7 DAY), 3600000),
+(21, 0, NOW(), NOW(), 21, 3, 3, 100000, 2000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 2 DAY), 150000, 0),
+(22, 0, NOW(), NOW(), 22, 4, 7, 500000, 10000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(NOW(), INTERVAL 5 DAY), 550000, 0),
+(23, 0, NOW(), NOW(), 23, 5, 1, 200000, 5000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 23 HOUR), DATE_ADD(NOW(), INTERVAL 10 MINUTE), 220000, 0),
+(27, 0, NOW(), NOW(), 27, 4, 1, 40000, 1000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 60 MINUTE), DATE_ADD(NOW(), INTERVAL 1 MINUTE), 45000, 0),
+(28, 0, NOW(), NOW(), 28, 5, 1, 50000, 1000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 60 MINUTE), DATE_ADD(NOW(), INTERVAL 5 MINUTE), 55000, 0),
+(29, 0, NOW(), NOW(), 29, 6, 1, 10000, 1000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 60 MINUTE), DATE_ADD(NOW(), INTERVAL 10 MINUTE), 10000, 0),
+(32, 0, NOW(), NOW(), 32, 3, 1, 150000, 5000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 1 HOUR), DATE_ADD(DATE_SUB(NOW(), INTERVAL 1 HOUR), INTERVAL 1 DAY), 150000, 0),
+(33, 0, NOW(), NOW(), 33, 4, 3, 300000, 10000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 24 HOUR), DATE_ADD(DATE_SUB(NOW(), INTERVAL 24 HOUR), INTERVAL 3 DAY), 320000, 0),
+(34, 0, NOW(), NOW(), 34, 5, 5, 250000, 5000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 2 HOUR), DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 HOUR), INTERVAL 5 DAY), 255000, 0),
+(35, 0, NOW(), NOW(), 35, 6, 7, 50000, 2000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 3 DAY), INTERVAL 7 DAY), 82000, 0),
+(36, 0, NOW(), NOW(), 36, 7, 3, 1200000, 30000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 DAY), INTERVAL 3 DAY), 1350000, 0),
+(37, 0, NOW(), NOW(), 37, 3, 7, 3500000, 30000, 'IN_PROGRESS', DATE_SUB(NOW(), INTERVAL 10 MINUTE), DATE_ADD(DATE_SUB(NOW(), INTERVAL 10 MINUTE), INTERVAL 7 DAY), 3600000, 0),
 
 -- [ENDED] 종료 및 낙찰
-(24, 0, NOW(), NOW(), 24, 6, 3, 50000, 1000, 'ENDED', DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 80000),
-(25, 0, NOW(), NOW(), 25, 3, 3, 30000, 1000, 'ENDED', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_SUB(NOW(), INTERVAL 1 HOUR), 45000),
-(26, 0, NOW(), NOW(), 26, 7, 5, 300000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), 400000),
-(30, 0, NOW(), NOW(), 30, 3, 1, 500000, 10000, 'ENDED', DATE_SUB(NOW(), INTERVAL 300 MINUTE), DATE_SUB(NOW(), INTERVAL 60 MINUTE), 600000),
-(31, 0, NOW(), NOW(), 31, 4, 1, 200000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 300 MINUTE), DATE_SUB(NOW(), INTERVAL 60 MINUTE), 250000),
-(41, 0, NOW(), NOW(), 41, 5, 3, 150000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 180000),
-(42, 0, NOW(), NOW(), 42, 3, 5, 400000, 10000, 'ENDED', DATE_SUB(NOW(), INTERVAL 7 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 450000),
-(43, 0, NOW(), NOW(), 43, 4, 3, 50000, 2000, 'ENDED', DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 7 DAY), 70000),
+(24, 0, NOW(), NOW(), 24, 6, 3, 50000, 1000, 'ENDED', DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 80000, 0),
+(25, 0, NOW(), NOW(), 25, 3, 3, 30000, 1000, 'ENDED', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_SUB(NOW(), INTERVAL 1 HOUR), 45000, 0),
+(26, 0, NOW(), NOW(), 26, 7, 5, 300000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), 400000, 0),
+(30, 0, NOW(), NOW(), 30, 3, 1, 500000, 10000, 'ENDED', DATE_SUB(NOW(), INTERVAL 300 MINUTE), DATE_SUB(NOW(), INTERVAL 60 MINUTE), 600000, 0),
+(31, 0, NOW(), NOW(), 31, 4, 1, 200000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 300 MINUTE), DATE_SUB(NOW(), INTERVAL 60 MINUTE), 250000, 0),
+(41, 0, NOW(), NOW(), 41, 5, 3, 150000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 180000, 0),
+(42, 0, NOW(), NOW(), 42, 3, 5, 400000, 10000, 'ENDED', DATE_SUB(NOW(), INTERVAL 7 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 450000, 0),
+(43, 0, NOW(), NOW(), 43, 4, 3, 50000, 2000, 'ENDED', DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 7 DAY), 70000, 0),
 
 -- [ENDED & FAILED] 결제 실패/유찰
-(38, 0, NOW(), NOW(), 38, 4, 3, 10000, 1000, 'WITHDRAWN', DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 10000), -- 유찰로 수정
-(39, 0, NOW(), NOW(), 39, 5, 3, 300000, 5000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 10 MINUTE), DATE_ADD(NOW(), INTERVAL 3 DAY), NULL), -- 예정
-(40, 0, NOW(), NOW(), 40, 6, 5, 150000, 5000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 6 DAY), NULL); -- 예정
-
+(38, 0, NOW(), NOW(), 38, 4, 3, 10000, 1000, 'WITHDRAWN', DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 10000, 0), -- 유찰로 수정
+(39, 0, NOW(), NOW(), 39, 5, 3, 300000, 5000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 10 MINUTE), DATE_ADD(NOW(), INTERVAL 3 DAY), NULL, 0), -- 예정
+(40, 0, NOW(), NOW(), 40, 6, 5, 150000, 5000, 'SCHEDULED', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 6 DAY), NULL, 0); -- 예정
 
 /* ==================================================================================
    [STEP 8] AUCTION_BID 데이터 (입찰 내역)
@@ -374,13 +373,13 @@ INSERT INTO auction_auctionorder (deleted, created_at, updated_at, auction_id, b
 /* ==================================================================================
    [STEP 11] PAYMENT_SETTLEMENT 생성 (정산 상태)
    ================================================================================== */
-INSERT INTO payment_settlement (deleted, created_at, updated_at, auction_id, seller_id, sales_amount, fee_amount, settlement_amount, status) VALUES
-                                                                                                                                                 (0, NOW(), NOW(), 26, 7, 400000, 40000, 360000, 'READY'),
-                                                                                                                                                 (0, NOW(), NOW(), 30, 3, 600000, 60000, 540000, 'READY'),
-                                                                                                                                                 (0, NOW(), NOW(), 31, 4, 20000, 0, 20000, 'READY'), -- 몰수금 정산
-                                                                                                                                                 (0, NOW(), NOW(), 41, 5, 180000, 18000, 162000, 'READY'),
-                                                                                                                                                 (0, NOW(), NOW(), 42, 3, 40000, 0, 40000, 'READY'), -- 몰수금 정산
-                                                                                                                                                 (0, NOW(), NOW(), 43, 4, 70000, 7000, 63000, 'DONE');
+INSERT INTO payment_settlement (deleted, created_at, updated_at, auction_id, seller_id, sales_amount, fee_amount, settlement_amount, status, try_count) VALUES
+                                                                                                                                                 (0, NOW(), NOW(), 26, 7, 400000, 40000, 360000, 'READY', 0),
+                                                                                                                                                 (0, NOW(), NOW(), 30, 3, 600000, 60000, 540000, 'READY', 0),
+                                                                                                                                                 (0, NOW(), NOW(), 31, 4, 20000, 0, 20000, 'READY', 0), -- 몰수금 정산
+                                                                                                                                                 (0, NOW(), NOW(), 41, 5, 180000, 18000, 162000, 'READY', 0),
+                                                                                                                                                 (0, NOW(), NOW(), 42, 3, 40000, 0, 40000, 'READY', 0), -- 몰수금 정산
+                                                                                                                                                 (0, NOW(), NOW(), 43, 4, 70000, 7000, 63000, 'DONE', 0);
 
 
 /* ==================================================================================
