@@ -82,7 +82,7 @@ jwt:
 
 custom:
   global:
-    internalBackUrl: ${INTERNAL_BACK_URL:http://localhost:8080}
+    internalBackUrl: ${INTERNAL_BACK_URL:http://rarego-nginx}
   payment:
     settlement:
       chunkSize: 10

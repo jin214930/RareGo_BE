@@ -22,13 +22,13 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+    elasticsearch:
+      uris: http://localhost:9200
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:empty}
     api:
       timeout: 30s
-
-
 
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
@@ -67,7 +67,7 @@ jwt:
 
 custom:
   global:
-    internalBackUrl: ${INTERNAL_BACK_URL:http://localhost:8080}
+    internalBackUrl: ${INTERNAL_BACK_URL:http://rarego-nginx}
   payment:
     settlement:
       chunkSize: 10

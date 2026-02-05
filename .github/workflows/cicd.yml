@@ -31,7 +31,22 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.2.3 # 9.2.3으로 일치
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+          xpack.security.http.ssl.enabled: false
+          xpack.security.transport.ssl.enabled: false
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl http://localhost:9200/_cluster/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10    
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,10 +66,10 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Test + Coverage verify (JaCoCo)
-        run: ./gradlew test jacocoTestCoverageVerification
+        run: ./gradlew :payment-service:test :member-service:test :notification-service:test :auction-service:test :product-service:test :auth-service:test jacocoTestCoverageVerification --stacktrace
 
       - name: Build with Gradle
-        run: ./gradlew build -x test
+        run: ./gradlew :payment-service:build :member-service:build :notification-service:build :auction-service:build :product-service:build :auth-service:build -x test
 
   build-images:
     runs-on: ubuntu-latest
@@ -81,6 +96,9 @@ jobs:
           - name: auth-service
             dockerfile: auth-service/Dockerfile
             image_suffix: "-auth-service"
+          - name: product-elasticsearch
+            dockerfile: docker/elasticsearch/Dockerfile
+            image_suffix: "-product-elasticsearch"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -142,7 +160,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           source: "docker-compose.yml,docker"
-          target: "~/app"
+          target: "~/beadv4_4_BugZero_BE"
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -154,8 +172,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            mkdir -p ~/app
-            cd ~/app
+            mkdir -p ~/beadv4_4_BugZero_BE
+            cd ~/beadv4_4_BugZero_BE
             
             # .env.deploy 파일 초기화 및 환경 변수 주입
             echo "PAYMENT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-payment-service:${{ github.ref_name }}" > .env.deploy
@@ -163,6 +181,7 @@ jobs:
             echo "NOTIFICATION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-notification-service:${{ github.ref_name }}" >> .env.deploy
             echo "AUCTION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auction-service:${{ github.ref_name }}" >> .env.deploy
             echo "PRODUCT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-product-service:${{ github.ref_name }}" >> .env.deploy
+            echo "PRODUCT_ELASTICSEARCH_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-product-elasticsearch:${{ github.ref_name }}" >> .env.deploy
             echo "AUTH_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auth-service:${{ github.ref_name }}" >> .env.deploy
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.deploy
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env.deploy
@@ -174,7 +193,6 @@ jobs:
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env.deploy
             echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env.deploy
             echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env.deploy
-            echo "INTERNAL_BACK_URL=${{ secrets.INTERNAL_BACK_URL }}" >> .env.deploy
             echo "FRONT_URL=${{ secrets.FRONT_URL }}" >> .env.deploy
             echo "GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}" >> .env.deploy
             echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env.deploy
@@ -184,6 +202,8 @@ jobs:
             echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env.deploy
             echo "KAFKA_BOOTSTRAP_SERVERS=${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}" >> .env.deploy
             echo "ELASTICSEARCH_URIS=${{ secrets.ELASTICSEARCH_URIS }}" >> .env.deploy
+            echo "NGINX_BASIC_AUTH_USER=${{ secrets.NGINX_BASIC_AUTH_USER }}" >> .env.deploy
+            echo "NGINX_BASIC_AUTH_PASS=${{ secrets.NGINX_BASIC_AUTH_PASS }}" >> .env.deploy
             
             # GitHub Secret에서 프로필 설정
             echo "SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}" >> .env.deploy
