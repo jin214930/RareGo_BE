@@ -14,10 +14,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.bounded_context.payment.domain.Settlement;
-import com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus;
-import com.bugzero.rarego.bounded_context.payment.event.SettlementFinishedEvent;
-import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
+import com.bugzero.rarego.app.PaymentProcessSettlementUseCase;
+import com.bugzero.rarego.app.PaymentSettlementProcessor;
+import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.domain.SettlementStatus;
+import com.bugzero.rarego.event.SettlementFinishedEvent;
+import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.global.event.EventPublisher;
 
 @ExtendWith(MockitoExtension.class)

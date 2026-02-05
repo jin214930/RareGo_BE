@@ -15,15 +15,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
-import com.bugzero.rarego.bounded_context.payment.domain.PaymentTransaction;
-import com.bugzero.rarego.bounded_context.payment.domain.Settlement;
-import com.bugzero.rarego.bounded_context.payment.domain.SettlementFee;
-import com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus;
-import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
-import com.bugzero.rarego.bounded_context.payment.domain.WalletTransactionType;
-import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
-import com.bugzero.rarego.bounded_context.payment.out.SettlementFeeRepository;
+import com.bugzero.rarego.app.PaymentSettlementProcessor;
+import com.bugzero.rarego.app.PaymentSupport;
+import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.domain.PaymentTransaction;
+import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.domain.SettlementFee;
+import com.bugzero.rarego.domain.SettlementStatus;
+import com.bugzero.rarego.domain.Wallet;
+import com.bugzero.rarego.domain.WalletTransactionType;
+import com.bugzero.rarego.out.PaymentTransactionRepository;
+import com.bugzero.rarego.out.SettlementFeeRepository;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentSettlementProcessorTest {

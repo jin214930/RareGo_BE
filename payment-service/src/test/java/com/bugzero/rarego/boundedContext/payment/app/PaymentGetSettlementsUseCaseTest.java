@@ -19,11 +19,13 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
-import com.bugzero.rarego.bounded_context.payment.domain.Settlement;
-import com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus;
-import com.bugzero.rarego.bounded_context.payment.in.dto.SettlementResponseDto;
-import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
+import com.bugzero.rarego.app.PaymentGetSettlementsUseCase;
+import com.bugzero.rarego.app.PaymentSupport;
+import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.domain.SettlementStatus;
+import com.bugzero.rarego.in.dto.SettlementResponseDto;
+import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.global.response.PagedResponseDto;
 
 @ExtendWith(MockitoExtension.class)

@@ -13,13 +13,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.bounded_context.payment.domain.Deposit;
-import com.bugzero.rarego.bounded_context.payment.domain.DepositStatus;
-import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
-import com.bugzero.rarego.bounded_context.payment.domain.PaymentTransaction;
-import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
-import com.bugzero.rarego.bounded_context.payment.out.DepositRepository;
-import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
+import com.bugzero.rarego.app.PaymentHoldDepositUseCase;
+import com.bugzero.rarego.app.PaymentSupport;
+import com.bugzero.rarego.domain.Deposit;
+import com.bugzero.rarego.domain.DepositStatus;
+import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.domain.PaymentTransaction;
+import com.bugzero.rarego.domain.Wallet;
+import com.bugzero.rarego.out.DepositRepository;
+import com.bugzero.rarego.out.PaymentTransactionRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.payment.dto.DepositHoldRequestDto;
@@ -84,9 +86,9 @@ class PaymentHoldDepositUseCaseTest {
 
 		// when & then
 		assertThatThrownBy(() -> paymentHoldDepositUseCase.holdDeposit(request))
-				.isInstanceOf(CustomException.class)
-				.extracting("errorType")
-				.isEqualTo(ErrorType.INSUFFICIENT_BALANCE);
+			.isInstanceOf(CustomException.class)
+			.extracting("errorType")
+			.isEqualTo(ErrorType.INSUFFICIENT_BALANCE);
 	}
 
 	@Test
@@ -105,7 +107,7 @@ class PaymentHoldDepositUseCaseTest {
 
 		given(paymentSupport.findMemberByPublicId(MEMBER_PUBLIC_ID)).willReturn(member);
 		when(depositRepository.findByMemberIdAndAuctionId(MEMBER_ID, AUCTION_ID))
-				.thenReturn(Optional.of(existingDeposit));
+			.thenReturn(Optional.of(existingDeposit));
 
 		// when
 		DepositHoldResponseDto response = paymentHoldDepositUseCase.holdDeposit(request);

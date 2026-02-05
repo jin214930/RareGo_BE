@@ -10,14 +10,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.bounded_context.payment.domain.Payment;
-import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
-import com.bugzero.rarego.bounded_context.payment.domain.PaymentStatus;
-import com.bugzero.rarego.bounded_context.payment.in.dto.PaymentConfirmRequestDto;
-import com.bugzero.rarego.bounded_context.payment.in.dto.PaymentConfirmResponseDto;
-import com.bugzero.rarego.bounded_context.payment.in.dto.TossPaymentsConfirmResponseDto;
-import com.bugzero.rarego.bounded_context.payment.out.PaymentRepository;
-import com.bugzero.rarego.bounded_context.payment.out.TossPaymentsApiClient;
+import com.bugzero.rarego.app.PaymentConfirmFinalizer;
+import com.bugzero.rarego.app.PaymentConfirmPaymentUseCase;
+import com.bugzero.rarego.app.PaymentSupport;
+import com.bugzero.rarego.domain.Payment;
+import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.domain.PaymentStatus;
+import com.bugzero.rarego.in.dto.PaymentConfirmRequestDto;
+import com.bugzero.rarego.in.dto.PaymentConfirmResponseDto;
+import com.bugzero.rarego.in.dto.TossPaymentsConfirmResponseDto;
+import com.bugzero.rarego.out.PaymentRepository;
+import com.bugzero.rarego.out.TossPaymentsApiClient;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 
@@ -187,7 +190,8 @@ class PaymentConfirmPaymentUseCaseTest {
 		// 1. Toss API는 성공
 		given(tossApiClient.confirm(any())).willReturn(tossResponse);
 		// 2. 내부 로직(DB반영)에서 에러 발생
-		given(paymentConfirmFinalizer.finalizePayment(any(), any())).willThrow(new RuntimeException("DB Connection Error"));
+		given(paymentConfirmFinalizer.finalizePayment(any(), any())).willThrow(
+			new RuntimeException("DB Connection Error"));
 
 		// when & then
 		assertThatThrownBy(() -> useCase.confirmPayment(memberPublicId, requestDto))

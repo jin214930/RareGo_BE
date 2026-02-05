@@ -14,8 +14,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
-import com.bugzero.rarego.bounded_context.payment.out.PaymentMemberRepository;
+import com.bugzero.rarego.app.PaymentSyncMemberUseCase;
+import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.out.PaymentMemberRepository;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
 
 @ExtendWith(MockitoExtension.class)

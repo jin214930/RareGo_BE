@@ -16,15 +16,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.bugzero.rarego.bounded_context.payment.domain.PaymentMember;
-import com.bugzero.rarego.bounded_context.payment.domain.Settlement;
-import com.bugzero.rarego.bounded_context.payment.domain.SettlementStatus;
-import com.bugzero.rarego.bounded_context.payment.domain.Wallet;
-import com.bugzero.rarego.bounded_context.payment.out.PaymentMemberRepository;
-import com.bugzero.rarego.bounded_context.payment.out.PaymentTransactionRepository;
-import com.bugzero.rarego.bounded_context.payment.out.SettlementFeeRepository;
-import com.bugzero.rarego.bounded_context.payment.out.SettlementRepository;
-import com.bugzero.rarego.bounded_context.payment.out.WalletRepository;
+import com.bugzero.rarego.app.PaymentProcessSettlementUseCase;
+import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.domain.SettlementStatus;
+import com.bugzero.rarego.domain.Wallet;
+import com.bugzero.rarego.out.PaymentMemberRepository;
+import com.bugzero.rarego.out.PaymentTransactionRepository;
+import com.bugzero.rarego.out.SettlementFeeRepository;
+import com.bugzero.rarego.out.SettlementRepository;
+import com.bugzero.rarego.out.WalletRepository;
 
 @SpringBootTest(properties = "custom.payment.settlement.holdDays=-1")
 class PaymentProcessSettlementUseCaseIntegrationTest {
