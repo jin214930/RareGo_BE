@@ -1,4 +1,4 @@
-package com.bugzero.rarego.bounded_context.payment.in;
+package com.bugzero.rarego.in;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;

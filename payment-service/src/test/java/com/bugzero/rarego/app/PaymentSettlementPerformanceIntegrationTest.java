@@ -1,4 +1,4 @@
-package com.bugzero.rarego.bounded_context.payment.app;
+package com.bugzero.rarego.app;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,8 +16,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 
-import com.bugzero.rarego.app.PaymentProcessSettlementUseCase;
-import com.bugzero.rarego.app.PaymentSupport;
 import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementStatus;

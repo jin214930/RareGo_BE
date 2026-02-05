@@ -1,4 +1,4 @@
-package com.bugzero.rarego.bounded_context.payment.app;
+package com.bugzero.rarego.app;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.assertj.core.api.Assertions.*;
