@@ -1,17 +1,19 @@
 package com.bugzero.rarego.product.domain;
 
-import com.bugzero.rarego.shared.product.type.AuctionStatus;
-import com.bugzero.rarego.shared.product.type.Category;
-import com.bugzero.rarego.shared.product.type.ProductCondition;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 import org.springframework.data.elasticsearch.annotations.Setting;
 
-import java.time.LocalDateTime;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.ProductCondition;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)

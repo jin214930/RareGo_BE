@@ -3,6 +3,8 @@ package com.bugzero.rarego.product.app;
 import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.mockito.BDDMockito.*;
 
+import java.time.LocalDateTime;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,6 +25,8 @@ import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionRequestDto;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
 import com.bugzero.rarego.product.out.InspectionRepository;
+import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
 
@@ -32,6 +36,10 @@ class ProductCreateInspectionUseCaseTest {
 	private InspectionRepository inspectionRepository;
 	@Mock
 	private ProductSupport productSupport;
+	@Mock
+	private AuctionApiClient auctionApiClient;
+	@Mock
+	private ProductSearchService productSearchService;
 
 	@InjectMocks
 	private ProductCreateInspectionUseCase useCase;
@@ -145,6 +153,78 @@ class ProductCreateInspectionUseCaseTest {
 			assertThatThrownBy(() -> useCase.createInspection(ADMIN_UUID, request))
 				.isInstanceOf(CustomException.class)
 				.hasFieldOrPropertyWithValue("errorType", ErrorType.INSPECTION_ALREADY_COMPLETED);
+		}
+
+		@Test
+		@DisplayName("검수가 승인되면 경매 정보를 가져와 ES에 적재해야 한다")
+		void createInspection_Approved() {
+			// given
+			String inspectorId = "admin-uuid";
+			Long productId = 1L;
+			ProductInspectionRequestDto requestDto = new ProductInspectionRequestDto(
+				productId, InspectionStatus.APPROVED, ProductCondition.MISB, "승인합니다"
+			);
+
+			Product mockProduct = mock(Product.class);
+			ProductMember mockSeller = mock(ProductMember.class);
+			ProductMember mockAdmin = mock(ProductMember.class);
+
+			when(productSupport.verifyValidateProduct(productId)).thenReturn(mockProduct);
+			when(mockProduct.getSeller()).thenReturn(mockSeller);
+			when(mockSeller.isDeleted()).thenReturn(false);
+			when(productSupport.verifyValidateMember(inspectorId)).thenReturn(mockAdmin);
+
+			// 경매 정보 Mocking
+			AuctionInfoResponseDto auctionInfo = new AuctionInfoResponseDto(100L, 5000, LocalDateTime.now());
+			when(auctionApiClient.getAuctionInfo(productId)).thenReturn(auctionInfo);
+
+			// when
+			useCase.createInspection(inspectorId, requestDto);
+
+			// then
+			// 1. DB 저장 로직 호출 확인
+			verify(inspectionRepository, times(1)).save(any());
+
+			// 2. [핵심] ES 적재 메서드(save)가 정확한 파라미터로 호출되었는지 확인
+			verify(productSearchService, times(1)).save(
+				eq(mockProduct),
+				anyList(), // images
+				eq(100L),  // auctionId
+				eq(5000),  // startPrice
+				any(LocalDateTime.class) // startedAt
+			);
+
+			// 3. 삭제 메서드는 호출되지 않아야 함
+			verify(productSearchService, never()).delete(anyLong());
+		}
+
+		@Test
+		@DisplayName("검수가 반려되면 ES에서 데이터를 삭제해야 한다")
+		void createInspection_Rejected() {
+			// given
+			String inspectorId = "admin-uuid";
+			Long productId = 1L;
+			ProductInspectionRequestDto requestDto = new ProductInspectionRequestDto(
+				productId, InspectionStatus.REJECTED, ProductCondition.MISB, "반려합니다"
+			);
+
+			Product mockProduct = mock(Product.class);
+			ProductMember mockSeller = mock(ProductMember.class);
+			ProductMember mockAdmin = mock(ProductMember.class);
+
+			when(productSupport.verifyValidateProduct(productId)).thenReturn(mockProduct);
+			when(mockProduct.getSeller()).thenReturn(mockSeller);
+			when(productSupport.verifyValidateMember(inspectorId)).thenReturn(mockAdmin);
+
+			// when
+			useCase.createInspection(inspectorId, requestDto);
+
+			// then
+			// 1. ES 삭제 메서드 호출 확인
+			verify(productSearchService, times(1)).delete(productId);
+
+			// 2. 적재 메서드는 호출되지 않아야 함
+			verify(productSearchService, never()).save(any(), any(), any(), anyInt(), any());
 		}
 	}
 
