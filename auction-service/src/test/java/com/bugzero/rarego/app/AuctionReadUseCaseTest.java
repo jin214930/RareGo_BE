@@ -132,8 +132,8 @@ class AuctionReadUseCaseTest {
     void getAuctions_with_search_condition() {
         // given
         AuctionSearchCondition condition = new AuctionSearchCondition();
-        ReflectionTestUtils.setField(condition, "keyword", "키워드");
-        ReflectionTestUtils.setField(condition, "category", "카테고리");
+        condition.setKeyword("키워드");
+        condition.setCategory(Category.스타워즈);
         Pageable pageable = PageRequest.of(0, 10);
 
         // 1. 키워드로 상품 ID 검색

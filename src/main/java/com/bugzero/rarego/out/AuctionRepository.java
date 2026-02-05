@@ -1,10 +1,8 @@
 package com.bugzero.rarego.out;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-
+import com.bugzero.rarego.domain.Auction;
+import com.bugzero.rarego.domain.AuctionStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,10 +11,10 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import domain.com.bugzero.rarego.Auction;
-import com.bugzero.rarego.domain.AuctionStatus;
-
-import jakarta.persistence.LockModeType;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 public interface AuctionRepository extends JpaRepository<Auction, Long>, JpaSpecificationExecutor<Auction> {
     // 비관적 락 처리
@@ -34,6 +32,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, JpaSpec
             @Param("now") LocalDateTime now,
             Pageable pageable
     );
+
     Optional<Auction> findByProductId(Long productId);
 
     List<Auction> findAllByStatusAndStartTimeBefore(AuctionStatus status, LocalDateTime now);
@@ -55,21 +54,22 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, JpaSpec
     );
 
     @Query("""
-        SELECT a FROM Auction a
-        WHERE (:auctionIds IS NULL OR a.id IN :auctionIds)
-        AND (:status IS NULL OR a.status = :status)
-        AND (:productIds IS NULL OR a.productId IN :productIds)
-        AND (:approvedProductIds IS NULL OR a.productId IN :approvedProductIds)
-        AND a.startTime IS NOT NULL
-        AND a.endTime IS NOT NULL
-    """)
+                SELECT a FROM Auction a
+                WHERE (:auctionIds IS NULL OR a.id IN :auctionIds)
+                AND (:status IS NULL OR a.status = :status)
+                AND (:productIds IS NULL OR a.productId IN :productIds)
+                AND (:approvedProductIds IS NULL OR a.productId IN :approvedProductIds)
+                AND a.startTime IS NOT NULL
+                AND a.endTime IS NOT NULL
+            """)
     Page<Auction> findAllBySearchConditions(
-        @Param("auctionIds") List<Long> auctionIds,
-        @Param("status") AuctionStatus status,
-        @Param("productIds") List<Long> productIds,
-        @Param("approvedProductIds") List<Long> approvedProductIds,
-        Pageable pageable
+            @Param("auctionIds") List<Long> auctionIds,
+            @Param("status") AuctionStatus status,
+            @Param("productIds") List<Long> productIds,
+            @Param("approvedProductIds") List<Long> approvedProductIds,
+            Pageable pageable
     );
+
     /**
      * 해당 회원이 진행 중인 판매가 있는지 확인
      */

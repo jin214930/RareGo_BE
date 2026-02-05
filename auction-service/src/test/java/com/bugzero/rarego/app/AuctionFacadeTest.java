@@ -2,11 +2,10 @@ package com.bugzero.rarego.app;
 
 import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.domain.AuctionOrderStatus;
-import com.bugzero.rarego.boundedContext.auction.in.dto.*;
-import com.bugzero.rarego.in.dto.*;
-import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.*;
+import com.bugzero.rarego.in.dto.*;
+import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
