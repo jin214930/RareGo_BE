@@ -31,7 +31,22 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.2.3 # 9.2.3으로 일치
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+          xpack.security.http.ssl.enabled: false
+          xpack.security.transport.ssl.enabled: false
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl http://localhost:9200/_cluster/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10    
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,7 +66,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Test + Coverage verify (JaCoCo)
-        run: ./gradlew :payment-service:test :member-service:test :notification-service:test :auction-service:test :product-service:test :auth-service:test jacocoTestCoverageVerification
+        run: ./gradlew :payment-service:test :member-service:test :notification-service:test :auction-service:test :product-service:test :auth-service:test jacocoTestCoverageVerification --stacktrace
 
       - name: Build with Gradle
         run: ./gradlew :payment-service:build :member-service:build :notification-service:build :auction-service:build :product-service:build :auth-service:build -x test
@@ -81,6 +96,9 @@ jobs:
           - name: auth-service
             dockerfile: auth-service/Dockerfile
             image_suffix: "-auth-service"
+          - name: product-elasticsearch
+            dockerfile: docker/elasticsearch/Dockerfile
+            image_suffix: "-product-elasticsearch"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -163,6 +181,7 @@ jobs:
             echo "NOTIFICATION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-notification-service:${{ github.ref_name }}" >> .env.deploy
             echo "AUCTION_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auction-service:${{ github.ref_name }}" >> .env.deploy
             echo "PRODUCT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-product-service:${{ github.ref_name }}" >> .env.deploy
+            echo "PRODUCT_ELASTICSEARCH_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-product-elasticsearch:${{ github.ref_name }}" >> .env.deploy
             echo "AUTH_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-auth-service:${{ github.ref_name }}" >> .env.deploy
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.deploy
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env.deploy
