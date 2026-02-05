@@ -65,6 +65,7 @@ services:
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      FRONT_URL: ${FRONT_URL:-http://localhost:3000}
     depends_on:
       db:
         condition: service_healthy
@@ -94,6 +95,7 @@ services:
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       SPRING_ELASTICSEARCH_URIS: ${ELASTICSEARCH_URIS:-http://elasticsearch:9200}
+      FRONT_URL: ${FRONT_URL:-http://localhost:3000}
     depends_on:
       db:
         condition: service_healthy
@@ -122,6 +124,7 @@ services:
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      FRONT_URL: ${FRONT_URL:-http://localhost:3000}
     depends_on:
       db:
         condition: service_healthy
@@ -150,6 +153,7 @@ services:
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      FRONT_URL: ${FRONT_URL:-http://localhost:3000}
     depends_on:
       db:
         condition: service_healthy
@@ -181,7 +185,7 @@ services:
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       SPRING_ELASTICSEARCH_URIS: ${ELASTICSEARCH_URIS:-http://elasticsearch:9200}
-
+      FRONT_URL: ${FRONT_URL:-http://localhost:3000}
     depends_on:
       db:
         condition: service_healthy
@@ -219,6 +223,7 @@ services:
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID: ${KAKAO_CLIENT}
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_ID: ${NAVER_CLIENT}
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_SECRET: ${NAVER_SECRET}
+      FRONT_URL: ${FRONT_URL:-http://localhost:3000}
     depends_on:
       db:
         condition: service_healthy
