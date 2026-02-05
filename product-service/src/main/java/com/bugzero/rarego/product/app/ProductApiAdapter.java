@@ -17,6 +17,7 @@ import com.bugzero.rarego.product.out.ProductImageRepository;
 import com.bugzero.rarego.product.out.ProductRepository;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.out.ProductApiClient;
+import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 
 import lombok.RequiredArgsConstructor;
@@ -53,7 +54,7 @@ public class ProductApiAdapter implements ProductApiClient {
 	}
 
 	@Override
-	public List<Long> searchProductIds(String keyword, String category) {
+	public List<Long> searchProductIds(String keyword, Category category) {
 		return productRepository.findIdsBySearchCondition(keyword, category);
 	}
 

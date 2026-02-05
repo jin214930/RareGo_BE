@@ -22,7 +22,7 @@ public class MemberApiClient {
 	private final InternalApiErrorHandler errorHandler;
 
 	public MemberApiClient(
-		@Value("${custom.services.member-url}") String internalMemberUrl,
+		@Value("${custom.global.internalBackUrl}") String internalMemberUrl,
 		InternalApiErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 		this.internalRestClient = RestClient.builder()
