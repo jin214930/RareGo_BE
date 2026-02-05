@@ -87,6 +87,10 @@ toss:
     secretKey: ${TOSS_PAYMENTS_SECRET_KEY}
     url: "https://api.tosspayments.com/v1/payments"
 
+rarego:
+  s3:
+    enabled: true # TODO: 기능 안정화 후 삭제 필요
+
 aws:
   s3:
     bucket: rarego-auction-product-images
@@ -109,6 +113,13 @@ custom:
       chunkSize: 10
       holdDays: 7
     systemMemberId: 1
+  services:
+    auth-url: http://localhost:8080
+    member-url: http://localhost:8081
+    payment-url: http://localhost:8082
+    auction-url: http://localhost:8083
+    product-url: http://localhost:8084
+    notification-url: http://localhost:8085
 
 
 springdoc:
