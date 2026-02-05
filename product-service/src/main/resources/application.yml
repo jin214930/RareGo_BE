@@ -79,5 +79,9 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
 
+rarego:
+  s3:
+    enabled: true
+
 auction:
   payment-timeout-days: 3
