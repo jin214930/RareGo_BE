@@ -43,11 +43,11 @@ public class ProductSearchDocument {
     @Field(type = FieldType.Keyword)
     private AuctionStatus auctionStatus;
 
-    @Field(type = FieldType.Long)
-    private Long startPrice;
+    @Field(type = FieldType.Integer)
+    private int startPrice;
 
-    @Field(type = FieldType.Long)
-    private Long finalPrice;
+    @Field(type = FieldType.Integer)
+    private int finalPrice;
 
     @Field(type = FieldType.Date)
     private LocalDateTime startedAt;
