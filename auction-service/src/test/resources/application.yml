@@ -61,4 +61,10 @@ custom:
     settlement:
       holdDays: 0
     systemMemberId: 2
-
+  services:
+    auth-url: http://localhost:8080
+    member-url: http://localhost:8081
+    payment-url: http://localhost:8082
+    auction-url: http://localhost:8083
+    product-url: http://localhost:8084
+    notification-url: http://localhost:8085
