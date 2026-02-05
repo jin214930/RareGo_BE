@@ -60,7 +60,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://auction-service:8083}
+      INTERNAL_BACK_URL: http://rarego-nginx
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -98,7 +98,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://member-service:8081}
+      INTERNAL_BACK_URL: http://rarego-nginx
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -136,7 +136,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://auth-service:8089}
+      INTERNAL_BACK_URL: http://rarego-nginx
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -174,7 +174,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://member-service:8081}
+      INTERNAL_BACK_URL: http://rarego-nginx
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -212,7 +212,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://auction-service:8083}
+      INTERNAL_BACK_URL: http://rarego-nginx
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
@@ -246,7 +246,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-have-to-change-abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      INTERNAL_BACK_URL: ${INTERNAL_BACK_URL:-http://member-service:8081}
+      INTERNAL_BACK_URL: http://rarego-nginx
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       TZ: Asia/Seoul
 
