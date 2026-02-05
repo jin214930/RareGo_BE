@@ -53,7 +53,13 @@ custom:
       chunkSize: 10
       holdDays: 7
     systemMemberId: 1
-
+  services:
+    auth-url: http://rarego-nginx
+    member-url: http://rarego-nginx
+    payment-url: http://rarego-nginx
+    auction-url: http://rarego-nginx
+    product-url: http://rarego-nginx
+    notification-url: http://rarego-nginx
 
 springdoc:
   api-docs:
