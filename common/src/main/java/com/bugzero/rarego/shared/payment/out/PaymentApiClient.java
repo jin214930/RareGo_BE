@@ -20,11 +20,11 @@ public class PaymentApiClient {
 	private final InternalApiErrorHandler errorHandler;
 
 	public PaymentApiClient(
-		@Value("${custom.services.payment-url}") String internalBackUrl,
+		@Value("${custom.services.payment-url}") String internalPaymentUrl,
 		InternalApiErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 		this.restClient = RestClient.builder()
-			.baseUrl(internalBackUrl + "/api/v1/internal/payments")
+			.baseUrl(internalPaymentUrl + "/api/v1/internal/payments")
 			.build();
 	}
 
