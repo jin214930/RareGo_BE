@@ -21,7 +21,7 @@ public class AuctionApiClient {
 	private final RestClient restClient;
 	private final InternalApiErrorHandler errorHandler;
 
-	public AuctionApiClient(@Value("${custom.services.auction-url}") String internalAuctionUrl,
+	public AuctionApiClient(@Value("${custom.global.internalBackUrl}") String internalAuctionUrl,
 		InternalApiErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 		this.restClient = RestClient.builder()
