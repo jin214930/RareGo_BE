@@ -160,7 +160,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           source: "docker-compose.yml,docker"
-          target: "~/app"
+          target: "~/beadv4_4_BugZero_BE"
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -172,8 +172,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            mkdir -p ~/app
-            cd ~/app
+            mkdir -p ~/beadv4_4_BugZero_BE
+            cd ~/beadv4_4_BugZero_BE
             
             # .env.deploy 파일 초기화 및 환경 변수 주입
             echo "PAYMENT_DOCKER_IMAGE=${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')-payment-service:${{ github.ref_name }}" > .env.deploy
@@ -193,7 +193,6 @@ jobs:
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env.deploy
             echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env.deploy
             echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env.deploy
-            echo "INTERNAL_BACK_URL=${{ secrets.INTERNAL_BACK_URL }}" >> .env.deploy
             echo "FRONT_URL=${{ secrets.FRONT_URL }}" >> .env.deploy
             echo "GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}" >> .env.deploy
             echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env.deploy

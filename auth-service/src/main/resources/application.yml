@@ -88,6 +88,8 @@ jwt:
   refresh-token-expire-seconds: ${JWT_ACCESS_TOKEN_EXPIRE_SECONDS:86400}
 
 custom:
+  global:
+    internalBackUrl: ${INTERNAL_BACK_URL:http://rarego-nginx}
   payment:
     settlement:
       chunkSize: 10

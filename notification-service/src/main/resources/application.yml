@@ -71,9 +71,9 @@ springdoc:
 
 custom:
   services:
-    auth-url: http://localhost:8080
-    member-url: http://localhost:8081
-    payment-url: http://localhost:8082
-    auction-url: http://localhost:8083
-    product-url: http://localhost:8084
-    notification-url: http://localhost:8085
+    auth-url: http://rarego-nginx
+    member-url: http://rarego-nginx
+    payment-url: http://rarego-nginx
+    auction-url: http://rarego-nginx
+    product-url: http://rarego-nginx
+    notification-url: http://rarego-nginx
