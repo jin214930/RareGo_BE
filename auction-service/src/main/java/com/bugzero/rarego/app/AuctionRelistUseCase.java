@@ -2,6 +2,7 @@ package com.bugzero.rarego.app;
 
 import java.time.LocalDateTime;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.AuctionRelistRequestDto;
 import com.bugzero.rarego.in.dto.AuctionRelistResponseDto;
+import com.bugzero.rarego.shared.auction.event.AuctionRelistedEvent;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +26,7 @@ public class AuctionRelistUseCase {
 	private final AuctionSupport support; // 기존 Support 재사용
 	private final AuctionRepository auctionRepository;
 	private final AuctionOrderRepository auctionOrderRepository;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
 	public AuctionRelistResponseDto relistAuction(Long oldAuctionId, String memberPublicId, AuctionRelistRequestDto request) {
@@ -51,6 +54,13 @@ public class AuctionRelistUseCase {
 		// *참고: Auction 생성자에서 status는 기본적으로 SCHEDULED로 설정됨
 		// TODO: 이 부분은 바로 IN_PROGRESS로 해야할지 기본 생성자대로 SCHEDULED로 해야할지 결정 필요
 		Auction savedAuction = auctionRepository.save(newAuction);
+
+		eventPublisher.publishEvent(new AuctionRelistedEvent(
+			savedAuction.getProductId(),
+			savedAuction.getId(),
+			savedAuction.getStartPrice(),
+			savedAuction.getStartTime()
+		));
 
 		return AuctionRelistResponseDto.builder()
 			.newAuctionId(savedAuction.getId())

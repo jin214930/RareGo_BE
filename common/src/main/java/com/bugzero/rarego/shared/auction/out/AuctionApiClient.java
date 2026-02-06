@@ -13,6 +13,7 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.exception.InternalApiErrorHandler;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
@@ -117,5 +118,19 @@ public class AuctionApiClient {
 				(httpRequest, httpResponse) -> errorHandler.handleWithDefault(httpRequest, httpResponse,
 					ErrorType.AUCTION_DELETE_FAILED))
 			.toBodilessEntity();
+	}
+
+	// ES 적재에 필요한 경매 ID, 시작가, 시작 시간 정보를 가져오는 메서드
+	public AuctionInfoResponseDto getAuctionInfo(Long productId) {
+		SuccessResponseDto<AuctionInfoResponseDto> response = restClient.get()
+			.uri("/products/{productId}", productId) // Auction Service에 해당 API 필요
+			.retrieve()
+			.onStatus(HttpStatusCode::isError, (req, res) ->
+				errorHandler.handleWithDefault(req, res, ErrorType.AUCTION_NOT_FOUND))
+			.body(new ParameterizedTypeReference<>() {});
+
+		return Optional.ofNullable(response)
+			.map(SuccessResponseDto::data)
+			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
 	}
 }

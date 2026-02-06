@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuctionMemberControllerTest {
 
     @InjectMocks
-    private AuctionMemberController auctionMemberController;
+    private com.bugzero.rarego.in.AuctionMemberController auctionMemberController;
 
     @Mock
     private AuctionFacade auctionFacade;

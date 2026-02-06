@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuctionRepositoryTest {
 
     @Autowired
-    private AuctionRepository auctionRepository;
+    private com.bugzero.rarego.out.AuctionRepository auctionRepository;
 
     @Autowired
     private TestEntityManager em;
