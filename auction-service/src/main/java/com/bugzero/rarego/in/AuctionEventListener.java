@@ -1,8 +1,8 @@
 package com.bugzero.rarego.in;
 
 import com.bugzero.rarego.app.AuctionFacade;
-import com.bugzero.rarego.event.AuctionCreatedEvent;
-import com.bugzero.rarego.event.AuctionUpdatedEvent;
+import com.bugzero.rarego.domain.event.AuctionCreatedEvent;
+import com.bugzero.rarego.domain.event.AuctionUpdatedEvent;
 import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
 import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
 import lombok.RequiredArgsConstructor;

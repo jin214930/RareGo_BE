@@ -3,7 +3,7 @@ package com.bugzero.rarego.app;
 import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionOrder;
 import com.bugzero.rarego.domain.Bid;
-import com.bugzero.rarego.event.AuctionFailedEvent;
+import com.bugzero.rarego.domain.event.AuctionFailedEvent;
 import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.out.BidRepository;
