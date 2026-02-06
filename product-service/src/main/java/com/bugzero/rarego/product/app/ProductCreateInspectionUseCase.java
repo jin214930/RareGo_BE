@@ -65,12 +65,12 @@ public class ProductCreateInspectionUseCase {
 			.build();
 	}
 
+	// 관리자가 검수 승인을 누르면 -> DB에 저장하고 -> 즉시 ProductSearchService.save()를 호출하여 ES에 적재
+	// ES 적재 실패시 승인처리 자체는 실행이 되고, 동기화 처리 자체는 콜백
 	private void synchronizeElasticsearch(Product product, InspectionStatus status) {
 		try {
 			if (status == InspectionStatus.APPROVED) {
-				// 승인됨 -> 경매 정보 조회 -> ES 적재
 				AuctionInfoResponseDto auctionInfo = auctionApiClient.getAuctionInfo(product.getId());
-
 				productSearchService.save(
 					product,
 					product.getImages(),
@@ -78,15 +78,13 @@ public class ProductCreateInspectionUseCase {
 					auctionInfo.startPrice(),
 					auctionInfo.startedAt()
 				);
-				log.info("검수 승인 및 ES 적재 완료 (Sync): productId={}", product.getId());
 			} else {
-				// 반려/삭제 등 -> ES에서 제거
 				productSearchService.delete(product.getId());
-				log.info("검수 반려/삭제로 인한 ES 제거 (Sync): productId={}", product.getId());
 			}
 		} catch (Exception e) {
-			log.error("ES 동기화 실패 (Transaction Rollback): productId={}", product.getId(), e);
-			throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
+			// 예외를 catch하고 다시 throw하지 않음
+			log.error("ES 동기화 실패 (DB는 정상 커밋됨). 추후 배치로 복구 필요: productId={}, error={}",
+				product.getId(), e.getMessage());
 		}
 	}
 

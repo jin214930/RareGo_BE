@@ -6,7 +6,6 @@ import com.bugzero.rarego.product.domain.document.ProductSearchDocument;
 import com.bugzero.rarego.product.out.ProductSearchRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.type.Category;
-import com.bugzero.rarego.shared.product.type.InspectionStatus;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -28,7 +27,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -37,7 +35,7 @@ public class ProductSearchService {
 
 	private final ProductSearchRepository searchRepository;
 	private final ElasticsearchClient elasticsearchClient;
-	@Qualifier("ollamaEmbeddingModel") private final EmbeddingModel embeddingModel;
+	@Qualifier("openAiEmbeddingModel") private final EmbeddingModel embeddingModel;
 
 	// 초기 데이터 적재
 	@Transactional
@@ -48,20 +46,18 @@ public class ProductSearchService {
 		int startPrice,
 		LocalDateTime startedAt
 	) {
-		// 1. 임베딩 생성
+		// 임베딩 생성
 		String textToEmbed = String.format("%s %s %s %s",
 			product.getCategory(), product.getName(), product.getProductCondition(), product.getDescription());
 		List<Float> vector = generateEmbeddingToFloat(textToEmbed);
-		// ES Document의 vector 타입에 맞춰 Double 변환 필요 시:
 		List<Double> doubleVector = vector.stream().map(Float::doubleValue).toList();
 
-		// 2. 이미지 정렬
-		List<String> imageUrls = images.stream()
+		String imageUrl = images.stream()
 			.sorted(Comparator.comparingInt(ProductImage::getSortOrder))
 			.map(ProductImage::getImageUrl)
-			.toList();
+			.findFirst()
+			.orElse(null);
 
-		// 3. Document 빌드
 		ProductSearchDocument doc = ProductSearchDocument.builder()
 			.id(product.getId().toString())
 			.productId(product.getId())
@@ -70,7 +66,7 @@ public class ProductSearchService {
 			.productCondition(product.getProductCondition())
 			.category(product.getCategory())
 			.sellerId(product.getSeller().getId())
-			.imageUrls(imageUrls)
+			.imageUrl(imageUrl)
 			.embedding(doubleVector)
 
 			// 경매 정보 매핑
@@ -93,7 +89,7 @@ public class ProductSearchService {
 		});
 	}
 
-	// 상태 업데이트(낙찰 시)
+	// 낙찰 시 가격 상태 업데이트
 	public void updateSoldPrice(Long productId, int finalPrice) {
 		ProductSearchDocument doc = searchRepository.findByProductId(productId)
 			.orElseThrow(() -> new RuntimeException("ES Document Not Found: " + productId));
@@ -112,7 +108,7 @@ public class ProductSearchService {
 			.startedAt(doc.getStartedAt())
 			.closedAt(LocalDateTime.now())
 			.sellerId(doc.getSellerId())
-			.imageUrls(doc.getImageUrls())
+			.imageUrl(doc.getImageUrl())
 			.embedding(doc.getEmbedding())
 			.build();
 
@@ -120,7 +116,7 @@ public class ProductSearchService {
 		log.info("Product Sold Updated: {} -> {} won", productId, finalPrice);
 	}
 
-	// 경매 시작/종료 등 상태만 변경할 때 사용
+	// 경매 시작, 종료 등 상태만 변경할 때 사용
 	public void updateAuctionStatus(Long productId, AuctionStatus newStatus) {
 		searchRepository.findByProductId(productId).ifPresent(doc -> {
 			ProductSearchDocument updated = ProductSearchDocument.builder()
@@ -132,7 +128,7 @@ public class ProductSearchService {
 				.productCondition(doc.getProductCondition())
 				.category(doc.getCategory())
 				.sellerId(doc.getSellerId())
-				.imageUrls(doc.getImageUrls())
+				.imageUrl(doc.getImageUrl())
 				.embedding(doc.getEmbedding())
 				.startPrice(doc.getStartPrice())
 				.finalPrice(doc.getFinalPrice())
@@ -147,9 +143,9 @@ public class ProductSearchService {
 		});
 	}
 
-	/**
-	 * 하이브리드 검색 -> 키워드(BM25) + 벡터(KNN) + 필터링
-	 */
+
+	// 키워드(BM25) + 벡터(KNN) + 필터링
+	// 텍스트 매칭 + 벡터 유사도 검색 + 카테고리/상태 필터링
 	public Page<ProductSearchDocument> searchProducts(
 		String keyword,
 		Category category,
@@ -157,7 +153,7 @@ public class ProductSearchService {
 		Pageable pageable
 	) {
 		try {
-			// 1. 공통 필터 생성 (Query 객체 리스트)
+			// 공통 필터 생성 (Query 객체 리스트)
 			List<Query> filters = new ArrayList<>();
 			if (category != null) {
 				filters.add(Query.of(q -> q.term(t -> t.field("category").value(category.name()))));
@@ -166,14 +162,14 @@ public class ProductSearchService {
 				filters.add(Query.of(q -> q.term(t -> t.field("auctionStatus").value(auctionStatus.name()))));
 			}
 
-			// 2. 검색 요청 빌드 (ElasticsearchClient 사용)
+			// 검색 요청 빌드 (ElasticsearchClient 사용)
 			SearchResponse<ProductSearchDocument> response = elasticsearchClient.search(s -> {
-				// (A) 기본 설정: 인덱스, 페이징
+				// 기본 설정: 인덱스, 페이징
 				s.index("product_search")
 					.from((int) pageable.getOffset())
 					.size(pageable.getPageSize());
 
-				// (B) 텍스트 쿼리 구성 (Boolean Query)
+				// 텍스트 쿼리 구성
 				if (StringUtils.hasText(keyword)) {
 					s.query(q -> q.bool(b -> b
 						.should(sh -> sh.match(m -> m.field("productName").query(keyword).boost(0.7f)))
@@ -181,16 +177,16 @@ public class ProductSearchService {
 						.filter(filters) // 공통 필터 적용
 					));
 
-					// (C) 벡터(KNN) 쿼리 구성 - 하이브리드 핵심
-					List<Float> queryVector = generateEmbeddingToFloat(keyword); // float 변환 필요
+					// 벡터(KNN) 쿼리 구성
+					List<Float> queryVector = generateEmbeddingToFloat(keyword);
 
 					s.knn(k -> k
 						.field("embedding")
 						.queryVector(queryVector)
 						.k(10)
 						.numCandidates(100)
-						.filter(f -> f.bool(b -> b.filter(filters))) // ★ KNN에도 동일 필터 적용
-						.boost(0.3f) // 벡터 점수 비중 (텍스트와 합쳐서 1.0 되도록 조절 추천)
+						.filter(f -> f.bool(b -> b.filter(filters)))
+						.boost(0.3f) // 벡터 점수 비중
 					);
 				} else {
 					// 키워드 없을 땐 필터만 적용
@@ -200,12 +196,12 @@ public class ProductSearchService {
 				return s;
 			}, ProductSearchDocument.class);
 
-			// 3. 결과 변환 (SearchResponse -> Page)
+			// 결과 변환
 			List<ProductSearchDocument> content = response.hits().hits().stream()
 				.map(Hit::source)
 				.toList();
 
-			// total hits 계산 (정확한 페이징을 위해)
+			// total hits 계산
 			long total = response.hits().total() != null ? response.hits().total().value() : 0;
 
 			return new PageImpl<>(content, pageable, total);
@@ -216,8 +212,9 @@ public class ProductSearchService {
 		}
 	}
 
-	// [Helper] 임베딩 생성 (Float 리스트로 변환)
-	// ES Client의 KNN은 List<Float>를 요구하는 경우가 많습니다.
+	// [Helper Method] //
+
+	// 임베딩 생성 (Float 리스트로 변환)
 	private List<Float> generateEmbeddingToFloat(String text) {
 		float[] embeddingArray = embeddingModel.embed(text);
 		List<Float> floatList = new ArrayList<>();

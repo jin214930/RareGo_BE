@@ -14,13 +14,4 @@ public interface ProductSearchRepository extends ElasticsearchRepository<Product
 
 	Optional<ProductSearchDocument> findByProductId(Long productId);
 
-	Optional<ProductSearchDocument> findByAuctionId(Long auctionId);
-
-	List<ProductSearchDocument> findByCategoryAndAuctionStatus(Category category, AuctionStatus auctionStatus);
-
-	List<ProductSearchDocument> findByAuctionStatus(AuctionStatus auctionStatus);
-
-	List<ProductSearchDocument> findAllBySellerId(Long sellerId);
-
-	List<ProductSearchDocument> findAllByInspectionStatus(InspectionStatus inspectionStatus);
 }

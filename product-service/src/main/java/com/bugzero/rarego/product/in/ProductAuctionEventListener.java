@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 
 import com.bugzero.rarego.product.app.ProductSearchService;
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
-import com.bugzero.rarego.shared.auction.event.AuctionStartedEvent; // [추가]
-import com.bugzero.rarego.shared.auction.type.AuctionStatus; // [추가]
+import com.bugzero.rarego.shared.auction.event.AuctionStartedEvent;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

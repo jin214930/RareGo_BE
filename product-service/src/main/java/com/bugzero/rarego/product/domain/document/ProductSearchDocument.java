@@ -63,11 +63,12 @@ public class ProductSearchDocument {
 	@Field(type = FieldType.Date)
 	private LocalDateTime closedAt;
 
+	// 경매 쪽 상품 정보 통신 위해서 필요
 	@Field(type = FieldType.Long)
 	private Long sellerId;
 
-	@Field(type = FieldType.Keyword)
-	private List<String> imageUrls;
+	@Field(type = FieldType.Text)
+	private String imageUrl;
 
 	// 상품명+설명 벡터
 	@Field(type = FieldType.Dense_Vector, dims = 1536)
