@@ -11,6 +11,7 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.exception.InternalApiErrorHandler;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
+import com.bugzero.rarego.global.security.SystemAuthTokenProvider;
 import com.bugzero.rarego.shared.member.domain.MemberJoinRequestDto;
 import com.bugzero.rarego.shared.member.domain.MemberJoinResponseDto;
 import com.bugzero.rarego.shared.member.domain.MemberWithdrawRequestDto;
@@ -20,6 +21,7 @@ import com.bugzero.rarego.shared.member.domain.MemberWithdrawResponseDto;
 public class MemberApiClient {
 	private final RestClient internalRestClient;
 	private final InternalApiErrorHandler errorHandler;
+	private final SystemAuthTokenProvider systemAuthTokenProvider;
 
 	public MemberApiClient(
 		@Value("${custom.global.internalBackUrl}") String internalBackUrl,
@@ -28,12 +30,14 @@ public class MemberApiClient {
 		this.internalRestClient = RestClient.builder()
 			.baseUrl(internalBackUrl + "/api/v1/internal/members")
 			.build();
+		this.systemAuthTokenProvider = new SystemAuthTokenProvider();
 	}
 
 	public MemberJoinResponseDto join(String email) {
 		MemberJoinRequestDto request = new MemberJoinRequestDto(email);
 		SuccessResponseDto<MemberJoinResponseDto> response = internalRestClient.post()
 			.uri("/me")
+			.header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
 			.contentType(MediaType.APPLICATION_JSON)
 			.body(request)
 			.retrieve()
@@ -54,6 +58,7 @@ public class MemberApiClient {
 		SuccessResponseDto<MemberWithdrawResponseDto> response = internalRestClient.post()
 			.uri("/withdraw")
 			.body(request)
+			.header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
 			.retrieve()
 			.onStatus(HttpStatusCode::isError,
 				(httpRequest, httpResponse) -> errorHandler.handleWithDefault(httpRequest, httpResponse,
