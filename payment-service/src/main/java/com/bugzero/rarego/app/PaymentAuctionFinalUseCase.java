@@ -93,7 +93,7 @@ public class PaymentAuctionFinalUseCase {
 			auctionId,
 			order.sellerId(),
 			memberId,
-			paymentAmount));
+			finalPrice));
 
 		return AuctionFinalPaymentResponseDto.of(
 			order.orderId(),
