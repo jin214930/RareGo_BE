@@ -1,4 +1,4 @@
-package com.bugzero.rarego.event;
+package com.bugzero.rarego.domain.event;
 
 import java.time.LocalDateTime;
 

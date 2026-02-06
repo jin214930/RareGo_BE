@@ -1,4 +1,4 @@
-package com.bugzero.rarego.event;
+package com.bugzero.rarego.domain.event;
 
 /**
  * 경매 실패(유찰) 시 발행되는 이벤트
