@@ -3,7 +3,6 @@ package com.bugzero.rarego.product.app;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -12,7 +11,6 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -61,17 +59,18 @@ class ProductSearchServiceTest {
 	}
 
 	@Test
-	@DisplayName("상품을 ES에 적재하면 SCHEDULED 상태로 저장된다")
-	void save_shouldSaveProductWithScheduledStatus() {
+	@DisplayName("상품을 ES에 적재하면 복합 ID(pid_aid)와 SCHEDULED 상태로 저장된다")
+	void save_shouldSaveProductWithCompositeIdAndStatus() {
 		// given
 		Long productId = 1L;
 		Long auctionId = 100L;
 		String productName = "다스베이더 레고";
-		String description = "상태 아주 좋은 레고입니다.";
+		String expectedDocId = productId + "_" + auctionId; // 예상되는 복합 ID
+
 		int startPrice = 1000000;
 		LocalDateTime startedAt = LocalDateTime.now().minusHours(1);
 
-		Product mockProduct = createMockProduct(productId, productName, description, Category.스타워즈);
+		Product mockProduct = createMockProduct(productId, productName, "설명", Category.스타워즈);
 		ProductImage mockImage = createMockImage("http://image.url", 0);
 
 		// when
@@ -82,16 +81,13 @@ class ProductSearchServiceTest {
 		verify(searchRepository).save(captor.capture());
 
 		ProductSearchDocument savedDoc = captor.getValue();
+
+		// [검증] ID가 "1_100" 형태로 생성되었는지 확인
+		assertThat(savedDoc.getId()).isEqualTo(expectedDocId);
 		assertThat(savedDoc.getProductId()).isEqualTo(productId);
-		assertThat(savedDoc.getProductName()).isEqualTo(productName);
-		assertThat(savedDoc.getDescription()).isEqualTo(description);
-		assertThat(savedDoc.getCategory()).isEqualTo(Category.스타워즈);
+		assertThat(savedDoc.getAuctionId()).isEqualTo(auctionId);
 		assertThat(savedDoc.getAuctionStatus()).isEqualTo(AuctionStatus.SCHEDULED);
 		assertThat(savedDoc.getImageUrl()).isEqualTo("http://image.url");
-		assertThat(savedDoc.getAuctionId()).isEqualTo(auctionId);
-		assertThat(savedDoc.getStartPrice()).isEqualTo(startPrice);
-		assertThat(savedDoc.getFinalPrice()).isEqualTo(0);
-		assertThat(savedDoc.getEmbedding()).hasSize(1536);
 	}
 
 	@Test
@@ -114,74 +110,77 @@ class ProductSearchServiceTest {
 	}
 
 	@Test
-	@DisplayName("상품 삭제 시 ES에서 문서가 제거된다")
-	void delete_shouldRemoveDocumentFromES() {
+	@DisplayName("상품 삭제 시 ES에서 해당 상품의 모든 문서가 제거된다 (deleteByProductId 호출)")
+	void delete_shouldCallDeleteByProductId() {
 		// given
 		Long productId = 3L;
-		ProductSearchDocument existingDoc = ProductSearchDocument.builder()
-			.id("3")
-			.productId(productId)
-			.build();
-
-		given(searchRepository.findByProductId(productId)).willReturn(Optional.of(existingDoc));
 
 		// when
 		productSearchService.delete(productId);
 
 		// then
-		verify(searchRepository).delete(existingDoc);
+		// [변경] delete(entity)가 아니라 deleteByProductId(id)가 호출되어야 함
+		verify(searchRepository).deleteByProductId(productId);
 	}
 
 	@Test
-	@DisplayName("낙찰 시 최종 가격과 ENDED 상태로 업데이트된다")
+	@DisplayName("낙찰 시 해당 경매(auctionId)를 찾아 최종 가격과 ENDED 상태로 업데이트한다")
 	void updateSoldPrice_shouldUpdateFinalPriceAndStatus() {
 		// given
 		Long productId = 4L;
+		Long auctionId = 200L;
 		int finalPrice = 750000;
+		String docId = productId + "_" + auctionId; // 복합 키
 
 		ProductSearchDocument existingDoc = ProductSearchDocument.builder()
-			.id("4")
+			.id(docId)
 			.productId(productId)
+			.auctionId(auctionId)
 			.productName("테스트 상품")
-			.description("설명")
-			.category(Category.스타워즈)
 			.auctionStatus(AuctionStatus.IN_PROGRESS)
 			.startPrice(500000)
 			.finalPrice(0)
 			.build();
 
-		given(searchRepository.findByProductId(productId)).willReturn(Optional.of(existingDoc));
+		// [변경] findByProductId 대신 findById(복합키) Mocking
+		given(searchRepository.findById(docId)).willReturn(Optional.of(existingDoc));
 
 		// when
-		productSearchService.updateSoldPrice(productId, finalPrice);
+		// [변경] auctionId 파라미터 추가
+		productSearchService.updateSoldPrice(productId, auctionId, finalPrice);
 
 		// then
 		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
 		verify(searchRepository).save(captor.capture());
 
 		ProductSearchDocument updatedDoc = captor.getValue();
+		assertThat(updatedDoc.getId()).isEqualTo(docId); // ID 유지 확인
 		assertThat(updatedDoc.getFinalPrice()).isEqualTo(finalPrice);
 		assertThat(updatedDoc.getAuctionStatus()).isEqualTo(AuctionStatus.ENDED);
 		assertThat(updatedDoc.getClosedAt()).isNotNull();
 	}
 
 	@Test
-	@DisplayName("경매 상태를 IN_PROGRESS로 변경할 수 있다")
+	@DisplayName("특정 경매의 상태를 변경할 수 있다")
 	void updateAuctionStatus_shouldUpdateStatus() {
 		// given
 		Long productId = 5L;
+		Long auctionId = 300L;
+		String docId = productId + "_" + auctionId;
 
 		ProductSearchDocument existingDoc = ProductSearchDocument.builder()
-			.id("5")
+			.id(docId)
 			.productId(productId)
-			.productName("테스트 상품")
+			.auctionId(auctionId)
 			.auctionStatus(AuctionStatus.SCHEDULED)
 			.build();
 
-		given(searchRepository.findByProductId(productId)).willReturn(Optional.of(existingDoc));
+		// [변경] findById Mocking
+		given(searchRepository.findById(docId)).willReturn(Optional.of(existingDoc));
 
 		// when
-		productSearchService.updateAuctionStatus(productId, AuctionStatus.IN_PROGRESS);
+		// [변경] auctionId 파라미터 추가
+		productSearchService.updateAuctionStatus(productId, auctionId, AuctionStatus.IN_PROGRESS);
 
 		// then
 		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);

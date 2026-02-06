@@ -46,8 +46,11 @@ public class ProductSearchService {
 		int startPrice,
 		LocalDateTime startedAt
 	) {
+
+		String docId = ProductSearchDocument.generateId(product.getId(), auctionId);
+
 		// 임베딩 생성
-		String textToEmbed = String.format("%s %s %s %s",
+		String textToEmbed = String.format("상품명: %s, 상세내용: %s, 카테고리: %s, 상품상태: %s",
 			product.getCategory(), product.getName(), product.getProductCondition(), product.getDescription());
 		List<Float> vector = generateEmbeddingToFloat(textToEmbed);
 		List<Double> doubleVector = vector.stream().map(Float::doubleValue).toList();
@@ -59,7 +62,7 @@ public class ProductSearchService {
 			.orElse(null);
 
 		ProductSearchDocument doc = ProductSearchDocument.builder()
-			.id(product.getId().toString())
+			.id(docId)
 			.productId(product.getId())
 			.productName(product.getName())
 			.description(product.getDescription())
@@ -83,15 +86,16 @@ public class ProductSearchService {
 	}
 
 	public void delete(Long productId) {
-		searchRepository.findByProductId(productId).ifPresent(doc -> {
-			searchRepository.delete(doc);
-			log.info("Product Deleted from ES: productId={}", productId);
-		});
+		searchRepository.deleteByProductId(productId);
+		log.info("All Product Documents Deleted: productId={}", productId);
 	}
 
 	// 낙찰 시 가격 상태 업데이트
-	public void updateSoldPrice(Long productId, int finalPrice) {
-		ProductSearchDocument doc = searchRepository.findByProductId(productId)
+	public void updateSoldPrice(Long productId, Long auctionId, int finalPrice) {
+
+		String docId = ProductSearchDocument.generateId(productId, auctionId);
+
+		ProductSearchDocument doc = searchRepository.findById(docId)
 			.orElseThrow(() -> new RuntimeException("ES Document Not Found: " + productId));
 
 		ProductSearchDocument updatedDoc = ProductSearchDocument.builder()
@@ -117,8 +121,9 @@ public class ProductSearchService {
 	}
 
 	// 경매 시작, 종료 등 상태만 변경할 때 사용
-	public void updateAuctionStatus(Long productId, AuctionStatus newStatus) {
-		searchRepository.findByProductId(productId).ifPresent(doc -> {
+	public void updateAuctionStatus(Long productId, Long auctionId, AuctionStatus newStatus) {
+		String docId = ProductSearchDocument.generateId(productId, auctionId);
+		searchRepository.findById(docId).ifPresent(doc -> {
 			ProductSearchDocument updated = ProductSearchDocument.builder()
 				.id(doc.getId())
 				.productId(doc.getProductId())

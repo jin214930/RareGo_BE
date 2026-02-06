@@ -12,6 +12,8 @@ import com.bugzero.rarego.shared.product.type.InspectionStatus;
 
 public interface ProductSearchRepository extends ElasticsearchRepository<ProductSearchDocument, String> {
 
-	Optional<ProductSearchDocument> findByProductId(Long productId);
+	List<ProductSearchDocument> findByProductId(Long productId);
+
+	void deleteByProductId(Long productId);
 
 }

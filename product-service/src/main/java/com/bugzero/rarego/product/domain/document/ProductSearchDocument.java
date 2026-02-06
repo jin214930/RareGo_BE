@@ -73,5 +73,9 @@ public class ProductSearchDocument {
 	// 상품명+설명 벡터
 	@Field(type = FieldType.Dense_Vector, dims = 1536)
 	private List<Double> embedding;
+
+	public static String generateId(Long productId, Long auctionId) {
+		return productId + "_" + auctionId;
+	}
 }
 

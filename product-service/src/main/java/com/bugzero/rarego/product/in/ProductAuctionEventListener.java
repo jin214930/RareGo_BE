@@ -27,7 +27,18 @@ public class ProductAuctionEventListener {
 	public void handleAuctionEnded(AuctionEndedEvent event) {
 		log.info("Kafka Event Received: AuctionEnded for productId={}", event.productId());
 		if (event.finalPrice() != null) {
-			productSearchService.updateSoldPrice(event.productId(), event.finalPrice());
+			productSearchService.updateSoldPrice(
+				event.productId(),
+				event.auctionId(),
+				event.finalPrice()
+			);
+		} else {
+			// 유찰된 경우 -> 상태만 ENDED로 변경
+			productSearchService.updateAuctionStatus(
+				event.productId(),
+				event.auctionId(),
+				AuctionStatus.ENDED
+			);
 		}
 	}
 
@@ -37,7 +48,7 @@ public class ProductAuctionEventListener {
 		log.info("Kafka Event Received: AuctionStarted for productId={}", event.productId());
 
 		// 상태를 진행 중으로 변경
-		productSearchService.updateAuctionStatus(event.productId(), AuctionStatus.IN_PROGRESS);
+		productSearchService.updateAuctionStatus(event.productId(), event.auctionId(), AuctionStatus.IN_PROGRESS);
 	}
 
 	// 기존 ES 문서를 찾아 경매 정보(ID, 가격, 시간)만 덮어씌움
