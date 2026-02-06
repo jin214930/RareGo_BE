@@ -23,12 +23,13 @@ public class PaymentApiClient {
 
 	public PaymentApiClient(
 		@Value("${custom.global.internalBackUrl}") String internalBackUrl,
-		InternalApiErrorHandler errorHandler) {
+		InternalApiErrorHandler errorHandler,
+		SystemAuthTokenProvider systemAuthTokenProvider) {
 		this.errorHandler = errorHandler;
 		this.restClient = RestClient.builder()
 			.baseUrl(internalBackUrl + "/api/v1/internal/payments")
 			.build();
-		this.systemAuthTokenProvider = new SystemAuthTokenProvider();
+		this.systemAuthTokenProvider = systemAuthTokenProvider;
 	}
 
 	public DepositHoldResponseDto holdDeposit(int amount, String memberPublicId, Long auctionId) {

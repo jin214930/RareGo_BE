@@ -25,12 +25,13 @@ public class MemberApiClient {
 
 	public MemberApiClient(
 		@Value("${custom.global.internalBackUrl}") String internalBackUrl,
-		InternalApiErrorHandler errorHandler) {
+		InternalApiErrorHandler errorHandler,
+		SystemAuthTokenProvider systemAuthTokenProvider) {
 		this.errorHandler = errorHandler;
 		this.internalRestClient = RestClient.builder()
 			.baseUrl(internalBackUrl + "/api/v1/internal/members")
 			.build();
-		this.systemAuthTokenProvider = new SystemAuthTokenProvider();
+		this.systemAuthTokenProvider = systemAuthTokenProvider;
 	}
 
 	public MemberJoinResponseDto join(String email) {

@@ -25,12 +25,13 @@ public class AuctionApiClient {
 	private final SystemAuthTokenProvider systemAuthTokenProvider;
 
 	public AuctionApiClient(@Value("${custom.global.internalBackUrl}") String internalBackUrl,
-		InternalApiErrorHandler errorHandler) {
+		InternalApiErrorHandler errorHandler,
+		SystemAuthTokenProvider systemAuthTokenProvider) {
 		this.errorHandler = errorHandler;
 		this.restClient = RestClient.builder()
 			.baseUrl(internalBackUrl + "/api/v1/internal/auctions")
 			.build();
-		this.systemAuthTokenProvider = new SystemAuthTokenProvider();
+		this.systemAuthTokenProvider = systemAuthTokenProvider;
 	}
 
 	public Long createAuction(Long productId, String publicId, ProductAuctionRequestDto productAuctionRequestDto) {
