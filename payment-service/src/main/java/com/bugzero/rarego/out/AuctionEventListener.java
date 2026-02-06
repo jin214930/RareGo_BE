@@ -24,7 +24,7 @@ public class AuctionEventListener {
      * groupId는 application.yml에서 자동 설정 (payment-service-group)
      */
     // TODO: @Retryable 대신 kafka errorhandler + DLQ 패턴 도입 고민
-    @KafkaListener(topics = "auction-ended-completed", groupId = "payment-service-group")
+    @KafkaListener(topics = "auction-ended", groupId = "payment-service-group")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleAuctionEnded(AuctionEndedEvent event) {
         try {

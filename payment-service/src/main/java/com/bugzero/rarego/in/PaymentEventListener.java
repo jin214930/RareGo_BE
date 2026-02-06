@@ -22,17 +22,6 @@ public class PaymentEventListener {
     private final PaymentFacade paymentFacade;
     private final PaymentSettlementProcessor paymentSettlementProcessor;
 
-    // ❌ 제거: AuctionEndedEvent Spring Event 리스너
-    // 이제 Kafka Consumer(AuctionEventListener)가 처리함
-
-    // @TransactionalEventListener(phase = AFTER_COMMIT)
-    // @Transactional(propagation = REQUIRES_NEW)
-    // public void handle(AuctionEndedEvent event) {
-    //    log.info("경매 종료 이벤트 수신: auctionId={}, winnerId={}", event.auctionId(), event.winnerId());
-    //    paymentFacade.releaseDeposits(event.auctionId(), event.winnerId());
-    // }
-
-    // ✅ 유지: Member 관련 내부 이벤트들
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
     public void onMemberCreated(MemberJoinedEvent event) {
@@ -45,7 +34,6 @@ public class PaymentEventListener {
         paymentFacade.syncMember(event.memberDto());
     }
 
-    // ✅ 유지: Settlement 내부 이벤트
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleSettlementFinished(SettlementFinishedEvent event) {
         try {

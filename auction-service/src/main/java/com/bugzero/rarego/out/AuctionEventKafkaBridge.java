@@ -19,8 +19,7 @@ public class AuctionEventKafkaBridge {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    // 토픽 네이밍 컨벤션: [도메인]-[행위]-[상태]
-    private static final String TOPIC_AUCTION_ENDED = "auction-ended-completed";
+    private static final String TOPIC_AUCTION_ENDED = "auction-ended";
 
     /**
      * TransactionPhase.AFTER_COMMIT
