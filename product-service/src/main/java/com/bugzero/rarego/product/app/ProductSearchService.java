@@ -50,10 +50,15 @@ public class ProductSearchService {
 		String docId = ProductSearchDocument.generateId(product.getId(), auctionId);
 
 		// 임베딩 생성
-		String textToEmbed = String.format("상품명: %s, 상세내용: %s, 카테고리: %s, 상품상태: %s",
-			product.getCategory(), product.getName(), product.getProductCondition(), product.getDescription());
-		List<Float> vector = generateEmbeddingToFloat(textToEmbed);
-		List<Double> doubleVector = vector.stream().map(Float::doubleValue).toList();
+		String textToEmbed = String.format(
+			"카테고리: %s, 상품명: %s, 상품상태: %s, 상세내용: %s",
+			product.getCategory(),
+			product.getName(),
+			product.getProductCondition(),
+			product.getDescription()
+		);
+
+		float[] vector = embeddingModel.embed(textToEmbed);
 
 		String imageUrl = images.stream()
 			.sorted(Comparator.comparingInt(ProductImage::getSortOrder))
@@ -70,7 +75,7 @@ public class ProductSearchService {
 			.category(product.getCategory())
 			.sellerId(product.getSeller().getId())
 			.imageUrl(imageUrl)
-			.embedding(doubleVector)
+			.embedding(vector)
 
 			// 경매 정보 매핑
 			.auctionId(auctionId)
@@ -183,7 +188,8 @@ public class ProductSearchService {
 					));
 
 					// 벡터(KNN) 쿼리 구성
-					List<Float> queryVector = generateEmbeddingToFloat(keyword);
+					String queryText = buildSearchPrompt(keyword, category);
+					List<Float> queryVector = generateEmbeddingToFloat(queryText);
 
 					s.knn(k -> k
 						.field("embedding")
@@ -227,5 +233,15 @@ public class ProductSearchService {
 			floatList.add(v);
 		}
 		return floatList;
+	}
+
+	// 문자열 포맷으로 변환
+	private String buildSearchPrompt(String keyword, Category category) {
+		StringBuilder prompt = new StringBuilder();
+		if (category != null) {
+			prompt.append("카테고리: ").append(category.name()).append(", ");
+		}
+		prompt.append("상품명 또는 상세내용: ").append(keyword);
+		return prompt.toString();
 	}
 }
