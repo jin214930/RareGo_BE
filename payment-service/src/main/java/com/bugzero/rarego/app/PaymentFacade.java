@@ -10,7 +10,7 @@ import com.bugzero.rarego.in.dto.PaymentConfirmResponseDto;
 import com.bugzero.rarego.in.dto.PaymentRequestDto;
 import com.bugzero.rarego.in.dto.PaymentRequestResponseDto;
 import com.bugzero.rarego.in.dto.RefundResponseDto;
-import com.bugzero.rarego.in.dto.SettlementResponseDto;
+import com.bugzero.rarego.shared.payment.dto.SettlementResponseDto;
 import com.bugzero.rarego.in.dto.WalletResponseDto;
 import com.bugzero.rarego.in.dto.WalletTransactionResponseDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;
