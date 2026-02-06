@@ -1,6 +1,6 @@
 # payment-service
 
-Product boundedContext를 분리한 서비스입니다.
+Product bounded_context를 분리한 서비스입니다.
 
 ## Run
 - 기본 포트: 8084

@@ -1,5 +1,6 @@
 package com.bugzero.rarego.product.app;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +17,7 @@ import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
 import com.bugzero.rarego.shared.product.event.S3ImageConfirmEvent;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +29,7 @@ public class ProductCreateProductUseCase {
 	private final ProductSupport productSupport;
 	private final EventPublisher eventPublisher;
 
-    @Transactional
+	@Transactional
     public ProductCreateResponseDto createProduct(String memberUUID, ProductCreateRequestDto dto) {
 
 		ProductMember seller = productSupport.verifyValidateMember(memberUUID);
@@ -38,7 +40,7 @@ public class ProductCreateProductUseCase {
         // 부모만 저장 (CascadeType.PERSIST에 의해 자식인 ProductImage들도 자동으로 INSERT됨)
         Product savedProduct = productRepository.save(product);
 
-        //경매정보 생성 요청하는 api
+        // 경매 정보 생성 요청하는 api
         Long auctionId = auctionApiClient.createAuction(savedProduct.getId(), memberUUID,
                 dto.productAuctionRequestDto());
 

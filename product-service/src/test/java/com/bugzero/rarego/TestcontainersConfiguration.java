@@ -1,5 +1,7 @@
 package com.bugzero.rarego;
 
+import java.time.Duration;
+
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +15,7 @@ public class TestcontainersConfiguration {
 		return new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:9.2.3")
 			.withEnv("discovery.type", "single-node")
 			.withEnv("xpack.security.enabled", "false")
-			.withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
+			.withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
+			.withStartupTimeout(Duration.ofMinutes(3));
 	}
 }
