@@ -118,14 +118,12 @@ public class InternalAuctionController {
 		@RequestParam int page,
 		@RequestParam int size
 	) {
-		// Service 호출 (Slice 반환)
 		Slice<AuctionOrderDto> slice = auctionOrderService.findExpiringSoonOrders(
 			targetEndedAt,
 			PageRequest.of(page, size)
 		);
 
 		return ResponseEntity.ok()
-			// Client(스케줄러)가 다음 페이지 여부를 알 수 있도록 헤더 추가
 			.header("X-Has-Next", Boolean.toString(slice.hasNext()))
 			.body(SuccessResponseDto.from(SuccessType.OK, slice.getContent()));
 	}
@@ -135,7 +133,6 @@ public class InternalAuctionController {
 	public ResponseEntity<Void> markAsNoticed(@PathVariable Long orderId) {
 		auctionOrderService.markAsNoticed(orderId);
 
-		// Body 없이 200 OK 반환 (Client의 toBodilessEntity()와 매칭)
 		return ResponseEntity.ok().build();
 	}
 
