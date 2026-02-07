@@ -1,7 +1,10 @@
 package com.bugzero.rarego.product.app;
 
 import static org.assertj.core.api.AssertionsForClassTypes.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
+
+import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +26,8 @@ import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionRequestDto;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
 import com.bugzero.rarego.product.out.InspectionRepository;
+import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
 
@@ -32,6 +37,10 @@ class ProductCreateInspectionUseCaseTest {
 	private InspectionRepository inspectionRepository;
 	@Mock
 	private ProductSupport productSupport;
+	@Mock
+	private AuctionApiClient auctionApiClient;
+	@Mock
+	private ProductSearchService productSearchService;
 
 	@InjectMocks
 	private ProductCreateInspectionUseCase useCase;
@@ -74,10 +83,24 @@ class ProductCreateInspectionUseCaseTest {
 	void createInspection_Success() {
 		// given
 		ProductInspectionRequestDto requestDto = createRequest(InspectionStatus.APPROVED, "통과");
+
+		// [1] Product 객체 준비 (ID 설정 필수!)
 		Product spyProduct = spy(commonProduct);
 
+		// ★ [핵심 수정] spyProduct가 ID를 반환하도록 설정 (이 부분이 누락되어 null이 넘어감)
+		// PRODUCT_ID 상수가 없다면 1L 등으로 대체하세요.
+		given(spyProduct.getId()).willReturn(PRODUCT_ID);
+
+		// [2] ProductSupport Mocking
 		given(productSupport.verifyValidateProduct(PRODUCT_ID)).willReturn(spyProduct);
 		given(productSupport.verifyValidateMember(ADMIN_UUID)).willReturn(commonAdmin);
+
+		// [3] AuctionApiClient Mocking (이전 질문에서 추가한 부분 유지)
+		AuctionInfoResponseDto mockAuctionInfo = new AuctionInfoResponseDto(123L, 10000, LocalDateTime.now());
+		// anyLong() 대신 구체적인 값을 명시해도 됩니다. (null만 아니면 됨)
+		given(auctionApiClient.getAuctionInfo(any())).willReturn(mockAuctionInfo);
+
+		// [4] Repository Mocking
 		given(inspectionRepository.save(any(Inspection.class))).willAnswer(invocation -> {
 			Inspection ins = invocation.getArgument(0);
 			ReflectionTestUtils.setField(ins, "id", 500L);
@@ -95,6 +118,9 @@ class ProductCreateInspectionUseCaseTest {
 		assertThat(saved.getInspectorId()).isEqualTo(ADMIN_INTERNAL_ID);
 		verify(spyProduct).determineInspection(InspectionStatus.APPROVED);
 		verify(spyProduct).determineProductCondition(ProductCondition.MISB);
+
+		// [추가 검증] ES 적재가 올바른 ID로 호출되었는지 확인
+		verify(productSearchService).save(any(), any(), eq(123L), eq(10000), any());
 	}
 
 	@Nested
@@ -145,6 +171,82 @@ class ProductCreateInspectionUseCaseTest {
 			assertThatThrownBy(() -> useCase.createInspection(ADMIN_UUID, request))
 				.isInstanceOf(CustomException.class)
 				.hasFieldOrPropertyWithValue("errorType", ErrorType.INSPECTION_ALREADY_COMPLETED);
+		}
+
+		@Test
+		@DisplayName("성공: 검수가 승인되면 DB에 저장하고 ES에 적재한다")
+		void createInspection_Success() {
+			// given
+			String inspectorId = "admin-uuid";
+			Long productId = 1L;
+			ProductInspectionRequestDto requestDto = new ProductInspectionRequestDto(
+				productId, InspectionStatus.APPROVED, ProductCondition.MISB, "승인"
+			);
+
+			Product mockProduct = mock(Product.class);
+			ProductMember mockSeller = mock(ProductMember.class);
+			ProductMember mockAdmin = mock(ProductMember.class);
+			Inspection mockInspection = mock(Inspection.class);
+
+			// 1. 기본 조회 Mocking
+			when(productSupport.verifyValidateProduct(productId)).thenReturn(mockProduct);
+			when(mockProduct.getSeller()).thenReturn(mockSeller);
+			when(mockSeller.isDeleted()).thenReturn(false);
+			when(productSupport.verifyValidateMember(inspectorId)).thenReturn(mockAdmin);
+
+			// 2. [중요] 유효성 검사 통과를 위한 상태 Mocking (이거 없으면 '검수 완료된 상품' 에러 남)
+			when(mockProduct.getInspectionStatus()).thenReturn(InspectionStatus.PENDING);
+			when(mockProduct.getProductCondition()).thenReturn(ProductCondition.INSPECTION);
+			when(mockProduct.getId()).thenReturn(productId); // ID 반환 설정
+
+			// 3. DB 저장 Mocking
+			when(inspectionRepository.save(any())).thenReturn(mockInspection);
+			when(mockInspection.getId()).thenReturn(10L);
+			when(mockInspection.getProduct()).thenReturn(mockProduct);
+
+			// 4. [중요] ES 적재를 위한 경매 정보 Mocking (이거 없으면 NPE 발생)
+			AuctionInfoResponseDto auctionInfo = new AuctionInfoResponseDto(555L, 10000, LocalDateTime.now());
+			when(auctionApiClient.getAuctionInfo(productId)).thenReturn(auctionInfo);
+
+			// when
+			useCase.createInspection(inspectorId, requestDto);
+
+			// then
+			// ES 적재 메서드가 호출되었는지 확인
+			verify(productSearchService, times(1)).save(
+				eq(mockProduct),
+				any(), // images
+				eq(555L),  // auctionId
+				eq(10000), // startPrice
+				any()      // startedAt
+			);
+		}
+
+		@Test
+		@DisplayName("실패: 이미 검수가 완료된 상품이면 예외가 발생한다")
+		void createInspection_AlreadyCompleted() {
+			// given
+			String inspectorId = "admin-uuid";
+			Long productId = 1L;
+			ProductInspectionRequestDto requestDto = new ProductInspectionRequestDto(
+				productId, InspectionStatus.APPROVED, ProductCondition.MISB, "승인"
+			);
+
+			Product mockProduct = mock(Product.class);
+			ProductMember mockSeller = mock(ProductMember.class);
+
+			when(productSupport.verifyValidateProduct(productId)).thenReturn(mockProduct);
+			when(mockProduct.getSeller()).thenReturn(mockSeller);
+
+			// [중요] 이미 승인된 상태로 설정
+			when(mockProduct.getInspectionStatus()).thenReturn(InspectionStatus.APPROVED);
+			// OR
+			// when(mockProduct.getProductCondition()).thenReturn(ProductCondition.NEW);
+
+			// when & then: 예외가 발생하는지 확인
+			assertThrows(CustomException.class, () ->
+				useCase.createInspection(inspectorId, requestDto)
+			);
 		}
 	}
 

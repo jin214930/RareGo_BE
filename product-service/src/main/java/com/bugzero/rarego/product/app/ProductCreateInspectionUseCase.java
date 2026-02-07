@@ -11,16 +11,23 @@ import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionRequestDto;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
 import com.bugzero.rarego.product.out.InspectionRepository;
+import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductCreateInspectionUseCase {
+
 	private final InspectionRepository inspectionRepository;
 	private final ProductSupport productSupport;
+	private final AuctionApiClient auctionApiClient;
+	private final ProductSearchService productSearchService;
 
 	@Transactional
 	public ProductInspectionResponseDto createInspection(String inspectorId, ProductInspectionRequestDto dto) {
@@ -45,6 +52,8 @@ public class ProductCreateInspectionUseCase {
 		//상품데이터의 상품상태도 동기화
 		product.determineProductCondition(dto.productCondition());
 
+		synchronizeElasticsearch(product, dto.status());
+
 		return ProductInspectionResponseDto.builder()
 			.inspectionId(inspection.getId())
 			.productId(inspection.getProduct().getId())
@@ -54,6 +63,29 @@ public class ProductCreateInspectionUseCase {
 			.createdAt(inspection.getCreatedAt())
 			.updatedAt(inspection.getUpdatedAt())
 			.build();
+	}
+
+	// 관리자가 검수 승인을 누르면 -> DB에 저장하고 -> 즉시 ProductSearchService.save()를 호출하여 ES에 적재
+	// ES 적재 실패시 승인처리 자체는 실행이 되고, 동기화 처리 자체는 콜백
+	private void synchronizeElasticsearch(Product product, InspectionStatus status) {
+		try {
+			if (status == InspectionStatus.APPROVED) {
+				AuctionInfoResponseDto auctionInfo = auctionApiClient.getAuctionInfo(product.getId());
+				productSearchService.save(
+					product,
+					product.getImages(),
+					auctionInfo.auctionId(),
+					auctionInfo.startPrice(),
+					auctionInfo.startedAt()
+				);
+			} else {
+				productSearchService.delete(product.getId());
+			}
+		} catch (Exception e) {
+			// 예외를 catch하고 다시 throw하지 않음
+			log.error("ES 동기화 실패 (DB는 정상 커밋됨). 추후 배치로 복구 필요: productId={}, error={}",
+				product.getId(), e.getMessage());
+		}
 	}
 
 	private void checkedReason(ProductInspectionRequestDto dto) {
@@ -69,4 +101,6 @@ public class ProductCreateInspectionUseCase {
 			throw new CustomException(ErrorType.INSPECTION_ALREADY_COMPLETED);
 		}
 	}
+
+
 }

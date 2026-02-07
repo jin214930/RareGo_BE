@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -37,6 +38,8 @@ class AuctionRelistUseCaseTest {
     private AuctionRepository auctionRepository;
     @Mock
     private AuctionOrderRepository auctionOrderRepository;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Test
     @DisplayName("재경매 성공: 유찰된 상품(주문 없음)을 재등록한다")
