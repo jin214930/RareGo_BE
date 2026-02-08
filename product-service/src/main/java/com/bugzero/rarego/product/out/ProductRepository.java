@@ -1,5 +1,6 @@
 package com.bugzero.rarego.product.out;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -62,5 +63,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 		@Param("category") Category category,
 		@Param("status") InspectionStatus status,
 		Pageable pageable
+	);
+
+	// 특정 시간 이후에 변경된 승인 상품 조회
+	List<Product> findAllByInspectionStatusAndUpdatedAtAfter(
+		InspectionStatus inspectionStatus,
+		LocalDateTime updatedAt
 	);
 }
