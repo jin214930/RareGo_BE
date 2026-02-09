@@ -17,7 +17,7 @@ public enum NotificationType {
 	private final String url;
 
 	public String makeUrl(Long referenceId) {
-		if (url.contains("%")) {
+		if (!url.contains("%")) {
 			return url;
 		}
 		return url.formatted(referenceId);
