@@ -53,10 +53,28 @@ public class NotificationCreateNotificationUseCase {
 			notificationRepository.saveAndFlush(notification);
 		} catch (DataIntegrityViolationException e) {
 			// 이미 DB에 존재하는 경우 (Unique Constraint 위배)
-			log.warn("[알림 중복 무시] 이미 존재하는 알림입니다. MemberId: {}, Type: {}, RefId: {}",
-				notification.getMember().getId(),
-				notification.getType(),
-				notification.getReferenceId());
+			if (isDuplicateEntryException(e)) {
+
+				log.warn("[알림 중복 무시] 이미 존재하는 알림입니다. MemberId: {}, Type: {}, RefId: {}",
+					notification.getMember().getId(),
+					notification.getType(),
+					notification.getReferenceId());
+				return;
+			}
+
+			log.error("중복이 아닌 심각한 오류 발생, 알림 저장 실패.", e);
+			throw e;
 		}
+	}
+
+	private boolean isDuplicateEntryException(DataIntegrityViolationException e) {
+		Throwable cause = e.getMostSpecificCause();
+
+		// 우리가 Entity에 설정한 제약조건 이름: "uk_notification_dedup"
+		String message = cause.getMessage();
+		return message != null && (
+			message.contains("uk_notification_dedup") || // 우리가 지정한 제약조건명
+				message.contains("Duplicate entry")          // MySQL 메시지 패턴
+		);
 	}
 }
