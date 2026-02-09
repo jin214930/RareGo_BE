@@ -22,7 +22,7 @@ public class SystemAuthTokenProvider {
 			accessTokenExpirationSeconds,
 			Map.of(
 			"publicId", "00000000-0000-0000-0000-000000000001",
-			"role", "ADMIN"
+			"role", "SYSTEM"
 			)
 		);
 	}
