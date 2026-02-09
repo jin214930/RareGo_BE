@@ -61,5 +61,4 @@ public class ProductFacade {
 		return productSyncMemberUseCase.syncMember(member);
 	}
 
-
 }
