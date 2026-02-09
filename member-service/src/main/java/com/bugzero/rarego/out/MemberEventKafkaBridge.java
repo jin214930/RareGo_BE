@@ -6,6 +6,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
+import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,5 +32,15 @@ public class MemberEventKafkaBridge {
 		String key = String.valueOf(event.memberDto().publicId());
 
 		kafkaTemplate.send(TOPIC_MEMBER_JOINED, key, event);
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void sendToKafka(MemberUpdatedEvent event) {
+		log.info("🚀 Bridge: Kafka로 이벤트 전송 [Topic: {}]", TOPIC_MEMBER_UPDATED);
+
+		// 메시지 순서 보장을 위해 Key를 publicId로 설정
+		String key = String.valueOf(event.memberDto().publicId());
+
+		kafkaTemplate.send(TOPIC_MEMBER_UPDATED, key, event);
 	}
 }

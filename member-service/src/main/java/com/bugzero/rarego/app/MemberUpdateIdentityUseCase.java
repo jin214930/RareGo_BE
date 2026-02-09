@@ -1,5 +1,6 @@
 package com.bugzero.rarego.app;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class MemberUpdateIdentityUseCase {
 
 	private final MemberSupport memberSupport;
 	private final MemberRepository memberRepository;
-	private final EventPublisher eventPublisher;
+	private final ApplicationEventPublisher eventPublisher;
 
 	// 본인인증
 	public MemberUpdateResponseDto updateIdentity(String publicId, MemberUpdateIdentityRequestDto requestDto
@@ -49,7 +50,7 @@ public class MemberUpdateIdentityUseCase {
 		memberSupport.findByContactPhone(contactPhone);	// 이미 같은 번호 존재하면 오류
 		member.changeIdentity(normalizedPhone, normalizedName);
 		memberRepository.save(member);
-		eventPublisher.publish(new MemberUpdatedEvent(MemberDto.from(member)));
+		eventPublisher.publishEvent(new MemberUpdatedEvent(MemberDto.from(member)));
 		return MemberUpdateResponseDto.from(member);
 	}
 
