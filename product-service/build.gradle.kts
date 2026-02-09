@@ -22,7 +22,7 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation(platform("software.amazon.awssdk:bom:2.41.19"))
+    implementation(platform("software.amazon.awssdk:bom:2.41.24"))
     implementation("software.amazon.awssdk:s3")
 
     // --- [Spring Boot Starters: Core & Web] ---
@@ -46,7 +46,7 @@ dependencies {
     // --- [NoSQL & Messaging] ---
     implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
-    implementation("org.redisson:redisson-spring-boot-starter:4.1.0")
+    implementation("org.redisson:redisson-spring-boot-starter:4.2.0")
     implementation("org.springframework.boot:spring-boot-starter-kafka")
 
     // --- [AI & Monitoring] ---
@@ -72,7 +72,7 @@ dependencies {
     // testImplementation("org.springframework.batch:spring-batch-test")
 
     // --- [Test: Testcontainers] ---
-    implementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
+    implementation(platform("org.testcontainers:testcontainers-bom:2.0.3"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
