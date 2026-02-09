@@ -49,6 +49,7 @@ INSERT INTO member_member (id, deleted, email, nickname, public_id, real_name, c
 INSERT INTO product_member SELECT * FROM member_member;
 INSERT INTO auction_member SELECT * FROM member_member;
 INSERT INTO payment_member SELECT * FROM member_member;
+INSERT INTO rarego.notification_member SELECT * FROM member_member;
 
 -- 3. 소셜 로그인 계정 생성
 INSERT INTO auth_account (deleted, member_public_id, provider, provider_id, role, created_at, updated_at) VALUES

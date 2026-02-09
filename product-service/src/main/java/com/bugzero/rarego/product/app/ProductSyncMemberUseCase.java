@@ -34,7 +34,7 @@ public class ProductSyncMemberUseCase {
 				&& member.updatedAt() != null
 				&& !member.updatedAt().isAfter(existed.getUpdatedAt())) {
 
-				log.info("[SKIP] AuctionMember sync 중 이벤트 지연 무시됨. id={}, existedUpdatedAt={}, eventUpdatedAt={}",
+				log.info("[SKIP] ProductMember sync 중 이벤트 지연 무시됨. id={}, existedUpdatedAt={}, eventUpdatedAt={}",
 					member.id(), existed.getUpdatedAt(), member.updatedAt());
 				return existed; // 스킵
 			}
