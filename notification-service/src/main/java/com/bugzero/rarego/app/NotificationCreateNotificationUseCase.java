@@ -34,8 +34,7 @@ public class NotificationCreateNotificationUseCase {
 			return;
 		}
 
-		NotificationMapper<Object> mapper = mapperOptional.get();
-		List<Notification> notifications = mapper.map(event);
+		List<Notification> notifications = mapperOptional.get().map(event);
 
 		if (notifications.isEmpty()) {
 			log.warn("[알림] 생성된 알림이 없습니다. Event: {}", event.getClass().getSimpleName());
@@ -46,13 +45,12 @@ public class NotificationCreateNotificationUseCase {
 			saveWithIdempotency(notification);
 		}
 
-		log.info("[알림] 저장 완료. 타입: {}, 개수: {}건",
-			event.getClass().getSimpleName(), notifications.size());
+		log.info("[알림] 저장 완료. 타입: {}, 개수: {}건", event.getClass().getSimpleName(), notifications.size());
 	}
 
 	private void saveWithIdempotency(Notification notification) {
 		try {
-			notificationRepository.save(notification);
+			notificationRepository.saveAndFlush(notification);
 		} catch (DataIntegrityViolationException e) {
 			// 이미 DB에 존재하는 경우 (Unique Constraint 위배)
 			log.warn("[알림 중복 무시] 이미 존재하는 알림입니다. MemberId: {}, Type: {}, RefId: {}",
