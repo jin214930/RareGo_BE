@@ -1,5 +1,6 @@
 package com.bugzero.rarego.app;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import java.util.Collections;
@@ -36,7 +37,7 @@ class NotificationCreateNotificationUseCaseTest {
 	}
 
 	@Test
-	@DisplayName("성공: 지원하는 이벤트가 들어오면 알림을 생성하고 '단건으로' 저장한다.")
+	@DisplayName("성공: 지원하는 이벤트가 들어오면 알림을 변환하고 '즉시 저장(saveAndFlush)'한다.")
 	void createNotification_success() {
 		// given
 		TestEvent event = new TestEvent(1L);
@@ -49,12 +50,12 @@ class NotificationCreateNotificationUseCaseTest {
 		useCase.createNotification(event);
 
 		// then
-		// [변경] saveAll이 아니라 save가 호출되었는지 검증
-		then(notificationRepository).should(times(1)).save(notification);
+		// [변경] 트랜잭션 내 예외 포착을 위해 saveAndFlush 호출 검증
+		then(notificationRepository).should(times(1)).saveAndFlush(notification);
 	}
 
 	@Test
-	@DisplayName("성공(중복무시): 이미 존재하는 알림(중복)이라면 에러를 무시하고 정상 종료한다.")
+	@DisplayName("성공(중복무시): 'Duplicate entry' 예외가 발생하면 로그를 남기고 정상 종료한다.")
 	void createNotification_success_duplicate() {
 		// given
 		TestEvent event = new TestEvent(1L);
@@ -64,25 +65,52 @@ class NotificationCreateNotificationUseCaseTest {
 		given(notificationMapper.supports(event)).willReturn(true);
 		given(notificationMapper.map(event)).willReturn(List.of(notification));
 
-		// [중요] 예외 발생 시 로그를 찍기 위해 notification.getMember().getId()를 호출함.
-		// Mock 객체이므로 NullPointerException 방지를 위해 Member 스텁핑 필요
+		// 로그 출력을 위한 Mock Stubbing
 		given(notification.getMember()).willReturn(member);
 
-		// [핵심] 저장 시 DataIntegrityViolationException 예외가 터지도록 설정
-		willThrow(new DataIntegrityViolationException("Duplicate entry"))
-			.given(notificationRepository).save(notification);
+		// [핵심] 예외 메시지에 "Duplicate entry"가 포함되어야 로직에서 중복으로 인식함
+		DataIntegrityViolationException duplicateException =
+			new DataIntegrityViolationException("Duplicate entry '1-OUTBID' for key 'uk_notification_dedup'");
+
+		willThrow(duplicateException)
+			.given(notificationRepository).saveAndFlush(notification);
 
 		// when
-		// 예외가 던져지지 않아야 테스트 통과 (try-catch 작동 확인)
 		useCase.createNotification(event);
 
 		// then
-		// 저장은 시도했으나 예외를 삼켰음을 검증
-		then(notificationRepository).should(times(1)).save(notification);
+		// 예외가 던져지지 않고(Swallowed), 저장 시도는 했음을 검증
+		then(notificationRepository).should(times(1)).saveAndFlush(notification);
 	}
 
 	@Test
-	@DisplayName("실패: 지원하지 않는 이벤트가 들어오면 저장하지 않고 로그만 남긴다(무시한다).")
+	@DisplayName("실패: 중복이 아닌 다른 데이터 무결성 예외(FK, NotNull 등)는 다시 던져야 한다.")
+	void createNotification_fail_integrity_violation() {
+		// given
+		TestEvent event = new TestEvent(1L);
+		Notification notification = mock(Notification.class);
+
+		given(notificationMapper.supports(event)).willReturn(true);
+		given(notificationMapper.map(event)).willReturn(List.of(notification));
+
+		// [핵심] 중복 키워드가 없는 다른 종류의 예외 생성
+		DataIntegrityViolationException otherException =
+			new DataIntegrityViolationException("Column 'message' cannot be null");
+
+		willThrow(otherException)
+			.given(notificationRepository).saveAndFlush(notification);
+
+		// when & then
+		// 중복이 아니므로 예외가 밖으로 던져져야 함 -> Kafka 재시도 유도
+		assertThatThrownBy(() -> useCase.createNotification(event))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("cannot be null");
+
+		then(notificationRepository).should(times(1)).saveAndFlush(notification);
+	}
+
+	@Test
+	@DisplayName("실패: 지원하지 않는 이벤트가 들어오면 저장하지 않는다.")
 	void createNotification_fail_not_supported() {
 		// given
 		TestEvent event = new TestEvent(1L);
@@ -94,8 +122,7 @@ class NotificationCreateNotificationUseCaseTest {
 
 		// then
 		then(notificationMapper).should(never()).map(any());
-		// [변경] saveAll -> save
-		then(notificationRepository).should(never()).save(any());
+		then(notificationRepository).should(never()).saveAndFlush(any());
 	}
 
 	@Test
@@ -111,8 +138,7 @@ class NotificationCreateNotificationUseCaseTest {
 		useCase.createNotification(event);
 
 		// then
-		// [변경] saveAll -> save
-		then(notificationRepository).should(never()).save(any());
+		then(notificationRepository).should(never()).saveAndFlush(any());
 	}
 
 	record TestEvent(Long id) {
