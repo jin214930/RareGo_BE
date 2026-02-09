@@ -27,8 +27,8 @@ public class PaymentEventKafkaBridge {
 
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void send(SettlementFinishedEvent event) {
-		if (event.totalCount() == 0) {
+	public void sendSettlementFinished(SettlementFinishedEvent event) {
+		if (event.settlements().isEmpty()) {
 			return;
 		}
 
@@ -43,7 +43,7 @@ public class PaymentEventKafkaBridge {
 
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void send(AuctionPaymentCompletedEvent event) {
+	public void sendAuctionPaymentCompleted(AuctionPaymentCompletedEvent event) {
 		try {
 			log.info("Kafka 발행 시작: 낙찰 결제 완료 (orderId={})", event.orderId());
 
@@ -58,7 +58,7 @@ public class PaymentEventKafkaBridge {
 
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void send(AuctionPaymentExpiringSoonEvent event) {
+	public void sendAuctionPaymentExpiringSoon(AuctionPaymentExpiringSoonEvent event) {
 		log.info("결제 마감 임박 이벤트 Kafka 발행 시작: orderId={}, auctionId={}", event.orderId(), event.auctionId());
 
 		try {
