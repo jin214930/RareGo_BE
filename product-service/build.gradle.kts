@@ -72,7 +72,7 @@ dependencies {
     // testImplementation("org.springframework.batch:spring-batch-test")
 
     // --- [Test: Testcontainers] ---
-    implementation(platform("org.testcontainers:testcontainers-bom:2.0.3"))
+    implementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
