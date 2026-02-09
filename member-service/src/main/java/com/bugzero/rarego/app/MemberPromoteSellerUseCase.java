@@ -20,8 +20,8 @@ public class MemberPromoteSellerUseCase {
 	@Transactional
 	public void promoteSeller(String publicId, String role) {
 
-		// 이미 seller나 admin이라면 로직 불필요
-		if (role.equals("SELLER") || role.equals("ADMIN")) {
+		// 이미 seller나 admin, system이라면 로직 불필요
+		if (!role.equals("USER")) {
 			return;
 		}
 
