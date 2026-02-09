@@ -10,6 +10,8 @@ import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.in.dto.NotificationResponseDto;
 import com.bugzero.rarego.in.dto.NotificationUnreadCountResponseDto;
 
+import com.bugzero.rarego.shared.member.domain.MemberDto;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -20,6 +22,7 @@ public class NotificationFacade {
 	private final NotificationGetNotificationsUseCase notificationGetNotificationsUseCase;
 	private final NotificationGetUnreadCountUseCase notificationGetUnreadCountUseCase;
 	private final NotificationMarkAsReadUseCase notificationMarkAsReadUseCase;
+	private final NotificationSyncMemberUseCase notificationSyncMemberUseCase;
 
 	public void createNotification(Object event) {
 		notificationCreateNotificationUseCase.createNotification(event);
@@ -40,5 +43,9 @@ public class NotificationFacade {
 
 	public void markAsRead(String publicId, Long id) {
 		notificationMarkAsReadUseCase.markAsRead(publicId, id);
+	}
+
+	public void syncMember(MemberDto memberDto) {
+		notificationSyncMemberUseCase.syncMember(memberDto);
 	}
 }
