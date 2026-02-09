@@ -72,15 +72,15 @@ dependencies {
     // testImplementation("org.springframework.batch:spring-batch-test")
 
     // --- [Test: Testcontainers] ---
-    implementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers")
-    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:elasticsearch")
 }
 dependencyManagement {
     imports {
         mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
+        mavenBom("org.testcontainers:testcontainers-bom:1.20.4")
     }
 }
 
