@@ -18,6 +18,7 @@ import com.bugzero.rarego.domain.Member;
 import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.shared.auth.out.AuthApiClient;
 import com.bugzero.rarego.shared.member.event.MemberBecameSellerEvent;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +30,9 @@ class MemberPromoteSellerUseCaseTest {
 	@Mock
 	private EventPublisher eventPublisher;
 
+	@Mock
+	private AuthApiClient authApiClient;
+
 	@InjectMocks
 	private MemberPromoteSellerUseCase memberPromoteSellerUseCase;
 
@@ -37,7 +41,7 @@ class MemberPromoteSellerUseCaseTest {
 	void promoteSeller_returnsWhenRoleSeller() {
 		memberPromoteSellerUseCase.promoteSeller("public-id", "SELLER");
 
-		verifyNoInteractions(memberSupport, eventPublisher);
+		verifyNoInteractions(memberSupport, authApiClient, eventPublisher);
 	}
 
 	@Test
@@ -45,17 +49,18 @@ class MemberPromoteSellerUseCaseTest {
 	void promoteSeller_returnsWhenRoleAdmin() {
 		memberPromoteSellerUseCase.promoteSeller("public-id", "ADMIN");
 
-		verifyNoInteractions(memberSupport, eventPublisher);
+		verifyNoInteractions(memberSupport, authApiClient, eventPublisher);
 	}
 
 	@Test
-	@DisplayName("필수 항목이 모두 있으면 판매자 전환 이벤트를 발행한다")
+	@DisplayName("필수 항목이 모두 있으면 auth role을 동기 업데이트하고 판매자 전환 이벤트를 발행한다")
 	void promoteSeller_publishesEvent() {
 		Member member = baseMember();
 		when(memberSupport.findByPublicId("public-id")).thenReturn(member);
 
 		memberPromoteSellerUseCase.promoteSeller("public-id", "USER");
 
+		verify(authApiClient).promoteSeller("public-id");
 		ArgumentCaptor<MemberBecameSellerEvent> eventCaptor =
 			ArgumentCaptor.forClass(MemberBecameSellerEvent.class);
 		verify(eventPublisher).publish(eventCaptor.capture());
@@ -113,6 +118,7 @@ class MemberPromoteSellerUseCaseTest {
 			.isInstanceOf(CustomException.class)
 			.extracting("errorType")
 			.isEqualTo(errorType);
+		verify(authApiClient, never()).promoteSeller(anyString());
 		verify(eventPublisher, never()).publish(any());
 	}
 
