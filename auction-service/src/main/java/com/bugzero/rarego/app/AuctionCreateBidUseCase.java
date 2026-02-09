@@ -6,8 +6,10 @@ import com.bugzero.rarego.domain.Bid;
 import com.bugzero.rarego.event.AuctionBidCreatedEvent;
 import com.bugzero.rarego.event.AuctionUpdatedEvent;
 import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.lock.DistributedLock;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.BidResponseDto;
+import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.out.BidRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
@@ -27,13 +29,14 @@ public class AuctionCreateBidUseCase {
     private final BidRepository bidRepository;
     private final PaymentApiClient paymentApiClient;
     private final ApplicationEventPublisher eventPublisher;
+    private final AuctionRepository auctionRepository;
 
     @Transactional
     public BidResponseDto createBid(Long auctionId, String memberPublicId, int bidAmount) {
         // 1. 회원 조회
         AuctionMember bidder = support.getPublicMember(memberPublicId);
 
-        // 2. 경매 조회 (비관적 락)
+        // 2. 경매 조회
         Auction auction = support.getAuctionWithLock(auctionId);
 
         // 3. 유효성 검증

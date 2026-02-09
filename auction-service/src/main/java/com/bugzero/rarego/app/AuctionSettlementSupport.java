@@ -42,7 +42,7 @@ public class AuctionSettlementSupport {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processSettlement(Long auctionId) {
         // 비관적 락으로 조회: 다른 트랜잭션이 끝날 때까지 대기하여 최신 상태 보장
-        Auction auction = auctionRepository.findByIdWithLock(auctionId)
+        Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
 
         // 상태 검증: 진행 중이 아니라면 이미 다른 곳에서 정산/철회된 것임

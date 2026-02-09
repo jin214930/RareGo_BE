@@ -85,7 +85,7 @@ class AuctionCreateBidUseCaseTest {
         given(support.getPublicMember(BIDDER_PUBLICID)).willReturn(bidder);
 
         // [중요] UseCase에서 getAuctionWithLock을 호출하므로 맞춰줌
-        given(support.getAuctionWithLock(AUCTION_ID)).willReturn(auction);
+        given(support.findAuctionById(AUCTION_ID)).willReturn(auction);
 
         // 연속 입찰 검증 (Repository 직접 호출 유지)
         given(bidRepository.findTopByAuctionIdOrderByBidTimeDesc(AUCTION_ID)).willReturn(Optional.empty());
@@ -124,7 +124,7 @@ class AuctionCreateBidUseCaseTest {
 
         // [수정] Support Mocking
         given(support.getPublicMember(SELLER_PUBLICID)).willReturn(seller);
-        given(support.getAuctionWithLock(AUCTION_ID)).willReturn(auction);
+        given(support.findAuctionById(AUCTION_ID)).willReturn(auction);
 
         // when & then
         assertThatThrownBy(() ->
@@ -160,7 +160,7 @@ class AuctionCreateBidUseCaseTest {
 
         // [수정] Support Mocking
         given(support.getPublicMember(BIDDER_PUBLICID)).willReturn(bidder);
-        given(support.getAuctionWithLock(AUCTION_ID)).willReturn(auction);
+        given(support.findAuctionById(AUCTION_ID)).willReturn(auction);
 
         // 이전 입찰 기록이 있는 상태로 설정
         Bid lastBid = Bid.builder().bidderId(999L).build();

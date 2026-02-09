@@ -73,7 +73,7 @@ class AuctionSettlementSupportTest {
                 .bidAmount(50000)
                 .build();
 
-        given(auctionRepository.findByIdWithLock(auctionId)).willReturn(Optional.of(auction));
+        given(auctionRepository.findById(auctionId)).willReturn(Optional.of(auction));
 
         given(bidRepository.existsByAuctionId(auctionId)).willReturn(true);
         given(bidRepository.findTopByAuctionIdOrderByBidAmountDescBidTimeAsc(auctionId))
@@ -95,7 +95,7 @@ class AuctionSettlementSupportTest {
         // given
         Long auctionId = 1L;
 
-        given(auctionRepository.findByIdWithLock(auctionId)).willReturn(Optional.of(auction));
+        given(auctionRepository.findById(auctionId)).willReturn(Optional.of(auction));
 
         given(bidRepository.existsByAuctionId(auctionId)).willReturn(false);
 
