@@ -9,9 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = {KafkaAutoConfiguration.class})
 @TestPropertySource(properties = {
@@ -24,60 +26,54 @@ class AuctionKafkaConnectionTest {
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
 
+    // 토픽명 상수화
+    private static final String TOPIC_AUCTION_ENDED = "auction-ended";
+    private static final String TOPIC_AUCTION_RELISTED = "auction-relisted";
+    private static final String TOPIC_AUCTION_STARTED = "auction-started";
+
     @Test
     @DisplayName("로컬 카프카로 실제 경매 종료 메시지 전송 테스트")
     void testAuctionEndedRealSend() {
-        // 1. 보낼 데이터 생성
         AuctionEndedEvent event = new AuctionEndedEvent(999L, 777L, 150000, 888L);
-
-        // 2. 실제 카프카로 전송 (토픽명: auction-ended)
-        // 전송 후 get()을 호출하여 성공할 때까지 기다림
-        try {
-            kafkaTemplate.send("auction-ended", "999", event).get();
-            System.out.println("카프카 경매 종료 메시지 전송 성공!");
-        } catch (Exception e) {
-            System.err.println("전송 실패: " + e.getMessage());
-        }
+        sendAndLog(TOPIC_AUCTION_ENDED, "999", event);
     }
 
     @Test
     @DisplayName("로컬 카프카로 실제 재등록 메시지 전송 테스트")
     void testRelistRealSend() {
-        // 1. 보낼 데이터 생성
         AuctionRelistedEvent event = new AuctionRelistedEvent(
-                999L,                    // productId
-                1001L,                   // newAuctionId
-                120000,                  // startPrice
-                LocalDateTime.now()      // startedAt
+                999L, 1001L, 120000, LocalDateTime.now()
         );
-
-        // 2. 실제 카프카로 전송 (토픽명: auction-relisted)
-        // 전송 후 get()을 호출하여 성공할 때까지 기다림
-        try {
-            kafkaTemplate.send("auction-relisted", "999", event).get();
-            System.out.println("카프카 재등록 메시지 전송 성공!");
-        } catch (Exception e) {
-            System.err.println("전송 실패: " + e.getMessage());
-        }
+        sendAndLog(TOPIC_AUCTION_RELISTED, "999", event);
     }
 
     @Test
     @DisplayName("로컬 카프카로 실제 경매 시작 메시지 전송 테스트")
     void testAuctionStartedRealSend() {
-        // 1. 보낼 데이터 생성
         AuctionStartedEvent event = new AuctionStartedEvent(
-                777L,                    // auctionId
-                999L,                    // productId
-                LocalDateTime.now()      // startedAt
+                777L, 999L, LocalDateTime.now()
         );
+        sendAndLog(TOPIC_AUCTION_STARTED, "777", event);
+    }
 
-        // 2. 실제 카프카로 전송 (토픽명: auction-started)
-        // 전송 후 get()을 호출하여 성공할 때까지 기다림
+    /**
+     * 전송 및 결과 로그 출력 헬퍼 메서드
+     */
+    private void sendAndLog(String topic, String key, Object event) {
         try {
-            kafkaTemplate.send("auction-started", "777", event).get();
-            System.out.println("카프카 경매 시작 메시지 전송 성공!");
+            System.out.println(">>> 전송 시도: Topic=" + topic + ", Key=" + key);
+
+            SendResult<String, Object> result = kafkaTemplate.send(topic, key, event)
+                    .get(3, TimeUnit.SECONDS); // 타임아웃 추가
+
+            System.out.println("✅ 전송 성공!");
+            System.out.println("   - Offset: " + result.getRecordMetadata().offset());
+            System.out.println("   - Partition: " + result.getRecordMetadata().partition());
+            System.out.println("--------------------------------------------------");
+
         } catch (Exception e) {
-            System.err.println("전송 실패: " + e.getMessage());
+            System.err.println("❌ 전송 실패: " + e.getMessage());
+            throw new RuntimeException("Kafka 전송 실패", e); // 테스트 실패 처리
         }
     }
 }
