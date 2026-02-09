@@ -7,7 +7,6 @@ import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,20 +14,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.bugzero.rarego.app.MemberPromoteSellerUseCase;
 import com.bugzero.rarego.app.MemberSupport;
 import com.bugzero.rarego.domain.Member;
-import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auth.out.AuthApiClient;
-import com.bugzero.rarego.shared.member.event.MemberBecameSellerEvent;
 
 @ExtendWith(MockitoExtension.class)
 class MemberPromoteSellerUseCaseTest {
 
 	@Mock
 	private MemberSupport memberSupport;
-
-	@Mock
-	private EventPublisher eventPublisher;
 
 	@Mock
 	private AuthApiClient authApiClient;
@@ -41,7 +35,7 @@ class MemberPromoteSellerUseCaseTest {
 	void promoteSeller_returnsWhenRoleSeller() {
 		memberPromoteSellerUseCase.promoteSeller("public-id", "SELLER");
 
-		verifyNoInteractions(memberSupport, authApiClient, eventPublisher);
+		verifyNoInteractions(memberSupport, authApiClient);
 	}
 
 	@Test
@@ -49,22 +43,18 @@ class MemberPromoteSellerUseCaseTest {
 	void promoteSeller_returnsWhenRoleAdmin() {
 		memberPromoteSellerUseCase.promoteSeller("public-id", "ADMIN");
 
-		verifyNoInteractions(memberSupport, authApiClient, eventPublisher);
+		verifyNoInteractions(memberSupport, authApiClient);
 	}
 
 	@Test
-	@DisplayName("필수 항목이 모두 있으면 auth role을 동기 업데이트하고 판매자 전환 이벤트를 발행한다")
-	void promoteSeller_publishesEvent() {
+	@DisplayName("필수 항목이 모두 있으면 auth role을 동기 업데이트한다")
+	void promoteSeller_callsAuthApiSynchronously() {
 		Member member = baseMember();
 		when(memberSupport.findByPublicId("public-id")).thenReturn(member);
 
 		memberPromoteSellerUseCase.promoteSeller("public-id", "USER");
 
 		verify(authApiClient).promoteSeller("public-id");
-		ArgumentCaptor<MemberBecameSellerEvent> eventCaptor =
-			ArgumentCaptor.forClass(MemberBecameSellerEvent.class);
-		verify(eventPublisher).publish(eventCaptor.capture());
-		assertThat(eventCaptor.getValue().getPublicId()).isEqualTo("public-id");
 	}
 
 	@Test
@@ -119,7 +109,6 @@ class MemberPromoteSellerUseCaseTest {
 			.extracting("errorType")
 			.isEqualTo(errorType);
 		verify(authApiClient, never()).promoteSeller(anyString());
-		verify(eventPublisher, never()).publish(any());
 	}
 
 	private Member baseMember() {
