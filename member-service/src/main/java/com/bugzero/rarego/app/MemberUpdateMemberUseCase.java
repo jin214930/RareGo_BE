@@ -25,9 +25,9 @@ public class MemberUpdateMemberUseCase {
 
 	private final MemberSupport memberSupport;
 	private final MemberRepository memberRepository;
-	private final EventPublisher eventPublisher;
+	private final ApplicationEventPublisher eventPublisher;
 
-	public MemberUpdateResponseDto updateMe(String publicId, String role, MemberUpdateRequestDto requestDto) {
+	public MemberUpdateResponseDto updateMe(String publicId, MemberUpdateRequestDto requestDto) {
 		Member member = memberSupport.findByPublicId(publicId);
 
 		// clearField와 본문 일치하는지 확인
