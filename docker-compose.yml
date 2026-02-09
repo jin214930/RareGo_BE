@@ -335,6 +335,12 @@ services:
       - ./docker/letsencrypt:/etc/letsencrypt
       - ./docker/letsencrypt-lib:/var/lib/letsencrypt
     depends_on:
+      - auth-service
+      - member-service
+      - auction-service
+      - payment-service
+      - product-service
+      - notification-service
       - grafana
       - prometheus
     extra_hosts:
