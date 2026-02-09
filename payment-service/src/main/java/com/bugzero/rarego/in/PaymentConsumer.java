@@ -24,9 +24,9 @@ public class PaymentConsumer {
 	public void handleMemberJoined(MemberJoinedEvent event) {
 		try {
 			paymentFacade.syncMember(event.memberDto());
-			log.info("회원 레플리카 등록 완료 - memberPublicId: {}", event.memberDto().publicId());
+			log.info("[payment] 회원 레플리카 등록 완료 - memberPublicId: {}", event.memberDto().publicId());
 		} catch (Exception e) {
-			log.error("회원 레플리카 등록 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
+			log.error("[payment] 회원 레플리카 등록 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
 			throw e;
 		}
 	}
@@ -36,9 +36,9 @@ public class PaymentConsumer {
 	public void handleMemberUpdated(MemberUpdatedEvent event) {
 		try {
 			paymentFacade.syncMember(event.memberDto());
-			log.info("회원 레플리카 수정 완료 - memberPublicId: {}", event.memberDto().publicId());
+			log.info("[payment] 회원 레플리카 수정 완료 - memberPublicId: {}", event.memberDto().publicId());
 		} catch (Exception e) {
-			log.error("회원 레플리카 수정 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
+			log.error("[payment] 회원 레플리카 수정 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
 			throw e;
 		}
 	}
