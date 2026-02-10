@@ -35,7 +35,7 @@ public class AiGetInternalPriceUseCase {
 		String searchQuery = String.format(TEMPLATE,
 			dto.name(), dto.description(), dto.category(), dto.condition());
 
-		NativeQuery nativeQuery = buildNativeQuery(searchQuery, dto.category(), dto.condition(), LIST_LIMIT);
+		NativeQuery nativeQuery = buildNativeQuery(searchQuery, dto.category(), dto.condition());
 
 		// 검색 실행 및 결과 매핑
 		SearchHits<ProductSearchDocument> hits = elasticsearchOperations.search(nativeQuery,
@@ -62,7 +62,7 @@ public class AiGetInternalPriceUseCase {
 			.collect(Collectors.toList());
 	}
 
-	private NativeQuery buildNativeQuery(String query, Category category, TemporaryCondition condition, int limit) {
+	private NativeQuery buildNativeQuery(String query, Category category, TemporaryCondition condition) {
 
 		// 1. 사용자 입력 텍스트를 벡터로 변환
 		List<Float> vectorList = generateEmbeddingToFloat(query);
@@ -72,7 +72,7 @@ public class AiGetInternalPriceUseCase {
 			.withKnnSearches(KnnSearch.of(ks -> ks
 				.field("embedding")
 				.queryVector(vectorList)
-				.k(limit)
+				.k(LIST_LIMIT)
 				.numCandidates(100)
 				.similarity(0.6f) // 코사인 유사도 커트라인
 				// [핵심 수정] 필터를 여기에 배치해야 점수가 정상 합산됩니다.
