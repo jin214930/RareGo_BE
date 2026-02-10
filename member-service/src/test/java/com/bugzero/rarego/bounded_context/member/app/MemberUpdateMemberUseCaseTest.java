@@ -53,6 +53,7 @@ class MemberUpdateMemberUseCaseTest {
 			null
 		);
 		given(memberSupport.findByPublicId("public-id")).willReturn(member);
+		given(memberRepository.saveAndFlush(member)).willReturn(member);
 
 		// when
 		MemberUpdateResponseDto response = memberUpdateMemberUseCase.updateMe("public-id", requestDto);
@@ -63,7 +64,7 @@ class MemberUpdateMemberUseCaseTest {
 		assertThat(response.zipCode()).isEqualTo("12345");
 		assertThat(response.address()).isEqualTo("new address");
 		assertThat(response.addressDetail()).isEqualTo("detail");
-		verify(memberRepository).save(member);
+		verify(memberRepository).saveAndFlush(member);
 	}
 
 	@Test
@@ -92,7 +93,7 @@ class MemberUpdateMemberUseCaseTest {
 			.isInstanceOf(CustomException.class)
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_NICKNAME_ALREADY_EXISTS);
-		verify(memberRepository, never()).save(any(Member.class));
+		verify(memberRepository, never()).saveAndFlush(any(Member.class));
 	}
 
 	@Test
@@ -109,13 +110,14 @@ class MemberUpdateMemberUseCaseTest {
 			Set.of(MemberClearField.INTRO)
 		);
 		given(memberSupport.findByPublicId("public-id")).willReturn(member);
+		given(memberRepository.saveAndFlush(member)).willReturn(member);
 
 		// when
 		MemberUpdateResponseDto response = memberUpdateMemberUseCase.updateMe("public-id", requestDto);
 
 		// then
 		assertThat(response.intro()).isNull();
-		verify(memberRepository).save(member);
+		verify(memberRepository).saveAndFlush(member);
 	}
 
 	@Test
@@ -146,7 +148,7 @@ class MemberUpdateMemberUseCaseTest {
 			.isInstanceOf(CustomException.class)
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_UPDATED_FAILED);
-		verify(memberRepository, never()).save(any(Member.class));
+		verify(memberRepository, never()).saveAndFlush(any(Member.class));
 	}
 
 	private Member baseMember() {

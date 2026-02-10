@@ -28,8 +28,8 @@ public class MemberWithdrawMemberUseCase {
 		}
 
 		member.softDelete();
-		memberRepository.save(member);
-		eventPublisher.publishEvent(new MemberUpdatedEvent(MemberDto.from(member)));
-		return member.getPublicId();
+		Member saved = memberRepository.saveAndFlush(member);
+		eventPublisher.publishEvent(new MemberUpdatedEvent(MemberDto.from(saved)));
+		return saved.getPublicId();
 	}
 }

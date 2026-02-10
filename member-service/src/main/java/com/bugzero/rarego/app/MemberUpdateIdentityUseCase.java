@@ -7,10 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.bugzero.rarego.domain.Member;
 import com.bugzero.rarego.domain.MemberUpdateIdentityRequestDto;
 import com.bugzero.rarego.domain.MemberUpdateResponseDto;
-import com.bugzero.rarego.out.MemberRepository;
-import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.out.MemberRepository;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
 import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
 
@@ -49,9 +48,9 @@ public class MemberUpdateIdentityUseCase {
 
 		memberSupport.findByContactPhone(contactPhone);	// 이미 같은 번호 존재하면 오류
 		member.changeIdentity(normalizedPhone, normalizedName);
-		memberRepository.save(member);
-		eventPublisher.publishEvent(new MemberUpdatedEvent(MemberDto.from(member)));
-		return MemberUpdateResponseDto.from(member);
+		Member saved = memberRepository.saveAndFlush(member);
+		eventPublisher.publishEvent(new MemberUpdatedEvent(MemberDto.from(saved)));
+		return MemberUpdateResponseDto.from(saved);
 	}
 
 	// 하이픈 방지

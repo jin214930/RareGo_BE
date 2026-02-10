@@ -78,12 +78,13 @@ class MemberWithdrawMemberUseCaseTest {
 			.build();
 
 		when(memberSupport.findByPublicId("public-id")).thenReturn(member);
+		when(memberRepository.saveAndFlush(member)).thenReturn(member);
 
 		String result = memberWithdrawMemberUseCase.withdraw("public-id");
 
 		assertThat(result).isEqualTo("public-id");
 		assertThat(member.isDeleted()).isTrue();
-		verify(memberRepository).save(member);
+		verify(memberRepository).saveAndFlush(member);
 
 		ArgumentCaptor<MemberUpdatedEvent> captor = ArgumentCaptor.forClass(MemberUpdatedEvent.class);
 		verify(eventPublisher).publishEvent(captor.capture());
