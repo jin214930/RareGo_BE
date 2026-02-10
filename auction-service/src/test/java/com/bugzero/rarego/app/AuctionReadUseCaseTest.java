@@ -1,16 +1,16 @@
 package com.bugzero.rarego.app;
 
-import com.bugzero.rarego.domain.*;
-import com.bugzero.rarego.global.response.PagedResponseDto;
-import com.bugzero.rarego.in.dto.*;
-import com.bugzero.rarego.out.AuctionBookmarkRepository;
-import com.bugzero.rarego.out.AuctionOrderRepository;
-import com.bugzero.rarego.out.AuctionRepository;
-import com.bugzero.rarego.out.BidRepository;
-import com.bugzero.rarego.shared.auction.type.AuctionStatus;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
-import com.bugzero.rarego.shared.product.out.ProductApiClient;
-import com.bugzero.rarego.shared.product.type.Category;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,16 +25,33 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import com.bugzero.rarego.domain.Auction;
+import com.bugzero.rarego.domain.AuctionBookmark;
+import com.bugzero.rarego.domain.AuctionMember;
+import com.bugzero.rarego.domain.AuctionOrder;
+import com.bugzero.rarego.domain.AuctionOrderStatus;
+import com.bugzero.rarego.domain.Bid;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.response.PagedResponseDto;
+import com.bugzero.rarego.in.dto.AuctionBookmarkListResponseDto;
+import com.bugzero.rarego.in.dto.AuctionDetailResponseDto;
+import com.bugzero.rarego.in.dto.AuctionFilterType;
+import com.bugzero.rarego.in.dto.AuctionListResponseDto;
+import com.bugzero.rarego.in.dto.AuctionOrderResponseDto;
+import com.bugzero.rarego.in.dto.AuctionSearchCondition;
+import com.bugzero.rarego.in.dto.BidLogResponseDto;
+import com.bugzero.rarego.in.dto.MyAuctionOrderListResponseDto;
+import com.bugzero.rarego.in.dto.MyBidResponseDto;
+import com.bugzero.rarego.in.dto.MySaleResponseDto;
+import com.bugzero.rarego.out.AuctionBookmarkRepository;
+import com.bugzero.rarego.out.AuctionMemberRepository;
+import com.bugzero.rarego.out.AuctionOrderRepository;
+import com.bugzero.rarego.out.AuctionRepository;
+import com.bugzero.rarego.out.BidRepository;
+import com.bugzero.rarego.out.es.ProductSearchClient;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
+import com.bugzero.rarego.shared.product.type.Category;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionReadUseCaseTest {
@@ -726,14 +743,14 @@ class AuctionReadUseCaseTest {
         // given
         AuctionSearchCondition condition = new AuctionSearchCondition();
         condition.setKeyword("키워드");
-        condition.setCategory(Category.스타워즈);
+        condition.setCategory(Category.STARWARS);
         Pageable pageable = PageRequest.of(0, 10);
 
         // 1. 키워드로 상품 ID 검색
-        given(productApiClient.searchProductIds("키워드", Category.스타워즈)).willReturn(List.of(productId));
+        given(productSearchClient.searchProductIds("키워드", Category.STARWARS)).willReturn(List.of(productId));
 
         // 2. 검수 승인된 상품 ID 목록 조회
-        given(productApiClient.getApprovedProductIds()).willReturn(List.of(productId));
+        given(productSearchClient.getApprovedProductIds()).willReturn(List.of(productId));
 
             Page<Auction> auctionPage = new PageImpl<>(List.of(auction), pageable, 1);
             given(auctionRepository.findAllBySearchConditions(any(), any(), eq(List.of(productId)), eq(List.of(productId)), any())).willReturn(auctionPage);
@@ -748,8 +765,8 @@ class AuctionReadUseCaseTest {
         // then
         assertThat(result.data()).hasSize(1);
         assertThat(result.data().get(0).productName()).isEqualTo("검색 상품");
-        verify(productApiClient).searchProductIds("키워드", Category.스타워즈);
-        verify(productApiClient).getApprovedProductIds();
+        verify(productSearchClient).searchProductIds("키워드", Category.STARWARS);
+        verify(productSearchClient).getApprovedProductIds();
     }
 
         @Test
