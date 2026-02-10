@@ -20,7 +20,6 @@ public class PaymentConsumer {
 	private final PaymentFacade paymentFacade;
 
 	@KafkaListener(topics = "member-joined")
-	@Transactional(propagation = REQUIRES_NEW)
 	public void handleMemberJoined(MemberJoinedEvent event) {
 		try {
 			paymentFacade.syncMember(event.memberDto());
@@ -32,7 +31,6 @@ public class PaymentConsumer {
 	}
 
 	@KafkaListener(topics = "member-updated")
-	@Transactional(propagation = REQUIRES_NEW)
 	public void handleMemberUpdated(MemberUpdatedEvent event) {
 		try {
 			paymentFacade.syncMember(event.memberDto());

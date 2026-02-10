@@ -82,7 +82,6 @@ public class NotificationConsumer {
 	 * notificationMember 생성 동기화
 	 */
 	@KafkaListener(topics = "member-joined")
-	@Transactional(propagation = REQUIRES_NEW)
 	public void handleMemberJoined(MemberJoinedEvent event) {
 		try {
 			notificationFacade.syncMember(event.memberDto());
@@ -98,7 +97,6 @@ public class NotificationConsumer {
 	 * @param event
 	 */
 	@KafkaListener(topics = "member-updated")
-	@Transactional(propagation = REQUIRES_NEW)
 	public void handleMemberUpdated(MemberUpdatedEvent event) {
 		try {
 			notificationFacade.syncMember(event.memberDto());

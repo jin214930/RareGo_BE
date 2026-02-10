@@ -1,6 +1,7 @@
 package com.bugzero.rarego.app;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.shared.member.domain.MemberDto;
 
@@ -16,6 +17,7 @@ public class NotificationFacade {
 		notificationCreateNotificationUseCase.createNotification(event);
 	}
 
+	@Transactional
 	public void syncMember(MemberDto memberDto) {
 		notificationSyncMemberUseCase.syncMember(memberDto);
 	}

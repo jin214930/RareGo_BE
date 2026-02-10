@@ -20,7 +20,6 @@ public class AuctionConsumer {
 	private final AuctionFacade auctionFacade;
 
 	@KafkaListener(topics = "member-joined")
-	@Transactional(propagation = REQUIRES_NEW)
 	public void handleMemberJoined(MemberJoinedEvent event) {
 		try {
 			auctionFacade.syncMember(event.memberDto());
@@ -32,7 +31,6 @@ public class AuctionConsumer {
 	}
 
 	@KafkaListener(topics = "member-updated")
-	@Transactional(propagation = REQUIRES_NEW)
 	public void handleMemberUpdated(MemberUpdatedEvent event) {
 		try {
 			auctionFacade.syncMember(event.memberDto());

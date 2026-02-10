@@ -2,6 +2,7 @@ package com.bugzero.rarego.product.app;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.product.domain.ProductMember;
@@ -57,6 +58,7 @@ public class ProductFacade {
 	}
 
 	//멤버 동기화
+	@Transactional
 	public ProductMember syncMember(MemberDto member) {
 		return productSyncMemberUseCase.syncMember(member);
 	}
