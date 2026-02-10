@@ -73,7 +73,7 @@ public class AiGetInternalPriceUseCase {
 				.queryVector(vectorList)
 				.k(LIST_LIMIT)
 				.numCandidates(100)
-				.similarity(0.7f) // 코사인 유사도 커트라인
+				.similarity(0.8f) // 코사인 유사도 커트라인
 				.filter(f -> f.bool(b -> b
 					.filter(ft -> ft.term(t -> t.field("category").value(category.name())))
 					.filter(ft -> ft.term(t -> t.field("productCondition").value(condition.name())))

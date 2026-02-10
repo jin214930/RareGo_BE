@@ -22,7 +22,7 @@ import org.springframework.data.elasticsearch.core.TotalHitsRelation;
 import com.bugzero.rarego.ai.domain.dto.AiInternalPriceRequestDto;
 import com.bugzero.rarego.ai.domain.dto.AiInternalPriceResponseDto;
 import com.bugzero.rarego.ai.domain.type.TemporaryCondition;
-import com.bugzero.rarego.product.domain.ProductSearchDocument;
+import com.bugzero.rarego.product.domain.document.ProductSearchDocument;
 import com.bugzero.rarego.shared.product.type.Category;
 
 @ExtendWith(MockitoExtension.class)
