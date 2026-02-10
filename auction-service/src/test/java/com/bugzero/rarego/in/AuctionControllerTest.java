@@ -255,7 +255,7 @@ class AuctionControllerTest {
         // when
         mockMvc.perform(get("/api/v1/auctions")
                         .param("keyword", "Lego")
-                        .param("category", "스타워즈")
+                        .param("category", "STARWARS")
                         .param("sort", "CLOSING_SOON"))
                 .andExpect(status().isOk());
 
