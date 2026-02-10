@@ -17,7 +17,6 @@ public class NotificationFacade {
 		notificationCreateNotificationUseCase.createNotification(event);
 	}
 
-	@Transactional
 	public void syncMember(MemberDto memberDto) {
 		notificationSyncMemberUseCase.syncMember(memberDto);
 	}

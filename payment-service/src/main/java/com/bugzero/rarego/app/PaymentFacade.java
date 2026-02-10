@@ -116,7 +116,6 @@ public class PaymentFacade {
 	/**
 	 * PaymentMember 동기화
 	 */
-	@Transactional
 	public PaymentMember syncMember(MemberDto member) {
 		return paymentSyncMemberUseCase.syncMember(member);
 	}

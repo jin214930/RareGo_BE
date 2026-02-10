@@ -58,7 +58,6 @@ public class ProductFacade {
 	}
 
 	//멤버 동기화
-	@Transactional
 	public ProductMember syncMember(MemberDto member) {
 		return productSyncMemberUseCase.syncMember(member);
 	}
