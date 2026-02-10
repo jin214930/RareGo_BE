@@ -31,13 +31,13 @@ public class AuctionCreateBidUseCase {
     private final ApplicationEventPublisher eventPublisher;
     private final AuctionRepository auctionRepository;
 
-    @Transactional
+    @DistributedLock(key = "'auction:bid:' + #auctionId")
     public BidResponseDto createBid(Long auctionId, String memberPublicId, int bidAmount) {
         // 1. 회원 조회
         AuctionMember bidder = support.getPublicMember(memberPublicId);
 
         // 2. 경매 조회
-        Auction auction = support.getAuctionWithLock(auctionId);
+        Auction auction = support.findAuctionById(auctionId);
 
         // 3. 유효성 검증
         validateBid(auction, bidder, bidAmount);
