@@ -98,6 +98,7 @@ public class AuctionFacade {
         return auctionReadUseCase.getMyAuctionOrders(memberPublicId, status, pageable);
     }
 
+    @Transactional
     public AuctionMember syncMember(MemberDto member) {
         return auctionSyncMemberUseCase.syncMember(member);
     }

@@ -4,7 +4,6 @@ import static org.springframework.transaction.annotation.Propagation.*;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.app.AuctionFacade;
 import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
