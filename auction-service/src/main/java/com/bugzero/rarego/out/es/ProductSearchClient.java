@@ -60,7 +60,7 @@ public class ProductSearchClient {
 				.map(Hit::source)
 				.filter(Objects::nonNull)
 				.collect(Collectors.toMap(
-					ProductSearchDocumentDto::getProductId,
+					ProductSearchDocumentDto::productId,
 					this::convertToDto,
 					(existing, replacement) -> existing // 중복 시 기존 것 유지 (또는 최신 것 선택)
 				));
@@ -90,7 +90,7 @@ public class ProductSearchClient {
 			return response.hits().hits().stream()
 				.map(Hit::source)
 				.filter(Objects::nonNull)
-				.map(ProductSearchDocumentDto::getProductId)
+				.map(ProductSearchDocumentDto::productId)
 				.distinct()
 				.toList();
 		} catch (IOException e) {
@@ -130,7 +130,7 @@ public class ProductSearchClient {
 			return response.hits().hits().stream()
 				.map(Hit::source)
 				.filter(Objects::nonNull)
-				.map(ProductSearchDocumentDto::getProductId)
+				.map(ProductSearchDocumentDto::productId)
 				.distinct()
 				.toList();
 
@@ -159,7 +159,7 @@ public class ProductSearchClient {
 			return response.hits().hits().stream()
 				.map(Hit::source)
 				.filter(Objects::nonNull)
-				.map(ProductSearchDocumentDto::getProductId)
+				.map(ProductSearchDocumentDto::productId)
 				.distinct()
 				.toList();
 		} catch (IOException e) {
@@ -170,14 +170,14 @@ public class ProductSearchClient {
 
 	// Helper: DTO 변환 (Builder 패턴 적용)
 	private ProductAuctionResponseDto convertToDto(ProductSearchDocumentDto doc) {
-		String imageUrl = doc.getImageUrl() != null ? doc.getImageUrl() : "";
+		String imageUrl = doc.imageUrl() != null ? doc.imageUrl() : "";
 
 		return ProductAuctionResponseDto.builder()
-			.id(doc.getProductId())
-			.sellerId(doc.getSellerId())
-			.name(doc.getProductName())
-			.description(doc.getDescription())
-			.category(doc.getCategory())
+			.id(doc.productId())
+			.sellerId(doc.sellerId())
+			.name(doc.productName())
+			.description(doc.description())
+			.category(doc.category())
 			.thumbnailUrl(imageUrl)
 			.imageUrls(List.of(imageUrl)) // 목록형에서는 1장만 있어도 무방
 			.build();

@@ -387,8 +387,8 @@ class AuctionReadUseCaseTest {
         }
 
         @Test
-        @DisplayName("actionRequired - 경매 종료 + 입찰 0건이면 true")
-        void getMySales_actionRequired_noBids() {
+        @DisplayName("auctionRequired - 경매 종료 + 입찰 0건이면 true")
+        void getMySales_auctionRequired_noBids() {
             // given
             String memberPublicId = "seller_pub";
             AuctionMember member = createMember(sellerId, memberPublicId);

@@ -46,7 +46,11 @@ public class AuctionReadUseCase {
         Map<Long, String> bidderMap = getBidderPublicIdMap(bidPage.getContent());
 
         Page<BidLogResponseDto> dtoPage = bidPage.map(bid -> {
-            String publicId = bidderMap.getOrDefault(bid.getBidderId(), "unknown");
+            String publicId = bidderMap.get(bid.getBidderId());
+            if (publicId == null) {
+                log.warn("입찰자 정보 누락됨: bidId={}, bidderId={}", bid.getId(), bid.getBidderId());
+                publicId = "unknown";
+            }
             return BidLogResponseDto.from(bid, publicId);
         });
 

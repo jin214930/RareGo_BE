@@ -38,12 +38,6 @@ public class AuctionSupport {
                 .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
     }
 
-    @Transactional
-    public Auction getAuctionWithLock(Long auctionId) {
-        return auctionRepository.findByIdWithLock(auctionId)
-                .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
-    }
-
     public AuctionMember getPublicMember(String publicId) {
         return auctionMemberRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new CustomException(ErrorType.MEMBER_NOT_FOUND));

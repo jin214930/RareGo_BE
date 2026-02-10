@@ -52,7 +52,7 @@ public class AuctionRelistUseCase {
 			.build();
 
 		// *참고: Auction 생성자에서 status는 기본적으로 SCHEDULED로 설정됨
-		// TODO: 이 부분은 바로 IN_PROGRESS로 해야할지 기본 생성자대로 SCHEDULED로 해야할지 결정 필요
+		// Scheduled로 해놓고 start 스케줄러가 바꿔주는 식으로 구성
 		Auction savedAuction = auctionRepository.save(newAuction);
 
 		eventPublisher.publishEvent(new AuctionRelistedEvent(

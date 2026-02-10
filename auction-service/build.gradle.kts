@@ -65,6 +65,8 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
 }
 
+tasks.register("prepareKotlinBuildScriptModel"){}
+
 tasks.withType<Test> {
     useJUnitPlatform()
     systemProperty("spring.profiles.active", "test")

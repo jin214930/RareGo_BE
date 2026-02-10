@@ -1,6 +1,7 @@
 package com.bugzero.rarego.out;
 
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
+import com.bugzero.rarego.shared.auction.event.AuctionRelistedEvent;
 import com.bugzero.rarego.shared.auction.event.AuctionStartedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class AuctionEventKafkaBridge {
 
     private static final String TOPIC_AUCTION_ENDED = "auction-ended";
     private static final String TOPIC_AUCTION_STARTED = "auction-started"; // 추가
+    private static final String TOPIC_AUCTION_RELISTED = "auction-relisted";
 
     /**
      * 경매 종료 이벤트 중계
@@ -46,5 +48,17 @@ public class AuctionEventKafkaBridge {
         String key = String.valueOf(event.auctionId());
 
         kafkaTemplate.send(TOPIC_AUCTION_STARTED, key, event);
+    }
+
+    /**
+     * 경매 재생성 이벤트 중계 (추가된 부분)
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void sendAuctionRelistedToKafka(AuctionRelistedEvent event) {
+        log.info("Bridge: Kafka로 경매 재생성 이벤트 전송 [Topic: {}, AuctionId: {}]",
+            TOPIC_AUCTION_RELISTED, event.newAuctionId());
+
+        String key = String.valueOf(event.newAuctionId());
+        kafkaTemplate.send(TOPIC_AUCTION_RELISTED, key, event);
     }
 }

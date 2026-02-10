@@ -1,6 +1,8 @@
 package com.bugzero.rarego.out;
 
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
+import com.bugzero.rarego.shared.auction.event.AuctionRelistedEvent;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+
+import java.time.LocalDateTime;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuctionEventKafkaBridge 테스트")
@@ -140,5 +144,61 @@ class AuctionEventKafkaBridgeTest {
         assertThat(capturedEvent.winnerId()).isEqualTo(777L);
         assertThat(capturedEvent.finalPrice()).isEqualTo(99999);
         assertThat(capturedEvent.productId()).isEqualTo(888L);
+    }
+
+    @Test
+    @DisplayName("경매 재생성 이벤트를 Kafka로 정상 전송한다")
+    void sendAuctionRelistedToKafka_Success() {
+        // given
+        AuctionRelistedEvent relistedEvent = new AuctionRelistedEvent(
+            999L,                   // productId
+            2001L,                  // newAuctionId
+            150000,                 // startPrice
+            LocalDateTime.now()     // startedAt
+        );
+
+        // when
+        auctionEventKafkaBridge.sendAuctionRelistedToKafka(relistedEvent);
+
+        // then
+        ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+
+        verify(kafkaTemplate, times(1)).send(
+            topicCaptor.capture(),
+            keyCaptor.capture(),
+            eventCaptor.capture()
+        );
+
+        assertThat(topicCaptor.getValue()).isEqualTo("auction-relisted");
+        assertThat(keyCaptor.getValue()).isEqualTo("2001"); // newAuctionId가 Key가 되어야 함
+        assertThat(eventCaptor.getValue()).isEqualTo(relistedEvent);
+    }
+
+    @Test
+    @DisplayName("재생성 이벤트의 newAuctionId를 Key로 사용하여 순서를 보장한다")
+    void sendAuctionRelistedToKafka_UsesNewAuctionIdAsKey() {
+        // given
+        Long expectedNewAuctionId = 7777L;
+        AuctionRelistedEvent event = new AuctionRelistedEvent(
+            123L,
+            expectedNewAuctionId,
+            10000,
+            LocalDateTime.now()
+        );
+
+        // when
+        auctionEventKafkaBridge.sendAuctionRelistedToKafka(event);
+
+        // then
+        ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(kafkaTemplate).send(
+            eq("auction-relisted"), // 토픽명 확인
+            keyCaptor.capture(),
+            eq(event)
+        );
+
+        assertThat(keyCaptor.getValue()).isEqualTo(String.valueOf(expectedNewAuctionId));
     }
 }

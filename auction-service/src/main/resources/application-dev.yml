@@ -22,7 +22,8 @@ spring:
 
   sql:
     init:
-      mode: never
+      mode: always
+      data-locations: file:initData.sql
 
 logging:
   level:
@@ -49,8 +50,16 @@ jwt:
 
 custom:
   global:
+    internalBackUrl: http://localhost:8082
     frontUrl: ${FRONT_URL:http://localhost:3000}
   payment:
     settlement:
       holdDays: 0
+  services:
+    auth-url: http://localhost:8089
+    member-url: http://localhost:8081
+    payment-url: http://localhost:8082
+    auction-url: http://localhost:8083
+    product-url: http://localhost:8084
+    notification-url: http://localhost:8085
 
