@@ -10,16 +10,27 @@ import org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = {KafkaAutoConfiguration.class})
+@DirtiesContext
+@EmbeddedKafka(
+        partitions = 1,
+        topics = {
+                "auction-ended",
+                "auction-relisted",
+                "auction-started"
+        }
+)
 @TestPropertySource(properties = {
-        "spring.kafka.bootstrap-servers=localhost:29092",
+        "spring.kafka.bootstrap-servers=${spring.embedded.kafka.brokers}",
         "spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer",
-        "spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer"
+        "spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JacksonJsonSerializer"
 })
 class AuctionKafkaConnectionTest {
 
