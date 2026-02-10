@@ -103,6 +103,45 @@ class ProductSyncMemberUseCaseTest {
 	}
 
 	@Test
+	@DisplayName("같은 updatedAt 이벤트도 최신 상태로 반영")
+	void syncMember_UpdateWhenEqualUpdatedAt() {
+		// given
+		LocalDateTime sameUpdatedAt = LocalDateTime.now();
+		ProductMember existed = ProductMember.builder()
+			.id(1L)
+			.email("before@example.com")
+			.updatedAt(sameUpdatedAt)
+			.build();
+
+		MemberDto member = new MemberDto(
+			1L,
+			"public-id",
+			"after@example.com",
+			"nick",
+			"intro",
+			"address",
+			"address detail",
+			"12345",
+			"01000000000",
+			"real name",
+			sameUpdatedAt.minusDays(1),
+			sameUpdatedAt,
+			false
+		);
+
+		given(productMemberRepository.findById(1L)).willReturn(Optional.of(existed));
+
+		// when
+		ProductMember result = productSyncMemberUseCase.syncMember(member);
+
+		// then
+		assertThat(result).isSameAs(existed);
+		assertThat(result.getEmail()).isEqualTo("after@example.com");
+		assertThat(result.getUpdatedAt()).isEqualTo(sameUpdatedAt);
+		verify(productMemberRepository, never()).save(any(ProductMember.class));
+	}
+
+	@Test
 	@DisplayName("기존 회원이 없으면 신규 저장")
 	void syncMember_SaveWhenNotExists() {
 		// given

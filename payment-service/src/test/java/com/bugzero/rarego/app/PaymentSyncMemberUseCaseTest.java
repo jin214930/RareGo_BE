@@ -34,8 +34,8 @@ class PaymentSyncMemberUseCaseTest {
 	private PaymentSyncMemberUseCase paymentSyncMemberUseCase;
 
 	@Test
-	@DisplayName("replica에서 이미 업데이트 된 날짜보다 늦은 변경은 무시")
-	void syncMember_SkipDelayedEvent() {
+	@DisplayName("replica에서 이미 업데이트 된 날짜보다 과거 이벤트도 반영")
+	void syncMember_UpdateWhenDelayedEvent() {
 		// given
 		LocalDateTime existedUpdatedAt = LocalDateTime.now();
 		PaymentMember existed = PaymentMember.builder()
@@ -66,6 +66,8 @@ class PaymentSyncMemberUseCaseTest {
 
 		// then
 		assertThat(result).isSameAs(existed);
+		assertThat(result.getUpdatedAt()).isEqualTo(existedUpdatedAt.minusMinutes(1));
+		assertThat(result.getEmail()).isEqualTo("user@example.com");
 		verify(paymentMemberRepository, never()).save(any(PaymentMember.class));
 	}
 
@@ -104,6 +106,45 @@ class PaymentSyncMemberUseCaseTest {
 		assertThat(result).isSameAs(existed);
 		assertThat(result.getUpdatedAt()).isEqualTo(eventUpdatedAt);
 		assertThat(result.getEmail()).isEqualTo("user@example.com");
+		verify(paymentMemberRepository, never()).save(any(PaymentMember.class));
+	}
+
+	@Test
+	@DisplayName("같은 updatedAt 이벤트도 최신 상태로 반영")
+	void syncMember_UpdateWhenEqualUpdatedAt() {
+		// given
+		LocalDateTime sameUpdatedAt = LocalDateTime.now();
+		PaymentMember existed = PaymentMember.builder()
+			.id(1L)
+			.email("before@example.com")
+			.updatedAt(sameUpdatedAt)
+			.build();
+
+		MemberDto member = new MemberDto(
+			1L,
+			"public-id",
+			"after@example.com",
+			"nick",
+			"intro",
+			"address",
+			"address detail",
+			"12345",
+			"01000000000",
+			"real name",
+			sameUpdatedAt.minusDays(1),
+			sameUpdatedAt,
+			false
+		);
+
+		given(paymentMemberRepository.findById(1L)).willReturn(Optional.of(existed));
+
+		// when
+		PaymentMember result = paymentSyncMemberUseCase.syncMember(member);
+
+		// then
+		assertThat(result).isSameAs(existed);
+		assertThat(result.getEmail()).isEqualTo("after@example.com");
+		assertThat(result.getUpdatedAt()).isEqualTo(sameUpdatedAt);
 		verify(paymentMemberRepository, never()).save(any(PaymentMember.class));
 	}
 
