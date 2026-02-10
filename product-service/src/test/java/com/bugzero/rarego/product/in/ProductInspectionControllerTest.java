@@ -203,7 +203,7 @@ class ProductInspectionControllerTest {
 		// when & then
 		mockMvc.perform(get("/api/v1/products/inspections")
 				.param("name", "레고")
-				.param("category", "스타워즈")
+				.param("category", "STARWARS")
 				.param("status", "PENDING")
 				.param("page", "0")
 				.param("size", "10")
