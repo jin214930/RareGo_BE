@@ -17,6 +17,7 @@ import com.bugzero.rarego.product.domain.document.ProductSearchDocument;
 import com.bugzero.rarego.shared.product.type.Category;
 
 import co.elastic.clients.elasticsearch._types.KnnSearch;
+import co.elastic.clients.json.JsonData;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -63,21 +64,25 @@ public class AiGetInternalPriceUseCase {
 
 	private NativeQuery buildNativeQuery(String query, Category category, TemporaryCondition condition) {
 
-		// 1. 사용자 입력 텍스트를 벡터로 변환
+		// 사용자 입력 텍스트를 벡터로 변환
 		List<Float> vectorList = generateEmbeddingToFloat(query);
 
-		// 2. ES 쿼리 조립 (필터를 KNN 내부로 통합)
 		return NativeQuery.builder()
 			.withKnnSearches(KnnSearch.of(ks -> ks
 				.field("embedding")
 				.queryVector(vectorList)
 				.k(LIST_LIMIT)
 				.numCandidates(100)
-				.similarity(0.8f) // 코사인 유사도 커트라인
+				.similarity(0.8f)
 				.filter(f -> f.bool(b -> b
 					.filter(ft -> ft.term(t -> t.field("category").value(category.name())))
 					.filter(ft -> ft.term(t -> t.field("productCondition").value(condition.name())))
-					.filter(ft -> ft.exists(e -> e.field("finalPrice")))
+					.filter(ft -> ft.range(r -> r
+						.untyped(u -> u
+							.field("finalPrice")
+							.gt(JsonData.of(0))
+						)
+					))
 				))
 			))
 			.build();
