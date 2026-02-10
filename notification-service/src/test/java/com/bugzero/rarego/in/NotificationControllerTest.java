@@ -32,8 +32,8 @@ import com.bugzero.rarego.global.response.PageDto;
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.global.response.SuccessType;
 import com.bugzero.rarego.global.security.MemberPrincipal;
-import com.bugzero.rarego.in.dto.NotificationResponse;
-import com.bugzero.rarego.in.dto.NotificationUnreadCountResponse;
+import com.bugzero.rarego.in.dto.NotificationResponseDto;
+import com.bugzero.rarego.in.dto.NotificationUnreadCountResponseDto;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -67,7 +67,7 @@ class NotificationControllerTest {
 		String publicId = "member-uuid-123";
 
 		// Mock 응답 데이터
-		NotificationResponse notification = new NotificationResponse(
+		NotificationResponseDto notification = new NotificationResponseDto(
 			1L,
 			"입찰 성공",
 			"축하합니다!",
@@ -77,7 +77,7 @@ class NotificationControllerTest {
 			LocalDateTime.now()
 		);
 
-		PagedResponseDto<NotificationResponse> responseDto =
+		PagedResponseDto<NotificationResponseDto> responseDto =
 			new PagedResponseDto<>(List.of(notification), new PageDto(1, 10, 1, 1, true, true));
 
 		// Facade 호출 스텁: any(Pageable.class)로 페이징 객체 처리
@@ -104,7 +104,7 @@ class NotificationControllerTest {
 		int page = 0;
 		int size = 5;
 
-		PagedResponseDto<NotificationResponse> emptyResponse =
+		PagedResponseDto<NotificationResponseDto> emptyResponse =
 			new PagedResponseDto<>(Collections.emptyList(), new PageDto(1, size, 0, 0, false, false));
 
 		// Facade 호출 스텁: onlyUnread=true 확인
@@ -134,7 +134,7 @@ class NotificationControllerTest {
 		// given
 		String publicId = "member-uuid-123";
 		long count = 5L;
-		NotificationUnreadCountResponse responseDto = new NotificationUnreadCountResponse(count);
+		NotificationUnreadCountResponseDto responseDto = new NotificationUnreadCountResponseDto(count);
 
 		given(notificationFacade.getUnreadCount(publicId)).willReturn(responseDto);
 

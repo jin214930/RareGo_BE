@@ -13,7 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.bugzero.rarego.domain.NotificationMember;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.in.dto.NotificationUnreadCountResponse;
+import com.bugzero.rarego.in.dto.NotificationUnreadCountResponseDto;
 import com.bugzero.rarego.out.NotificationRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,7 +48,7 @@ class NotificationGetUnreadCountUseCaseTest {
 			.willReturn(expectedCount);
 
 		// when
-		NotificationUnreadCountResponse response = useCase.getUnreadCount(publicId);
+		NotificationUnreadCountResponseDto response = useCase.getUnreadCount(publicId);
 
 		// then
 		// 반환된 값이 예상된 count와 일치하는지 검증

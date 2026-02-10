@@ -21,7 +21,7 @@ import com.bugzero.rarego.domain.Notification;
 import com.bugzero.rarego.domain.NotificationMember;
 import com.bugzero.rarego.domain.NotificationType;
 import com.bugzero.rarego.global.response.PagedResponseDto;
-import com.bugzero.rarego.in.dto.NotificationResponse;
+import com.bugzero.rarego.in.dto.NotificationResponseDto;
 import com.bugzero.rarego.out.NotificationRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,7 +58,7 @@ class NotificationGetNotificationsUseCaseTest {
 			.willReturn(notificationPage);
 
 		// when
-		PagedResponseDto<NotificationResponse> result = useCase.getNotifications(publicId, false, pageable);
+		PagedResponseDto<NotificationResponseDto> result = useCase.getNotifications(publicId, false, pageable);
 
 		// then
 		// 1. 전체 조회 메서드가 호출되었는지 검증
@@ -91,7 +91,7 @@ class NotificationGetNotificationsUseCaseTest {
 			.willReturn(notificationPage);
 
 		// when
-		PagedResponseDto<NotificationResponse> result = useCase.getNotifications(publicId, true, pageable);
+		PagedResponseDto<NotificationResponseDto> result = useCase.getNotifications(publicId, true, pageable);
 
 		// then
 		// 1. 안 읽은 알림 조회 메서드가 호출되었는지 검증

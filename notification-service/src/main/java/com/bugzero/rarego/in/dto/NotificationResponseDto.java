@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import com.bugzero.rarego.domain.Notification;
 
-public record NotificationResponse(
+public record NotificationResponseDto(
 	Long id,
 	String title,
 	String message,
@@ -13,8 +13,8 @@ public record NotificationResponse(
 	String type,
 	LocalDateTime createdAt
 ) {
-	public static NotificationResponse from(Notification notification) {
-		return new NotificationResponse(
+	public static NotificationResponseDto from(Notification notification) {
+		return new NotificationResponseDto(
 			notification.getId(),
 			notification.getType().getDescription(),
 			notification.getMessage(),

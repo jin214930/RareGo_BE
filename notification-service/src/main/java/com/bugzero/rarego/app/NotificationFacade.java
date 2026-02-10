@@ -4,8 +4,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.bugzero.rarego.global.response.PagedResponseDto;
-import com.bugzero.rarego.in.dto.NotificationResponse;
-import com.bugzero.rarego.in.dto.NotificationUnreadCountResponse;
+import com.bugzero.rarego.in.dto.NotificationResponseDto;
+import com.bugzero.rarego.in.dto.NotificationUnreadCountResponseDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,12 +21,12 @@ public class NotificationFacade {
 		notificationCreateNotificationUseCase.createNotification(event);
 	}
 
-	public PagedResponseDto<NotificationResponse> getNotifications(String publicId, Boolean onlyUnread,
+	public PagedResponseDto<NotificationResponseDto> getNotifications(String publicId, Boolean onlyUnread,
 		Pageable pageable) {
 		return notificationGetNotificationsUseCase.getNotifications(publicId, onlyUnread, pageable);
 	}
 
-	public NotificationUnreadCountResponse getUnreadCount(String publicId) {
+	public NotificationUnreadCountResponseDto getUnreadCount(String publicId) {
 		return notificationGetUnreadCountUseCase.getUnreadCount(publicId);
 	}
 

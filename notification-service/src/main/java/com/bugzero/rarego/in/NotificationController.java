@@ -16,8 +16,8 @@ import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
 import com.bugzero.rarego.global.response.SuccessType;
 import com.bugzero.rarego.global.security.MemberPrincipal;
-import com.bugzero.rarego.in.dto.NotificationResponse;
-import com.bugzero.rarego.in.dto.NotificationUnreadCountResponse;
+import com.bugzero.rarego.in.dto.NotificationResponseDto;
+import com.bugzero.rarego.in.dto.NotificationUnreadCountResponseDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,21 +28,21 @@ public class NotificationController {
 	private final NotificationFacade notificationFacade;
 
 	@GetMapping
-	public SuccessResponseDto<PagedResponseDto<NotificationResponse>> getNotifications(
+	public SuccessResponseDto<PagedResponseDto<NotificationResponseDto>> getNotifications(
 		@AuthenticationPrincipal MemberPrincipal memberPrincipal,
 		@RequestParam(required = false, defaultValue = "false") Boolean onlyUnread,
 		@PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
 	) {
-		PagedResponseDto<NotificationResponse> response = notificationFacade.getNotifications(
+		PagedResponseDto<NotificationResponseDto> response = notificationFacade.getNotifications(
 			memberPrincipal.publicId(), onlyUnread, pageable);
 
 		return SuccessResponseDto.from(SuccessType.OK, response);
 	}
 
 	@GetMapping("/unread-count")
-	public SuccessResponseDto<NotificationUnreadCountResponse> getUnreadCount(
+	public SuccessResponseDto<NotificationUnreadCountResponseDto> getUnreadCount(
 		@AuthenticationPrincipal MemberPrincipal memberPrincipal) {
-		NotificationUnreadCountResponse response = notificationFacade.getUnreadCount(memberPrincipal.publicId());
+		NotificationUnreadCountResponseDto response = notificationFacade.getUnreadCount(memberPrincipal.publicId());
 
 		return SuccessResponseDto.from(SuccessType.OK, response);
 	}
