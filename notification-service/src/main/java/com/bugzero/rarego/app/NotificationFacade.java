@@ -22,15 +22,10 @@ public class NotificationFacade {
 	private final NotificationGetNotificationsUseCase notificationGetNotificationsUseCase;
 	private final NotificationGetUnreadCountUseCase notificationGetUnreadCountUseCase;
 	private final NotificationMarkAsReadUseCase notificationMarkAsReadUseCase;
-	private final NotificationSyncMemberUseCase notificationSyncMemberUseCase;
 
 	public void createNotification(Object event) {
 		notificationCreateNotificationUseCase.createNotification(event);
 	}
-
-	public void syncMember(MemberDto memberDto) {
-		notificationSyncMemberUseCase.syncMember(memberDto);
-  }
     
 	public PagedResponseDto<NotificationResponseDto> getNotifications(String publicId, Boolean onlyUnread,
 		Pageable pageable) {
