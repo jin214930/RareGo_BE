@@ -31,6 +31,7 @@ public class PaymentReleaseDepositUseCase {
 	private final PaymentSupport paymentSupport;
 	private final PaymentTransactionRepository transactionRepository;
 
+	@Transactional
 	public void releaseDeposits(Long auctionId, Long winnerId) {
 		List<Deposit> depositsToRelease = findDepositsToRelease(auctionId, winnerId);
 		if (depositsToRelease.isEmpty()) {
@@ -65,7 +66,7 @@ public class PaymentReleaseDepositUseCase {
 	public void releaseDeposit(Long auctionId, String memberPublicId) {
 		PaymentMember member = paymentSupport.findMemberByPublicId(memberPublicId);
 		Deposit deposit = depositRepository.findByMemberIdAndAuctionId(member.getId(), auctionId)
-			.orElseThrow(() -> new CustomException(ErrorType.DEPOSIT_NOT_FOUND));
+				.orElseThrow(() -> new CustomException(ErrorType.DEPOSIT_NOT_FOUND));
 
 		if (deposit.getStatus() != DepositStatus.HOLD) {
 			log.info("보증금이 HOLD 상태가 아님 (상태: {}), 환급 건너뜀", deposit.getStatus());

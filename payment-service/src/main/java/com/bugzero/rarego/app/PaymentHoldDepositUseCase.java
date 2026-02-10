@@ -25,6 +25,7 @@ public class PaymentHoldDepositUseCase {
 	private final PaymentTransactionRepository transactionRepository;
 	private final PaymentSupport paymentSupport;
 
+	@Transactional
 	public DepositHoldResponseDto holdDeposit(DepositHoldRequestDto request) {
 		// publicId → memberId 변환
 		PaymentMember member = paymentSupport.findMemberByPublicId(request.memberPublicId());
