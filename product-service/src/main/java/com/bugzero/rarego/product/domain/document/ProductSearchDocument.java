@@ -80,5 +80,7 @@ public class ProductSearchDocument {
 	public static String generateId(Long productId, Long auctionId) {
 		return productId + "_" + auctionId;
 	}
+
+	public static final String EMBEDDING_TEMPLATE = "상품명: %s, 상세내용: %s, 카테고리: %s, 상품상태: %s";
 }
 

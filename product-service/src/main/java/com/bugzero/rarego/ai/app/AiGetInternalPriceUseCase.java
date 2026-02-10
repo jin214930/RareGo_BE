@@ -27,12 +27,11 @@ public class AiGetInternalPriceUseCase {
 	private final EmbeddingModel embeddingModel;
 	//가져올 유사상품 최대갯수
 	private static final int LIST_LIMIT = 3;
-	private static final String TEMPLATE = "상품명: %s, 상세내용: %s, 카테고리: %s, 상품상태: %s";
 
 
 	public List<AiInternalPriceResponseDto> findTopSimilarProducts(
 		AiInternalPriceRequestDto dto) {
-		String searchQuery = String.format(TEMPLATE,
+		String searchQuery = String.format(ProductSearchDocument.EMBEDDING_TEMPLATE,
 			dto.name(), dto.description(), dto.category(), dto.condition());
 
 		NativeQuery nativeQuery = buildNativeQuery(searchQuery, dto.category(), dto.condition());
@@ -74,8 +73,7 @@ public class AiGetInternalPriceUseCase {
 				.queryVector(vectorList)
 				.k(LIST_LIMIT)
 				.numCandidates(100)
-				.similarity(0.6f) // 코사인 유사도 커트라인
-				// [핵심 수정] 필터를 여기에 배치해야 점수가 정상 합산됩니다.
+				.similarity(0.7f) // 코사인 유사도 커트라인
 				.filter(f -> f.bool(b -> b
 					.filter(ft -> ft.term(t -> t.field("category").value(category.name())))
 					.filter(ft -> ft.term(t -> t.field("productCondition").value(condition.name())))

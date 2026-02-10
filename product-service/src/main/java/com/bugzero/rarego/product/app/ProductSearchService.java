@@ -52,7 +52,7 @@ public class ProductSearchService {
 
 		// 임베딩 생성
 		String textToEmbed = String.format(
-			"상품명: %s, 상세내용: %s, 카테고리: %s, 상품상태: %s",
+			ProductSearchDocument.EMBEDDING_TEMPLATE,
 			product.getName(),
 			product.getDescription(),
 			product.getCategory(),
@@ -238,11 +238,10 @@ public class ProductSearchService {
 
 	// 문자열 포맷으로 변환
 	private String buildSearchPrompt(String keyword, Category category) {
-		StringBuilder prompt = new StringBuilder();
-		if (category != null) {
-			prompt.append("카테고리: ").append(category.name()).append(", ");
-		}
-		prompt.append("상품명: ").append(keyword).append("상세내용: ").append(keyword);
-		return prompt.toString();
+		return String.format(ProductSearchDocument.EMBEDDING_TEMPLATE,
+			keyword, keyword,
+			(category != null ? category.name() : ""),
+			""
+		);
 	}
 }
