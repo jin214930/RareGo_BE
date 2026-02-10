@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.shared.member.domain.MemberDto;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.bugzero.rarego.global.response.PagedResponseDto;
 import com.bugzero.rarego.in.dto.NotificationResponseDto;
@@ -22,11 +23,12 @@ public class NotificationFacade {
 	private final NotificationGetNotificationsUseCase notificationGetNotificationsUseCase;
 	private final NotificationGetUnreadCountUseCase notificationGetUnreadCountUseCase;
 	private final NotificationMarkAsReadUseCase notificationMarkAsReadUseCase;
+	private final NotificationSubscribeUseCase notificationSubscribeUseCase;
 
 	public void createNotification(Object event) {
 		notificationCreateNotificationUseCase.createNotification(event);
 	}
-    
+
 	public PagedResponseDto<NotificationResponseDto> getNotifications(String publicId, Boolean onlyUnread,
 		Pageable pageable) {
 		return notificationGetNotificationsUseCase.getNotifications(publicId, onlyUnread, pageable);
@@ -38,6 +40,10 @@ public class NotificationFacade {
 
 	public void markAsRead(String publicId, Long id) {
 		notificationMarkAsReadUseCase.markAsRead(publicId, id);
+	}
+
+	public SseEmitter subscribe(String publicId) {
+		return notificationSubscribeUseCase.subscribe(publicId);
 	}
 
 	public void syncMember(MemberDto memberDto) {
