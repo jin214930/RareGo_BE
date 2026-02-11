@@ -177,7 +177,6 @@ public class InternalAuctionController {
 		);
 	}
 
-	// 2. 다건 조회: GET /api/v1/internal/auctions/products?productIds=1,2,3
 	@Operation(summary = "상품별 경매 정보 조회 (Batch)", description = "여러 상품 ID로 경매 정보를 일괄 조회합니다.")
 	@GetMapping("/products")
 	public SuccessResponseDto<List<AuctionInfoResponseDto>> getAuctionInfos(
@@ -187,6 +186,5 @@ public class InternalAuctionController {
 			auctionFacade.getAuctionInfosByProductIds(productIds)
 		);
 	}
-
 }
 
