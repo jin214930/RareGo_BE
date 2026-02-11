@@ -101,7 +101,7 @@ jobs:
         run: |
           BASE="origin/${{ github.event.pull_request.base.ref }}"
           DIFF=$(git diff "$BASE...HEAD")
-          PROMPT=$(cat .github/codex/prompts/review.md)
+          PROMPT=$(cat .github/gemini/prompts/review.md)
           
           # JSON payload 생성 (diff 포함)
           PAYLOAD=$(jq -n --arg system "$PROMPT" --arg code "$DIFF" \
