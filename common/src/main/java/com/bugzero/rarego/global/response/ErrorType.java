@@ -40,23 +40,24 @@ public enum ErrorType {
     MEMBER_MEMBER_DELETED(403, 1023, "탈퇴한 계정입니다."),
     MEMBER_WITHDRAW_FAILED(500, 1024, "회원 탈퇴에 실패했습니다."),
 
-    // Auth/JWT (1500 ~ 1999)
-    AUTH_MEMBER_REQUIRED(400, 1501, "회원 정보가 필요합니다."),
-    JWT_EXPIRE_SECONDS_INVALID(500, 1504, "토큰 만료 설정이 올바르지 않습니다."),
-    JWT_ISSUE_FAILED(500, 1505, "토큰 발급에 실패했습니다."),
-    AUTH_UNAUTHORIZED(401, 1506, "인증이 필요합니다."),
-    AUTH_FORBIDDEN(403, 1507, "권한이 없습니다."),
-    AUTH_OAUTH2_INVALID_RESPONSE(400, 1508, "유효하지 않은 소셜 로그인입니다."),
-    AUTH_JOIN_FAILED(500, 1509, "회원 가입에 실패했습니다."),
-    AUTH_REFRESH_TOKEN_REQUIRED(401, 1510, "리프레시 토큰이 필요합니다."),
-    AUTH_REFRESH_TOKEN_INVALID(401, 1511, "유효하지 않은 리프레시 토큰입니다."),
-    AUTH_REFRESH_TOKEN_EXPIRED(401, 1512, "리프레시 토큰이 만료되었습니다."),
-    AUTH_REFRESH_TOKEN_OWNER_MISMATCH(401, 1513, "리프레시 토큰 소유자가 일치하지 않습니다."),
-    AUTH_ACCOUNT_DELETED(403, 1514, "탈퇴한 계정입니다."),
-    AUTH_ACCOUNT_NOT_FOUND(404, 1515, "회원 정보를 찾을 수 없습니다."),
-    WITHDRAWAL_ACTIVE_BID_EXISTS(409, 1516, "진행 중인 입찰이 있어 탈퇴할 수 없습니다."),
-    WITHDRAWAL_ACTIVE_SALE_EXISTS(409, 1517, "진행 중인 판매가 있어 탈퇴할 수 없습니다."),
-    WITHDRAWAL_PROCESSING_ORDER_EXISTS(409, 1518, "처리 중인 주문이 있어 탈퇴할 수 없습니다."),
+	// Auth/JWT (1500 ~ 1999)
+	AUTH_MEMBER_REQUIRED(400, 1501, "회원 정보가 필요합니다."),
+	JWT_EXPIRE_SECONDS_INVALID(500, 1504, "토큰 만료 설정이 올바르지 않습니다."),
+	JWT_ISSUE_FAILED(500, 1505, "토큰 발급에 실패했습니다."),
+	AUTH_UNAUTHORIZED(401, 1506, "인증이 필요합니다."),
+	AUTH_FORBIDDEN(403, 1507, "권한이 없습니다."),
+	AUTH_OAUTH2_INVALID_RESPONSE(400, 1508, "유효하지 않은 소셜 로그인입니다."),
+	AUTH_JOIN_FAILED(500, 1509, "회원 가입에 실패했습니다."),
+	AUTH_REFRESH_TOKEN_REQUIRED(401, 1510, "리프레시 토큰이 필요합니다."),
+	AUTH_REFRESH_TOKEN_INVALID(401, 1511, "유효하지 않은 리프레시 토큰입니다."),
+	AUTH_REFRESH_TOKEN_EXPIRED(401, 1512, "리프레시 토큰이 만료되었습니다."),
+	AUTH_REFRESH_TOKEN_OWNER_MISMATCH(401, 1513, "리프레시 토큰 소유자가 일치하지 않습니다."),
+	AUTH_ACCOUNT_DELETED(403, 1514, "탈퇴한 계정입니다."),
+	AUTH_ACCOUNT_NOT_FOUND(404, 1515, "회원 정보를 찾을 수 없습니다."),
+	WITHDRAWAL_ACTIVE_BID_EXISTS(409, 1516, "진행 중인 입찰이 있어 탈퇴할 수 없습니다."),
+	WITHDRAWAL_ACTIVE_SALE_EXISTS(409, 1517, "진행 중인 판매가 있어 탈퇴할 수 없습니다."),
+	WITHDRAWAL_PROCESSING_ORDER_EXISTS(409, 1518, "처리 중인 주문이 있어 탈퇴할 수 없습니다."),
+	AUTH_PROMOTE_SELLER_FAILED(500, 1519, "판매자 승격에 실패했습니다."),
 
     // Auction (2000 ~ 2999)
     AUCTION_CREATE_FAILED(500, 2000, "경매 생성에 실패했습니다."),
@@ -117,13 +118,18 @@ public enum ErrorType {
     SYSTEM_WALLET_NOT_FOUND(404, 4108, "시스템 지갑을 찾을 수 없습니다."),
     PAYMENT_CANCEL_FAILED(400, 4109, "토스 결제 취소에 실패했습니다."),
 
-    AUCTION_ORDER_NOT_FOUND(404, 4201, "주문 정보를 찾을 수 없습니다."),
-    NOT_AUCTION_WINNER(403, 4202, "낙찰자만 결제할 수 있습니다."),
-    INVALID_ORDER_STATUS(409, 4203, "결제 가능한 주문 상태가 아닙니다."),
-    DEPOSIT_NOT_FOUND(404, 4204, "보증금 정보를 찾을 수 없습니다."),
-    ALREADY_USED_DEPOSIT(409, 4205, "이미 사용된 보증금입니다."),
-    PAYMENT_DEADLINE_EXCEEDED(400, 4206, "결제 기한이 지났습니다."),
-    SETTLEMENT_ALREADY_COMPLETED(400, 4207, "이미 정산이 완료되어 환불할 수 없습니다.");
+	AUCTION_ORDER_NOT_FOUND(404, 4201, "주문 정보를 찾을 수 없습니다."),
+	NOT_AUCTION_WINNER(403, 4202, "낙찰자만 결제할 수 있습니다."),
+	INVALID_ORDER_STATUS(409, 4203, "결제 가능한 주문 상태가 아닙니다."),
+	DEPOSIT_NOT_FOUND(404, 4204, "보증금 정보를 찾을 수 없습니다."),
+	ALREADY_USED_DEPOSIT(409, 4205, "이미 사용된 보증금입니다."),
+	PAYMENT_DEADLINE_EXCEEDED(400, 4206, "결제 기한이 지났습니다."),
+	SETTLEMENT_ALREADY_COMPLETED(400, 4207, "이미 정산이 완료되어 환불할 수 없습니다."),
+	INVALID_DEPOSIT_STATUS(400, 4208, "이미 예치 중이거나 처리된 보증금입니다."),
+	// Notification (5000 ~ 5999)
+	NOTIFICATION_NOT_FOUND(404, 5001, "알림이 존재하지 않습니다."),
+	NOTIFICATION_OWNER_MISMATCH(403, 5002, "알림에 대한 접근 권한이 없습니다."),
+	;
 
     private final Integer httpStatus;
     private final int code;
