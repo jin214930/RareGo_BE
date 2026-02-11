@@ -40,26 +40,19 @@ public class AuctionFacade {
     // 쓰기 작업 (입찰 생성)
     public SuccessResponseDto<BidResponseDto> createBid(Long auctionId, String memberPublicId, int bidAmount) {
 
-        // 1. [사전 검증] 락 없이 할 수 있는 간단한 검증 (DB 부하를 줄이기 위함)
-        // 경매가 존재하는지, 시간이 맞는지 정도만 체크 (선택 사항이지만 권장)
-        // support.validateAuctionStatus(auctionId);
-
-        // 2. [외부 API] 보증금 계산 및 선결제(Hold) 요청
+        // 보증금 계산 및 선결제(Hold) 요청
         // 락 진입 전에 수행하므로 락 점유 시간을 획기적으로 줄임
-        Auction auction = support.findAuctionById(auctionId); // 조회는 락 없이 수행
+        Auction auction = support.findAuctionById(auctionId);
         int depositAmount = (int) (auction.getStartPrice() * 0.1);
 
         paymentApiClient.holdDeposit(depositAmount, memberPublicId, auctionId);
 
         try {
-            // 락 획득 및 입찰 처리
-            // 여기서 실패하면 catch 블록으로 이동
             BidResponseDto result = auctionCreateBidUseCase.createBid(auctionId, memberPublicId, bidAmount);
 
             return SuccessResponseDto.from(SuccessType.CREATED, result);
 
         } catch (Exception e) {
-            // 예외 발생 시 홀딩된 보증금 취소(환불)
             log.error("입찰 실패로 인한 보증금 취소 요청: auctionId={}, error={}", auctionId, e.getMessage());
             try {
                 paymentApiClient.releaseDeposit(auctionId, memberPublicId);
