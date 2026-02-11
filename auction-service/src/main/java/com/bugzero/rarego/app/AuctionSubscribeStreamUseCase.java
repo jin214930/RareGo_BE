@@ -8,6 +8,7 @@ import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Component
@@ -20,6 +21,7 @@ public class AuctionSubscribeStreamUseCase {
     private final AuctionBidStreamSupport streamSupport;
     private final AuctionRepository auctionRepository;
 
+    @Transactional(readOnly = true)
     public SseEmitter execute(Long auctionId) {
         Auction auction = findAuction(auctionId);
         validateAuctionInProgress(auction);

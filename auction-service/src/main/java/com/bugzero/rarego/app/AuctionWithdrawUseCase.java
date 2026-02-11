@@ -73,14 +73,17 @@ public class AuctionWithdrawUseCase {
         return AuctionWithdrawResponseDto.of(auctionId, auction.getProductId(), beforeStatus);
     }
 
+    @Transactional(readOnly = true)
     public boolean hasActiveBids(String publicId) {
         return bidRepository.existsActiveBidByPublicId(publicId);
     }
 
+    @Transactional(readOnly = true)
     public boolean hasActiveSales(String publicId) {
         return auctionRepository.existsActiveSaleByPublicId(publicId);
     }
 
+    @Transactional(readOnly = true)
     public boolean hasProcessingOrders(String publicId) {
         return auctionOrderRepository.existsByBuyerPublicIdAndStatus(
                 publicId, AuctionOrderStatus.PROCESSING

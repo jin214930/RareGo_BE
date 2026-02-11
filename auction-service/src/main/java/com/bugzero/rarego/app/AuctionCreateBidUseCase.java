@@ -16,7 +16,6 @@ import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -41,12 +40,6 @@ public class AuctionCreateBidUseCase {
 
         // 3. 유효성 검증
         validateBid(auction, bidder, bidAmount);
-
-        // 현재는 경매 시작 금액의 10%만 보증금으로 책정
-        int depositAmount = (int) (auction.getStartPrice() * 0.1);
-
-        // 보증금 Hold (유효성 검증 통과 후 보증금 Hold)
-        paymentApiClient.holdDeposit(depositAmount, memberPublicId, auctionId);
 
         // 마감 임박 연장 로직
         LocalDateTime now = LocalDateTime.now();

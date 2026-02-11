@@ -11,6 +11,6 @@ import java.util.concurrent.TimeUnit;
 public @interface DistributedLock {
 	String key();
 	TimeUnit timeUnit() default TimeUnit.SECONDS;
-	long waitTime() default 4L;  // 락 획득 대기 시간
-	long leaseTime() default 8L; // 락 점유 시간
+	long waitTime() default 10L;  // 락 획득 대기 시간
+	long leaseTime() default -1L; // 락 점유 시간
 }
