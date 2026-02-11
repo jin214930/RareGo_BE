@@ -1,5 +1,6 @@
 package com.bugzero.rarego.app;
 
+import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.domain.AuctionOrderStatus;
 import com.bugzero.rarego.global.exception.CustomException;
@@ -7,6 +8,7 @@ import com.bugzero.rarego.global.response.*;
 import com.bugzero.rarego.in.dto.*;
 import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,9 +25,13 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doNothing;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionFacadeTest {
@@ -51,6 +57,30 @@ class AuctionFacadeTest {
     @Mock
     private AuctionWithdrawUseCase auctionWithdrawUseCase;
 
+    @Mock
+    private AuctionSyncMemberUseCase auctionSyncMemberUseCase;
+
+    @Mock
+    private AuctionCreateAuctionUseCase auctionCreateAuctionUseCase;
+
+    @Mock
+    private AuctionUpdateAuctionUseCase auctionUpdateAuctionUseCase;
+
+    @Mock
+    private AuctionDeleteAuctionUseCase auctionDeleteAuctionUseCase;
+
+    @Mock
+    private AuctionDetermineStartAuctionUseCase auctionDetermineStartAuctionUseCase;
+
+    @Mock
+    private AuctionSubscribeStreamUseCase auctionSubscribeStreamUseCase;
+
+    @Mock
+    private PaymentApiClient paymentApiClient;
+
+    @Mock
+    private AuctionSupport support;
+
     @Test
     @DisplayName("입찰 생성 요청 시 UseCase를 호출하고 결과를 반환한다")
     void createBid_Success() {
@@ -59,6 +89,10 @@ class AuctionFacadeTest {
         Long memberId = 100L;
         String memberPublicId = "user_uuid";
         int bidAmount = 50000;
+
+        Auction auction = new Auction(1L, 1L, LocalDateTime.now(), 3, LocalDateTime.now().plusDays(3), 100000);
+        given(support.findAuctionById(auctionId)).willReturn(auction);
+        given(paymentApiClient.holdDeposit(anyInt(), anyString(), anyLong())).willReturn(null);
 
         BidResponseDto bidResponse = new BidResponseDto(
             1L, auctionId, "public-id", LocalDateTime.now(), (long) bidAmount, (long) bidAmount

@@ -57,7 +57,7 @@ public class AuctionEventKafkaBridge {
         log.info("Bridge: Kafka로 경매 재등록 이벤트 전송 [Topic: {}, ProductId: {}, NewAuctionId: {}]",
                 TOPIC_AUCTION_RELISTED, event.productId(), event.newAuctionId());
 
-        String key = String.valueOf(event.productId());
+        String key = String.valueOf(event.newAuctionId());
         kafkaTemplate.send(TOPIC_AUCTION_RELISTED, key, event);
     }
 }
