@@ -31,7 +31,8 @@ public final class SecurityPaths {
 		"/api/v1/auth/test/login",
 		"/api/v1/auth/test/check",
 		"/api/v1/auth/test/admin",
-		"/api/v1/payments/settlement"
+		"/api/v1/payments/settlement",
+		"/actuator/**"
 	};
 
 	public static final String[] PUBLIC_GET = {
