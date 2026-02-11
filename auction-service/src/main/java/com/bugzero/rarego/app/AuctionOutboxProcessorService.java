@@ -30,9 +30,14 @@ public class AuctionOutboxProcessorService {
         AuctionOutbox outbox = outboxRepository.findById(outboxId)
                 .orElseThrow(() -> new CustomException(ErrorType.AUCTION_OUTBOX_NOT_FOUND));
 
+        // 1. 페이로드 검증
+        Map<String, Object> payload = validatePayload(outbox);
+
+        Long auctionId = ((Number) payload.get("auctionId")).longValue();
+
         log.debug(
                 "아웃박스 처리 시작: id={}, auctionId={}, type={}, status={}",
-                outboxId, outbox.getAuctionId(), outbox.getType(), outbox.getStatus()
+                outboxId, auctionId, outbox.getType(), outbox.getStatus()
         );
 
         if (outbox.getStatus() == AuctionOutboxStatus.SENT) {
@@ -41,9 +46,6 @@ public class AuctionOutboxProcessorService {
         }
 
         try {
-            // 1. 페이로드 검증
-            Map<String, Object> payload = validatePayload(outbox);
-
             // 2. DB 상태 먼저 업데이트 (중복 발행 방지)
             outbox.markSent();
             outboxRepository.save(outbox);
@@ -53,7 +55,7 @@ public class AuctionOutboxProcessorService {
 
             log.info(
                     "아웃박스 처리 성공: id={}, auctionId={}, type={}",
-                    outboxId, outbox.getAuctionId(), outbox.getType()
+                    outboxId, auctionId, outbox.getType()
             );
 
         } catch (CustomException e) {
@@ -81,7 +83,9 @@ public class AuctionOutboxProcessorService {
             throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
         }
 
-        // 필수 필드 검증
+        if (!payload.containsKey("auctionId") || payload.get("auctionId") == null) {
+            throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
+        }
         if (!payload.containsKey("bidderId") || payload.get("bidderId") == null) {
             throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
         }
@@ -92,7 +96,9 @@ public class AuctionOutboxProcessorService {
             throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
         }
 
-        // 타입 검증
+        if (!(payload.get("auctionId") instanceof Number)) {
+            throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
+        }
         if (!(payload.get("bidderId") instanceof Number)) {
             throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
         }
@@ -107,7 +113,7 @@ public class AuctionOutboxProcessorService {
     }
 
     private void publishAuctionEndedEvent(Map<String, Object> payload) {
-        Long auctionId = (Long) payload.get("auctionId");
+        Long auctionId = ((Number) payload.get("auctionId")).longValue();
         Long bidderId = ((Number) payload.get("bidderId")).longValue();
         Integer bidAmount = ((Number) payload.get("bidAmount")).intValue();
         Long productId = ((Number) payload.get("productId")).longValue();

@@ -25,9 +25,6 @@ public class AuctionOutbox extends BaseIdAndTime {
     private AuctionOutboxStatus status;
 
     @Column(nullable = false)
-    private Long auctionId;
-
-    @Column(nullable = false)
     private int retryCount;
 
     @Column(length = 1024)
@@ -43,13 +40,13 @@ public class AuctionOutbox extends BaseIdAndTime {
             Long productId
     ) {
         Map<String, Object> payload = Map.of(
+                "auctionId", auctionId,
                 "bidderId", bidderId,
                 "bidAmount", bidAmount,
                 "productId", productId
         );
 
         return AuctionOutbox.builder()
-                .auctionId(auctionId)
                 .type(AuctionOutboxType.AUCTION_ENDED)
                 .status(AuctionOutboxStatus.PENDING)
                 .retryCount(0)

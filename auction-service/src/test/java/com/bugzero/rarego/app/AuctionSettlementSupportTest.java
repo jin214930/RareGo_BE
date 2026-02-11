@@ -20,6 +20,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,7 +43,7 @@ class AuctionSettlementSupportTest {
     @Mock
     private AuctionOutboxRepository auctionOutboxRepository;
     @Mock
-    private AuctionOutboxProcessor auctionOutboxProcessor;
+    private AuctionOutboxProcessorService auctionOutboxProcessorService;
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
@@ -50,9 +52,13 @@ class AuctionSettlementSupportTest {
     void processSettlement_Success() {
         // given
         Long auctionId = 1L;
+        Long bidderId = 20L;
+        Integer bidAmount = 50000;
+        Long productId = 100L;
+
         Auction auction = Auction.builder()
                 .sellerId(10L)
-                .productId(100L)
+                .productId(productId)
                 .endTime(LocalDateTime.now().minusDays(1))
                 .durationDays(3)
                 .build();
@@ -61,8 +67,8 @@ class AuctionSettlementSupportTest {
         ReflectionTestUtils.setField(auction, "status", AuctionStatus.IN_PROGRESS);
 
         Bid winningBid = Bid.builder()
-                .bidderId(20L)
-                .bidAmount(50000)
+                .bidderId(bidderId)
+                .bidAmount(bidAmount)
                 .build();
 
         given(auctionRepository.findByIdWithLock(auctionId)).willReturn(Optional.of(auction));
@@ -70,8 +76,18 @@ class AuctionSettlementSupportTest {
         given(bidRepository.findTopByAuctionIdOrderByBidAmountDescBidTimeAsc(auctionId))
                 .willReturn(Optional.of(winningBid));
 
-        // Mocking for Outbox save
         AuctionOutbox mockOutbox = mock(AuctionOutbox.class);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("auctionId", auctionId);
+        payload.put("bidderId", bidderId);
+        payload.put("bidAmount", bidAmount);
+        payload.put("productId", productId);
+
+        given(mockOutbox.getPayloadAsMap()).willReturn(payload);
+        given(mockOutbox.getType()).willReturn(null);
+        given(mockOutbox.getId()).willReturn(1L);
+
         given(auctionOutboxRepository.save(any(AuctionOutbox.class))).willReturn(mockOutbox);
 
         // when
@@ -82,6 +98,7 @@ class AuctionSettlementSupportTest {
         verify(auctionOrderRepository).save(any(AuctionOrder.class));
         verify(auctionOutboxRepository).save(any(AuctionOutbox.class));
         verify(eventPublisher, never()).publishEvent(any(AuctionFailedEvent.class));
+        verify(auctionOutboxProcessorService, never()).process(any(Long.class));
     }
 
     @Test
@@ -89,8 +106,10 @@ class AuctionSettlementSupportTest {
     void processSettlement_Fail() {
         // given
         Long auctionId = 2L;
+        Long productId = 200L;
+
         Auction auction = Auction.builder()
-                .productId(200L)
+                .productId(productId)
                 .endTime(LocalDateTime.now().minusDays(1))
                 .durationDays(3)
                 .build();
@@ -109,5 +128,6 @@ class AuctionSettlementSupportTest {
         verify(eventPublisher).publishEvent(any(AuctionFailedEvent.class));
         verify(auctionOrderRepository, never()).save(any(AuctionOrder.class));
         verify(auctionOutboxRepository, never()).save(any(AuctionOutbox.class));
+        verify(auctionOutboxProcessorService, never()).process(any(Long.class));
     }
 }

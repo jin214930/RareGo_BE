@@ -24,6 +24,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -34,7 +35,7 @@ public class AuctionSettlementSupport {
     private final BidRepository bidRepository;
     private final AuctionOrderRepository auctionOrderRepository;
     private final AuctionOutboxRepository auctionOutboxRepository;
-    private final AuctionOutboxProcessor auctionOutboxProcessor;
+    private final AuctionOutboxProcessorService auctionOutboxProcessorService;
     private final ApplicationEventPublisher eventPublisher;
 
     private static final int BATCH_SIZE = 100;
@@ -67,12 +68,6 @@ public class AuctionSettlementSupport {
         }
     }
 
-    /**
-     * 낙찰 처리 (외부 이벤트)
-     * 아웃박스 패턴 적용:
-     * - 이벤트: AuctionEndedEvent (외부)
-     * - 처리: 아웃박스에 저장 → afterCommit() → 이벤트 발행
-     */
     private void handleSuccess(Auction auction) {
         Bid winningBid = bidRepository.findTopByAuctionIdOrderByBidAmountDescBidTimeAsc(auction.getId())
                 .orElseThrow(() -> new CustomException(ErrorType.BID_NOT_FOUND));
@@ -105,13 +100,6 @@ public class AuctionSettlementSupport {
         );
     }
 
-    /**
-     * 유찰 처리 (내부 이벤트)
-     * <p>
-     * 아웃박스 패턴 미적용:
-     * - 이벤트: AuctionFailedEvent (내부)
-     * - 처리: 즉시 이벤트 발행 (리스너가 재경매 생성)
-     */
     private void handleFail(Auction auction) {
         auction.end();
         auctionRepository.save(auction);
@@ -129,16 +117,15 @@ public class AuctionSettlementSupport {
         );
     }
 
-    /**
-     * 아웃박스 저장 및 afterCommit 콜백 등록
-     * (외부 이벤트 발행용)
-     */
     private void saveOutboxAndSync(AuctionOutbox outbox) {
         AuctionOutbox saved = auctionOutboxRepository.save(outbox);
 
+        Map<String, Object> payload = saved.getPayloadAsMap();
+        Long auctionId = ((Number) payload.get("auctionId")).longValue();
+
         log.debug(
                 "아웃박스 생성: outboxId={}, auctionId={}, type={}",
-                saved.getId(), saved.getAuctionId(), saved.getType()
+                saved.getId(), auctionId, saved.getType()
         );
 
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -147,18 +134,18 @@ public class AuctionSettlementSupport {
                         @Override
                         public void afterCommit() {
                             try {
-                                auctionOutboxProcessor.process(saved.getId());
+                                auctionOutboxProcessorService.process(saved.getId());
 
                                 log.info(
                                         "아웃박스 처리 성공: outboxId={}, auctionId={}, type={}",
-                                        saved.getId(), saved.getAuctionId(), saved.getType()
+                                        saved.getId(), auctionId, saved.getType()
                                 );
 
                             } catch (Exception e) {
                                 log.error(
                                         "아웃박스 처리 실패 (커밋 후 콜백): " +
                                                 "outboxId={}, auctionId={}, type={}, error={}",
-                                        saved.getId(), saved.getAuctionId(),
+                                        saved.getId(), auctionId,
                                         saved.getType(), e.getMessage(), e
                                 );
                                 // 스케줄러가 재시도함
