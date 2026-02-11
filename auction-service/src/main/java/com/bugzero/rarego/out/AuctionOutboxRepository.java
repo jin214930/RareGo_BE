@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface AuctionOutboxRepository extends JpaRepository<AuctionOutbox, Long> {
     @Query(value = """
-            SELECT * FROM AUCTION_OUTBOX o
+            SELECT * FROM auction_outbox o
             WHERE o.status = :status
             AND o.retry_count < :retryCount
             ORDER BY o.id ASC
