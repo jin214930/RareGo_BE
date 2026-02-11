@@ -32,6 +32,7 @@ public class AuctionOutbox extends BaseIdAndTime {
 
     @Column(length = 1024)
     private String lastError;
+
     @Column(columnDefinition = "JSON", nullable = false)
     private String payload;
 
@@ -56,8 +57,8 @@ public class AuctionOutbox extends BaseIdAndTime {
                 .build();
     }
 
-    // Payload 파싱 헬퍼 메서드
-    
+    // ========== Payload 파싱 헬퍼 메서드 ==========
+
     public Map<String, Object> getPayloadAsMap() {
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -68,7 +69,6 @@ public class AuctionOutbox extends BaseIdAndTime {
         }
     }
 
-
     public <T> T getPayload(Class<T> clazz) {
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -77,7 +77,6 @@ public class AuctionOutbox extends BaseIdAndTime {
             throw new RuntimeException("Failed to parse payload: " + this.payload, e);
         }
     }
-
 
     private static String toJson(Map<String, Object> payload) {
         ObjectMapper mapper = new ObjectMapper();
@@ -88,17 +87,39 @@ public class AuctionOutbox extends BaseIdAndTime {
         }
     }
 
-    // 상태 관리 메서드
+    // ==========  상태 관리 메서드 ==========
 
     public void markSent() {
         this.status = AuctionOutboxStatus.SENT;
     }
 
-    public void markFailed(String errorMessage, int maxRetry) {
+    /**
+     * 복구 가능한 예외: 네트워크 타임아웃, DB 연결 일시적 실패
+     *
+     * @param errorMessage 오류 메시지
+     * @param maxRetry     최대 재시도 횟수
+     */
+    public void markFailedTransient(String errorMessage, int maxRetry) {
         this.retryCount += 1;
-        this.lastError = errorMessage;
+        this.lastError = "[TRANSIENT] " + errorMessage;
+
         if (this.retryCount >= maxRetry) {
+            // 최대 재시도 횟수 도달 → FAILED로 변환
             this.status = AuctionOutboxStatus.FAILED;
         }
+        // PENDING 상태 유지 (재시도 스케줄러가 처리)
+    }
+
+    /**
+     * 복구 불가능한 예외: 페이로드 형식 오류, 필드 누락, 타입 불일치
+     *
+     * @param errorMessage 오류 메시지
+     * @param maxRetry     최대 재시도 횟수
+     */
+    public void markFailedPermanently(String errorMessage, int maxRetry) {
+        this.retryCount += 1;
+        this.lastError = "[PERMANENT] " + errorMessage;
+        // 재시도 가능성이 없으므로 즉시 FAILED로 변환
+        this.status = AuctionOutboxStatus.FAILED;
     }
 }

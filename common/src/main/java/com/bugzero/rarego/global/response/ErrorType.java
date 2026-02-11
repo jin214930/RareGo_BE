@@ -91,6 +91,7 @@ public enum ErrorType {
     AUCTION_NOT_FOUND_OR_ALREADY_SETTLED(404, 2515, "존재하지 않는 경매이거나 이미 정산이 완료된 경매입니다."),
     AUCTION_NOT_FINISHED(400, 2516, "아직 경매 종료 시간이 되지 않아 정산할 수 없습니다."),
     AUCTION_OUTBOX_NOT_FOUND(404, 2517, "처리할 경매 관련 아웃박스 데이터를 찾을 수 없습니다."),
+    INVALID_OUTBOX_PAYLOAD(400, 2518, "아웃박스 페이로드가 유효하지 않습니다. 필수 필드를 확인하세요."),
 
     // Product (3000 ~ 3999)
     PRODUCT_NOT_FOUND(404, 3001, "상품이 존재하지 않습니다."),

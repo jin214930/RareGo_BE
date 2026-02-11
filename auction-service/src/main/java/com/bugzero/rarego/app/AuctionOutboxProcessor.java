@@ -28,20 +28,19 @@ public class AuctionOutboxProcessor {
 
     /**
      * 미처리된 아웃박스들을 배치로 재시도
-     *
-     * <p>
      * 스케줄러가 주기적으로(1분마다) 호출
      * 조건: PENDING 상태 + 재시도 횟수 < 3
-     * </p>
      *
      * @return 성공적으로 처리된 아웃박스 개수
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int retryPending() {
-        // 미처리 아웃박스 조회
-        List<AuctionOutbox> pendings = outboxRepository.findAllByStatusAndRetryCountLessThan(
-                AuctionOutboxStatus.PENDING, MAX_RETRY
-        );
+        // 미처리 아웃박스 조회 (FOR UPDATE SKIP LOCKED 적용)
+        // → 다른 트랜잭션에서 이미 처리 중인 행은 스킵
+        List<AuctionOutbox> pendings = outboxRepository
+                .findAllByStatusAndRetryCountLessThanWithLock(
+                        AuctionOutboxStatus.PENDING, MAX_RETRY
+                );
 
         log.debug("미처리 아웃박스 조회: count={}", pendings.size());
 
@@ -64,17 +63,6 @@ public class AuctionOutboxProcessor {
         return successCount;
     }
 
-    /**
-     * 단일 아웃박스 처리
-     * <p>
-     * 처리 흐름:
-     * 1) 아웃박스 조회
-     * 2) 이미 처리됨(SENT) 여부 확인 (중복 처리 방지)
-     * 3) AuctionEndedEvent 발행
-     * 4) 상태 업데이트 (PENDING → SENT 또는 FAILED)
-     *
-     * @param outboxId 아웃박스 ID
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void process(Long outboxId) {
         AuctionOutbox outbox = outboxRepository.findById(outboxId)
@@ -91,55 +79,83 @@ public class AuctionOutboxProcessor {
         }
 
         try {
-            publishAuctionEndedEvent(outbox);
+            // 1. 페이로드 검증
+            Map<String, Object> payload = validatePayload(outbox);
 
-            // 성공 시 상태 업데이트
+            // 2. DB 상태 먼저 업데이트 (중복 발행 방지)
             outbox.markSent();
             outboxRepository.save(outbox);
+
+            // 3. 이벤트 발행
+            publishAuctionEndedEvent(payload);
 
             log.info(
                     "아웃박스 처리 성공: id={}, auctionId={}, type={}",
                     outboxId, outbox.getAuctionId(), outbox.getType()
             );
 
-        } catch (Exception e) {
-            // 실패 시 재시도 카운트 증가
-            log.error(
-                    "아웃박스 처리 실패: id={}, auctionId={}, type={}, error={}",
-                    outboxId, outbox.getAuctionId(), outbox.getType(), e.getMessage(), e
-            );
+        } catch (CustomException e) {
+            // 복구 불가능한 예외 (페이로드 오류)
+            log.error("아웃박스 검증 실패 (복구 불가): id={}, errorType={}", outboxId, e.getErrorType());
+            outbox.markFailedPermanently(e.getErrorType().name(), MAX_RETRY);
+            outboxRepository.save(outbox);
 
-            outbox.markFailed(e.getMessage(), MAX_RETRY);
+        } catch (Exception e) {
+            // 복구 가능한 예외 (네트워크 등)
+            log.warn("아웃박스 처리 실패 (재시도 가능): id={}, error={}", outboxId, e.getMessage());
+            outbox.markFailedTransient(e.getMessage(), MAX_RETRY);
             outboxRepository.save(outbox);
 
             if (outbox.getStatus() == AuctionOutboxStatus.FAILED) {
-                log.warn(
-                        "아웃박스 최대 재시도 횟수 도달: id={}, auctionId={}, " +
-                                "type={}, lastError={}",
-                        outboxId, outbox.getAuctionId(), outbox.getType(),
-                        outbox.getLastError()
-                );
+                log.warn("아웃박스 최대 재시도 횟수 도달: id={}, lastError={}", outboxId, outbox.getLastError());
             }
         }
     }
 
-    /**
-     * AuctionEndedEvent 발행
-     *
-     * <p>
-     * JSON payload에서 데이터 추출하여 이벤트 발행
-     * 추가 DB 조회 불필요
-     * </p>
-     */
-    private void publishAuctionEndedEvent(AuctionOutbox outbox) {
+    private Map<String, Object> validatePayload(AuctionOutbox outbox) {
         Map<String, Object> payload = outbox.getPayloadAsMap();
 
-        Long auctionId = outbox.getAuctionId();
+        if (payload == null) {
+            throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
+        }
+
+        // 필수 필드 검증
+        if (!payload.containsKey("bidderId") || payload.get("bidderId") == null) {
+            throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
+        }
+        if (!payload.containsKey("bidAmount") || payload.get("bidAmount") == null) {
+            throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
+        }
+        if (!payload.containsKey("productId") || payload.get("productId") == null) {
+            throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
+        }
+
+        // 타입 검증
+        if (!(payload.get("bidderId") instanceof Number)) {
+            throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
+        }
+        if (!(payload.get("bidAmount") instanceof Number)) {
+            throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
+        }
+        if (!(payload.get("productId") instanceof Number)) {
+            throw new CustomException(ErrorType.INVALID_OUTBOX_PAYLOAD);
+        }
+
+        return payload;
+    }
+
+    /**
+     * 검증된 payload에서 데이터 추출하여 이벤트 발행
+     * 추가 DB 조회 불필요
+     *
+     * @param payload 검증된 페이로드 맵
+     */
+    private void publishAuctionEndedEvent(Map<String, Object> payload) {
+        Long auctionId = (Long) payload.get("auctionId");
         Long bidderId = ((Number) payload.get("bidderId")).longValue();
         Integer bidAmount = ((Number) payload.get("bidAmount")).intValue();
         Long productId = ((Number) payload.get("productId")).longValue();
 
-        // 이벤트 발행
         eventPublisher.publishEvent(new AuctionEndedEvent(
                 auctionId,
                 bidderId,
