@@ -26,6 +26,7 @@ import com.bugzero.rarego.global.response.SuccessResponseDto;
 import com.bugzero.rarego.global.response.SuccessType;
 import com.bugzero.rarego.in.dto.AuctionAutoSettleResponseDto;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
@@ -166,5 +167,26 @@ public class InternalAuctionController {
 		auctionFacade.deleteAuction(publicId, productId);
 		return SuccessResponseDto.from(SuccessType.OK);
 	}
+
+	@Operation(summary = "상품별 경매 정보 조회 (단건)", description = "상품 ID로 경매 정보를 조회합니다.")
+	@GetMapping("/products/{productId}")
+	public SuccessResponseDto<AuctionInfoResponseDto> getAuctionInfo(@PathVariable Long productId) {
+		return SuccessResponseDto.from(
+			SuccessType.OK,
+			auctionFacade.getAuctionInfoByProductId(productId)
+		);
+	}
+
+	// 2. 다건 조회: GET /api/v1/internal/auctions/products?productIds=1,2,3
+	@Operation(summary = "상품별 경매 정보 조회 (Batch)", description = "여러 상품 ID로 경매 정보를 일괄 조회합니다.")
+	@GetMapping("/products")
+	public SuccessResponseDto<List<AuctionInfoResponseDto>> getAuctionInfos(
+		@RequestParam("productIds") List<Long> productIds) {
+		return SuccessResponseDto.from(
+			SuccessType.OK,
+			auctionFacade.getAuctionInfosByProductIds(productIds)
+		);
+	}
+
 }
 
