@@ -107,8 +107,8 @@ jobs:
           PAYLOAD=$(jq -n --arg system "$PROMPT" --arg code "$DIFF" \
             '{contents: [{parts: [{text: ($system + "\n\nCode Diff:\n" + $code)}]}]}')
           
-          # API 호출 (Gemini 3 Flash 사용)
-          curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${GEMINI_API_KEY}" \
+          # API 호출 (Gemini 2.5 Flash 사용)
+          curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" > gemini-response.json
           
