@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.bugzero.rarego.app.AuthAccessTokenBlacklistUseCase;
 import com.bugzero.rarego.app.AuthLogoutAccountUseCase;
 import com.bugzero.rarego.app.RefreshTokenStore;
+import com.bugzero.rarego.global.security.JwtParser;
 
 @ExtendWith(MockitoExtension.class)
 class AuthLogoutAccountUseCaseTest {
@@ -20,6 +21,9 @@ class AuthLogoutAccountUseCaseTest {
 
 	@Mock
 	private AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase;
+
+	@Mock
+	private JwtParser jwtParser;
 
 	@InjectMocks
 	private AuthLogoutAccountUseCase authLogoutAccountUseCase;
@@ -58,14 +62,17 @@ class AuthLogoutAccountUseCaseTest {
 		// given
 		String accessToken = "access-token";
 		String refreshTokenValue = "refresh-token";
-		when(refreshTokenStore.isValid(refreshTokenValue, accessToken)).thenReturn(true);
+		String publicId = "member-public-id";
+		when(jwtParser.parseRefreshPublicId(refreshTokenValue)).thenReturn(publicId);
+		when(refreshTokenStore.isValid(refreshTokenValue, publicId)).thenReturn(true);
 
 		// when
 		authLogoutAccountUseCase.logout(refreshTokenValue, accessToken);
 
 		// then
 		verify(authAccessTokenBlacklistUseCase).blacklist(accessToken);
-		verify(refreshTokenStore).isValid(refreshTokenValue, accessToken);
+		verify(jwtParser).parseRefreshPublicId(refreshTokenValue);
+		verify(refreshTokenStore).isValid(refreshTokenValue, publicId);
 		verify(refreshTokenStore).revoke(refreshTokenValue);
 	}
 
@@ -75,14 +82,17 @@ class AuthLogoutAccountUseCaseTest {
 		// given
 		String accessToken = "access-token";
 		String refreshTokenValue = "refresh-token";
-		when(refreshTokenStore.isValid(refreshTokenValue, accessToken)).thenReturn(false);
+		String publicId = "member-public-id";
+		when(jwtParser.parseRefreshPublicId(refreshTokenValue)).thenReturn(publicId);
+		when(refreshTokenStore.isValid(refreshTokenValue, publicId)).thenReturn(false);
 
 		// when
 		authLogoutAccountUseCase.logout(refreshTokenValue, accessToken);
 
 		// then
 		verify(authAccessTokenBlacklistUseCase).blacklist(accessToken);
-		verify(refreshTokenStore).isValid(refreshTokenValue, accessToken);
+		verify(jwtParser).parseRefreshPublicId(refreshTokenValue);
+		verify(refreshTokenStore).isValid(refreshTokenValue, publicId);
 		verify(refreshTokenStore, never()).revoke(anyString());
 	}
 }
