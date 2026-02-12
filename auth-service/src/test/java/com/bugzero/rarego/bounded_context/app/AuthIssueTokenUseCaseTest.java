@@ -4,10 +4,8 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,8 +13,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.domain.AuthRole;
 import com.bugzero.rarego.app.AuthIssueTokenUseCase;
+import com.bugzero.rarego.config.JwtProperties;
+import com.bugzero.rarego.domain.AuthRole;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.security.JwtProvider;
@@ -26,20 +25,11 @@ class AuthIssueTokenUseCaseTest {
 	@Mock
 	private JwtProvider jwtProvider;
 
+	@Mock
+	private JwtProperties jwtProperties;
+
 	@InjectMocks
 	private AuthIssueTokenUseCase authIssueTokenUseCase;
-
-	private static void setField(Object target, String fieldName, Object value) throws Exception {
-		Field field = target.getClass().getDeclaredField(fieldName);
-		field.setAccessible(true);
-		field.set(target, value);
-	}
-
-	@BeforeEach
-	void setUp() throws Exception {
-		setField(authIssueTokenUseCase, "accessTokenExpireSeconds", 3600);
-		setField(authIssueTokenUseCase, "refreshTokenExpireSeconds", 7200);
-	}
 
 	@Test
 	@DisplayName("access 토큰 발급 시 멤버 publicId/role과 access 만료시간을 전달한다.")
@@ -47,6 +37,7 @@ class AuthIssueTokenUseCaseTest {
 		// given
 		String memberPublicId = "550e8400-e29b-41d4-a716-446655440000";
 		String role = AuthRole.USER.name();
+		when(jwtProperties.getAccessTokenExpireSeconds()).thenReturn(3600);
 
 		when(jwtProvider.issueToken(eq(3600), argThat(body ->
 			memberPublicId.equals(body.get("publicId"))
@@ -59,6 +50,7 @@ class AuthIssueTokenUseCaseTest {
 
 		// then
 		assertThat(token).isEqualTo("token");
+		verify(jwtProperties).getAccessTokenExpireSeconds();
 		verify(jwtProvider).issueToken(eq(3600), any(Map.class));
 	}
 
@@ -68,6 +60,7 @@ class AuthIssueTokenUseCaseTest {
 		// given
 		String memberPublicId = "1e2c1e52-7e77-4f5d-8c4f-1a2a12b7f9aa";
 		String role = AuthRole.ADMIN.name();
+		when(jwtProperties.getRefreshTokenExpireSeconds()).thenReturn(7200);
 
 		when(jwtProvider.issueToken(eq(7200), argThat(body ->
 			memberPublicId.equals(body.get("publicId"))
@@ -80,6 +73,7 @@ class AuthIssueTokenUseCaseTest {
 
 		// then
 		assertThat(token).isEqualTo("refresh-token");
+		verify(jwtProperties).getRefreshTokenExpireSeconds();
 		verify(jwtProvider).issueToken(eq(7200), any(Map.class));
 	}
 
@@ -89,13 +83,15 @@ class AuthIssueTokenUseCaseTest {
 		// given
 		String memberPublicId = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d";
 		String role = AuthRole.USER.name();
-
+		when(jwtProperties.getRefreshTokenExpireSeconds()).thenReturn(7200);
 		when(jwtProvider.issueToken(eq(7200), anyMap())).thenReturn("refresh-token");
 
 		// when
 		authIssueTokenUseCase.issueToken(memberPublicId, role, false);
 
 		// then
+		verify(jwtProperties).getRefreshTokenExpireSeconds();
+		verify(jwtProperties, never()).getAccessTokenExpireSeconds();
 		verify(jwtProvider).issueToken(eq(7200), any(Map.class));
 		verify(jwtProvider, never()).issueToken(eq(3600), any(Map.class));
 	}
@@ -106,7 +102,7 @@ class AuthIssueTokenUseCaseTest {
 		// given
 		String memberPublicId = "550e8400-e29b-41d4-a716-446655440000";
 		String role = AuthRole.USER.name();
-
+		when(jwtProperties.getAccessTokenExpireSeconds()).thenReturn(3600);
 		when(jwtProvider.issueToken(anyInt(), anyMap())).thenThrow(new RuntimeException("boom"));
 
 		// when
@@ -133,6 +129,7 @@ class AuthIssueTokenUseCaseTest {
 			.isInstanceOf(CustomException.class)
 			.extracting("errorType")
 			.isEqualTo(ErrorType.INVALID_INPUT);
+		verifyNoInteractions(jwtProperties, jwtProvider);
 	}
 
 	@Test
@@ -149,5 +146,6 @@ class AuthIssueTokenUseCaseTest {
 			.isInstanceOf(CustomException.class)
 			.extracting("errorType")
 			.isEqualTo(ErrorType.INVALID_INPUT);
+		verifyNoInteractions(jwtProperties, jwtProvider);
 	}
 }

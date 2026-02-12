@@ -2,9 +2,6 @@ package com.bugzero.rarego.bounded_context.app;
 
 import static org.mockito.Mockito.*;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,15 +9,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.domain.RefreshToken;
-import com.bugzero.rarego.out.RefreshTokenRepository;
 import com.bugzero.rarego.app.AuthAccessTokenBlacklistUseCase;
 import com.bugzero.rarego.app.AuthLogoutAccountUseCase;
+import com.bugzero.rarego.app.RefreshTokenStore;
 
 @ExtendWith(MockitoExtension.class)
 class AuthLogoutAccountUseCaseTest {
 	@Mock
-	private RefreshTokenRepository refreshTokenRepository;
+	private RefreshTokenStore refreshTokenStore;
 
 	@Mock
 	private AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase;
@@ -39,7 +35,7 @@ class AuthLogoutAccountUseCaseTest {
 
 		// then
 		verify(authAccessTokenBlacklistUseCase).blacklist(accessToken);
-		verifyNoInteractions(refreshTokenRepository);
+		verifyNoInteractions(refreshTokenStore);
 	}
 
 	@Test
@@ -53,41 +49,40 @@ class AuthLogoutAccountUseCaseTest {
 
 		// then
 		verify(authAccessTokenBlacklistUseCase).blacklist(accessToken);
-		verifyNoInteractions(refreshTokenRepository);
+		verifyNoInteractions(refreshTokenStore);
 	}
 
 	@Test
-	@DisplayName("refresh 토큰이 있으면 저장소에서 조회 후 삭제한다.")
-	void logoutDeletesRefreshTokenWhenFound() {
+	@DisplayName("refresh 토큰이 유효하면 저장소에서 폐기한다.")
+	void logoutRevokesRefreshTokenWhenValid() {
 		// given
 		String accessToken = "access-token";
 		String refreshTokenValue = "refresh-token";
-		RefreshToken refreshToken = new RefreshToken("member-public-id", refreshTokenValue, LocalDateTime.now().plusDays(1));
-		when(refreshTokenRepository.findByRefreshToken(refreshTokenValue)).thenReturn(Optional.of(refreshToken));
+		when(refreshTokenStore.isValid(refreshTokenValue, accessToken)).thenReturn(true);
 
 		// when
 		authLogoutAccountUseCase.logout(refreshTokenValue, accessToken);
 
 		// then
 		verify(authAccessTokenBlacklistUseCase).blacklist(accessToken);
-		verify(refreshTokenRepository).findByRefreshToken(refreshTokenValue);
-		verify(refreshTokenRepository).delete(refreshToken);
+		verify(refreshTokenStore).isValid(refreshTokenValue, accessToken);
+		verify(refreshTokenStore).revoke(refreshTokenValue);
 	}
 
 	@Test
-	@DisplayName("refresh 토큰이 없으면 삭제하지 않는다.")
-	void logoutSkipsDeleteWhenRefreshTokenMissing() {
+	@DisplayName("refresh 토큰이 유효하지 않으면 폐기하지 않는다.")
+	void logoutSkipsRevokeWhenRefreshTokenInvalid() {
 		// given
 		String accessToken = "access-token";
 		String refreshTokenValue = "refresh-token";
-		when(refreshTokenRepository.findByRefreshToken(refreshTokenValue)).thenReturn(Optional.empty());
+		when(refreshTokenStore.isValid(refreshTokenValue, accessToken)).thenReturn(false);
 
 		// when
 		authLogoutAccountUseCase.logout(refreshTokenValue, accessToken);
 
 		// then
 		verify(authAccessTokenBlacklistUseCase).blacklist(accessToken);
-		verify(refreshTokenRepository).findByRefreshToken(refreshTokenValue);
-		verify(refreshTokenRepository, never()).delete(any(RefreshToken.class));
+		verify(refreshTokenStore).isValid(refreshTokenValue, accessToken);
+		verify(refreshTokenStore, never()).revoke(anyString());
 	}
 }

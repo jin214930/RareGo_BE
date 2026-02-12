@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AuthLogoutAccountUseCase {
-	private final RefreshTokenRepository refreshTokenRepository;
+	private final RefreshTokenStore refreshTokenStore;
 	private final AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase;
 
 	@Transactional
@@ -21,7 +21,8 @@ public class AuthLogoutAccountUseCase {
 			return;
 		}
 
-		refreshTokenRepository.findByRefreshToken(refreshToken)
-			.ifPresent(refreshTokenRepository::delete);
+		if (refreshTokenStore.isValid(refreshToken, accessToken)) {
+			refreshTokenStore.revoke(refreshToken);
+		}
 	}
 }
