@@ -4,6 +4,7 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.ExceptionResponseDto;
@@ -39,6 +40,18 @@ public class GlobalExceptionHandler {
 		log.error("InvalidDataAccessApiUsageException 발생 (정렬 파라미터 오류 등): {}", e.getMessage());
 
 		return ExceptionResponseDto.from(ErrorType.INVALID_INPUT, "정렬 파라미터가 잘못되었습니다.");
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ExceptionResponseDto handleMethodArgumentTypeMismatchException(
+		MethodArgumentTypeMismatchException e) {
+
+		log.warn("MethodArgumentTypeMismatchException 발생: {}", e.getMessage());
+
+		String errorMessage = String.format("파라미터 '%s'의 값이 올바르지 않습니다. (입력값: %s)",
+			e.getName(), e.getValue());
+
+		return ExceptionResponseDto.from(ErrorType.INVALID_INPUT, errorMessage);
 	}
 
 	@ExceptionHandler(Exception.class)
