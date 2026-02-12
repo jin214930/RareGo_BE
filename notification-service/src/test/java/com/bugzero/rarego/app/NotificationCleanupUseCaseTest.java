@@ -3,6 +3,7 @@ package com.bugzero.rarego.app;
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.BDDAssertions.within;
 import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.then;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
