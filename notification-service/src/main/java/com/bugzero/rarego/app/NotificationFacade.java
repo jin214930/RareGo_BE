@@ -2,9 +2,6 @@ package com.bugzero.rarego.app;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.bugzero.rarego.shared.member.domain.MemberDto;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.bugzero.rarego.global.response.PagedResponseDto;
