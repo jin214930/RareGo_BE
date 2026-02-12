@@ -1,10 +1,10 @@
 package com.bugzero.rarego.global.response;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
 import java.util.Arrays;
 import java.util.Optional;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
@@ -14,8 +14,10 @@ public enum ErrorType {
     INVALID_INPUT(400, 9001, "잘못된 입력값입니다."),
     LOCK_ACQUISITION_FAILED(503, 9002, "현재 요청이 많아 처리가 지연되고 있습니다. 잠시 후 다시 시도해주세요."),
     CONCURRENCY_ISSUE(409, 9003, "동시성 이슈가 발생했습니다. 잠시 후 다시 시도해주세요."),
+	JSON_SERIALIZATION_FAILED(400, 9004, "JSON 직렬화에 실패했습니다. 파싱할 데이터를 확인헤주세요."),
 
-    // Member (1000 ~ 1499)
+
+	// Member (1000 ~ 1499)
     MEMBER_NOT_FOUND(404, 1001, "존재하지 않는 회원입니다."),
     MEMBER_EMAIL_EMPTY(400, 1003, "이메일은 필수 입력값입니다."),
     MEMBER_JOIN_FAILED(500, 1004, "회원 가입에 실패했습니다."),
