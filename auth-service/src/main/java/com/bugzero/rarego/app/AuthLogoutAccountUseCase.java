@@ -3,8 +3,6 @@ package com.bugzero.rarego.app;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.bugzero.rarego.out.RefreshTokenRepository;
-
 import lombok.RequiredArgsConstructor;
 
 @Service

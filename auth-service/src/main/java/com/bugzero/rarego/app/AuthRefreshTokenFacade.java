@@ -1,30 +1,21 @@
 package com.bugzero.rarego.app;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.config.JwtProperties;
 import com.bugzero.rarego.domain.Account;
-import com.bugzero.rarego.domain.RefreshToken;
 import com.bugzero.rarego.domain.TokenPairDto;
-import com.bugzero.rarego.out.AccountRepository;
-import com.bugzero.rarego.out.RefreshTokenRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.security.JwtParser;
+import com.bugzero.rarego.out.AccountRepository;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthRefreshTokenFacade {
-	private final RefreshTokenRepository refreshTokenRepository;
 	private final JwtParser jwtParser;
 	private final AuthIssueTokenUseCase authIssueTokenUseCase;
 	private final AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase;

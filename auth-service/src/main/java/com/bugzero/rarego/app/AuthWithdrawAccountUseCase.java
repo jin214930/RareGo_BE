@@ -3,7 +3,6 @@ package com.bugzero.rarego.app;
 import com.bugzero.rarego.domain.Account;
 import com.bugzero.rarego.domain.AuthRole;
 import com.bugzero.rarego.out.AccountRepository;
-import com.bugzero.rarego.out.RefreshTokenRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.security.JwtParser;
@@ -20,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthWithdrawAccountUseCase {
     private final JwtParser jwtParser;
     private final AccountRepository accountRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenStore refreshTokenStore;
     private final AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase;
     private final MemberApiClient memberApiClient;
     private final AuctionApiClient auctionApiClient;
@@ -38,14 +37,11 @@ public class AuthWithdrawAccountUseCase {
         }
 
         /**
-         * TODO:
          * 진행중인 product, bid, payment가 있는지 확인
          *     1. 내 입찰 조회 /members/me/bids => 내가 입찰한 BID가 있는 Auction이 모두 ENDED
          *     2. 내 판매 물품 조회 /members/me/sales => 내가 검수 맡기고, 경매한 product 모두 완료되어 Auction ENDED
          *     3. 내 낙찰 주문 조회 /members/me/orders => 내가 낙찰받는 주문이 AuctionOrderStatus.PROCESSING이 아니어야함
          */
-
-        // 탈퇴 가능 여부 확인
         validateNoActiveActivities(publicId, account.getRole());
 
         // 회원 정보 삭제

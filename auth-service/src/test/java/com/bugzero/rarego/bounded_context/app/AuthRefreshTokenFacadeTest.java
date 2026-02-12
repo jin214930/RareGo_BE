@@ -25,13 +25,9 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.security.JwtParser;
 import com.bugzero.rarego.out.AccountRepository;
-import com.bugzero.rarego.out.RefreshTokenRepository;
 
 @ExtendWith(MockitoExtension.class)
 class AuthRefreshTokenFacadeTest {
-	@Mock
-	private RefreshTokenRepository refreshTokenRepository;
-
 	@Mock
 	private JwtParser jwtParser;
 
