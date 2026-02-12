@@ -1,5 +1,7 @@
 package com.bugzero.rarego.global.outbox.app;
 
+import static com.bugzero.rarego.global.response.ErrorType.*;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +39,7 @@ public class OutboxUseCase {
 
 		if (metadata == null) {
 			log.debug("해당 이벤트를 위한 아웃박스 메타데이터가 없습니다: {}", event.getClass().getSimpleName());
-			return;
+			throw new CustomException(UNSUPPORTED_OUTBOX_EVENT);
 		}
 
 		try {
