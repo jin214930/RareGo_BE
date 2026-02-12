@@ -33,14 +33,14 @@ class AuthStoreRefreshTokenUseCaseTest {
 		// given
 		String memberPublicId = "550e8400-e29b-41d4-a716-446655440000";
 		String refreshToken = "refresh-token";
-		when(jwtProperties.getRefreshTokenExpireSeconds()).thenReturn(3600);
+		when(jwtProperties.getRefreshTokenExpireSeconds()).thenReturn(3600L);
 
 		// when
 		authStoreRefreshTokenUseCase.store(memberPublicId, refreshToken);
 
 		// then
 		verify(jwtProperties).getRefreshTokenExpireSeconds();
-		verify(refreshTokenStore).save(refreshToken, memberPublicId, 3600);
+		verify(refreshTokenStore).save(refreshToken, memberPublicId, 3600L);
 	}
 
 	@Test

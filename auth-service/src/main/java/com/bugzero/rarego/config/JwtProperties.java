@@ -11,12 +11,12 @@ import lombok.Getter;
 @Getter
 @Component
 public class JwtProperties {
-	private final int accessTokenExpireSeconds;
-	private final int refreshTokenExpireSeconds;
+	private final Long accessTokenExpireSeconds;
+	private final Long refreshTokenExpireSeconds;
 
 	public JwtProperties(
-		@Value("${jwt.access-token-expire-seconds}") int accessTokenExpireSeconds,
-		@Value("${jwt.refresh-token-expire-seconds}") int refreshTokenExpireSeconds
+		@Value("${jwt.access-token-expire-seconds}") Long accessTokenExpireSeconds,
+		@Value("${jwt.refresh-token-expire-seconds}") Long refreshTokenExpireSeconds
 	) {
 		if (accessTokenExpireSeconds <= 0 || refreshTokenExpireSeconds <= 0) {
 			throw new CustomException(ErrorType.JWT_EXPIRE_SECONDS_INVALID);

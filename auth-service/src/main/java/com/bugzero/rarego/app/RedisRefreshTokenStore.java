@@ -29,9 +29,12 @@ public class RedisRefreshTokenStore implements RefreshTokenStore {
 	}
 
 	@Override
-	public void save(String refreshToken, String publicId, long ttlSeconds) {
+	public void save(String refreshToken, String publicId, Long ttlSeconds) {
 		if (publicId == null || publicId.isBlank()) {
 			throw new CustomException(ErrorType.AUTH_MEMBER_REQUIRED);
+		}
+		if (ttlSeconds == null || ttlSeconds <= 0) {
+			throw new CustomException(ErrorType.JWT_EXPIRE_SECONDS_INVALID);
 		}
 
 		String tokenKey = key(refreshToken);

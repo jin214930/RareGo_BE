@@ -37,9 +37,9 @@ class AuthIssueTokenUseCaseTest {
 		// given
 		String memberPublicId = "550e8400-e29b-41d4-a716-446655440000";
 		String role = AuthRole.USER.name();
-		when(jwtProperties.getAccessTokenExpireSeconds()).thenReturn(3600);
+		when(jwtProperties.getAccessTokenExpireSeconds()).thenReturn(3600L);
 
-		when(jwtProvider.issueToken(eq(3600), argThat(body ->
+		when(jwtProvider.issueToken(eq(3600L), argThat(body ->
 			memberPublicId.equals(body.get("publicId"))
 				&& role.equals(body.get("role"))
 				&& body.size() == 2
@@ -51,7 +51,7 @@ class AuthIssueTokenUseCaseTest {
 		// then
 		assertThat(token).isEqualTo("token");
 		verify(jwtProperties).getAccessTokenExpireSeconds();
-		verify(jwtProvider).issueToken(eq(3600), any(Map.class));
+		verify(jwtProvider).issueToken(eq(3600L), any(Map.class));
 	}
 
 	@Test
@@ -60,9 +60,9 @@ class AuthIssueTokenUseCaseTest {
 		// given
 		String memberPublicId = "1e2c1e52-7e77-4f5d-8c4f-1a2a12b7f9aa";
 		String role = AuthRole.ADMIN.name();
-		when(jwtProperties.getRefreshTokenExpireSeconds()).thenReturn(7200);
+		when(jwtProperties.getRefreshTokenExpireSeconds()).thenReturn(7200L);
 
-		when(jwtProvider.issueToken(eq(7200), argThat(body ->
+		when(jwtProvider.issueToken(eq(7200L), argThat(body ->
 			memberPublicId.equals(body.get("publicId"))
 				&& "REFRESH".equals(body.get("typ"))
 				&& body.size() == 2
@@ -74,7 +74,7 @@ class AuthIssueTokenUseCaseTest {
 		// then
 		assertThat(token).isEqualTo("refresh-token");
 		verify(jwtProperties).getRefreshTokenExpireSeconds();
-		verify(jwtProvider).issueToken(eq(7200), any(Map.class));
+		verify(jwtProvider).issueToken(eq(7200L), any(Map.class));
 	}
 
 	@Test
@@ -83,8 +83,8 @@ class AuthIssueTokenUseCaseTest {
 		// given
 		String memberPublicId = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d";
 		String role = AuthRole.USER.name();
-		when(jwtProperties.getRefreshTokenExpireSeconds()).thenReturn(7200);
-		when(jwtProvider.issueToken(eq(7200), anyMap())).thenReturn("refresh-token");
+		when(jwtProperties.getRefreshTokenExpireSeconds()).thenReturn(7200L);
+		when(jwtProvider.issueToken(eq(7200L), anyMap())).thenReturn("refresh-token");
 
 		// when
 		authIssueTokenUseCase.issueToken(memberPublicId, role, false);
@@ -92,8 +92,8 @@ class AuthIssueTokenUseCaseTest {
 		// then
 		verify(jwtProperties).getRefreshTokenExpireSeconds();
 		verify(jwtProperties, never()).getAccessTokenExpireSeconds();
-		verify(jwtProvider).issueToken(eq(7200), any(Map.class));
-		verify(jwtProvider, never()).issueToken(eq(3600), any(Map.class));
+		verify(jwtProvider).issueToken(eq(7200L), any(Map.class));
+		verify(jwtProvider, never()).issueToken(eq(3600L), any(Map.class));
 	}
 
 	@Test
@@ -102,8 +102,8 @@ class AuthIssueTokenUseCaseTest {
 		// given
 		String memberPublicId = "550e8400-e29b-41d4-a716-446655440000";
 		String role = AuthRole.USER.name();
-		when(jwtProperties.getAccessTokenExpireSeconds()).thenReturn(3600);
-		when(jwtProvider.issueToken(anyInt(), anyMap())).thenThrow(new RuntimeException("boom"));
+		when(jwtProperties.getAccessTokenExpireSeconds()).thenReturn(3600L);
+		when(jwtProvider.issueToken(anyLong(), anyMap())).thenThrow(new RuntimeException("boom"));
 
 		// when
 		Throwable thrown = catchThrowable(() -> authIssueTokenUseCase.issueToken(memberPublicId, role, true));

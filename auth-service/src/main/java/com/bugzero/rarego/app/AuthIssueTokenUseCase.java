@@ -20,14 +20,14 @@ public class AuthIssueTokenUseCase {
 	private final JwtProvider jwtProvider;
 	private final JwtProperties jwtProperties;
 
-	private int getTokenExpireSeconds(boolean isAccessToken) {
+	private Long getTokenExpireSeconds(boolean isAccessToken) {
 		return isAccessToken ? jwtProperties.getAccessTokenExpireSeconds() : jwtProperties.getRefreshTokenExpireSeconds();
 	}
 
 	public String issueToken(String memberPublicId, String role, boolean isAccessToken) {
 		validateDto(memberPublicId, role, isAccessToken);
 
-		int expireSeconds = getTokenExpireSeconds(isAccessToken);
+		Long expireSeconds = getTokenExpireSeconds(isAccessToken);
 
 		// 내용 분기
 		Map<String, Object> claims = isAccessToken

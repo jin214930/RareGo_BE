@@ -59,7 +59,8 @@ public class AuthRefreshTokenFacade {
 			true);
 		String newRefreshToken = authIssueTokenUseCase.issueToken(account.getMemberPublicId(), account.getRole().name(),
 			false);
-		refreshTokenStore.save(newRefreshToken, account.getMemberPublicId(), jwtProperties.getAccessTokenExpireSeconds());
+		refreshTokenStore.save(newRefreshToken, account.getMemberPublicId(),
+			jwtProperties.getRefreshTokenExpireSeconds());
 
 		// 블랙리스트 추가
 		authAccessTokenBlacklistUseCase.blacklist(accessToken);

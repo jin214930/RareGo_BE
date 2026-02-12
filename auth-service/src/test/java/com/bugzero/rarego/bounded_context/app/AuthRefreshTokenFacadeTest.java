@@ -191,7 +191,7 @@ class AuthRefreshTokenFacadeTest {
 		when(accountRepository.findByMemberPublicId(memberPublicId)).thenReturn(Optional.of(account));
 		when(authIssueTokenUseCase.issueToken(memberPublicId, role, true)).thenReturn("new-access");
 		when(authIssueTokenUseCase.issueToken(memberPublicId, role, false)).thenReturn("new-refresh");
-		when(jwtProperties.getAccessTokenExpireSeconds()).thenReturn(3600);
+		when(jwtProperties.getRefreshTokenExpireSeconds()).thenReturn(3600L);
 
 		// when
 		TokenPairDto result = authRefreshTokenFacade.refresh(refreshToken, accessToken);
@@ -202,7 +202,8 @@ class AuthRefreshTokenFacadeTest {
 		verify(refreshTokenStore).revoke(refreshToken);
 		verify(authIssueTokenUseCase).issueToken(memberPublicId, role, true);
 		verify(authIssueTokenUseCase).issueToken(memberPublicId, role, false);
-		verify(refreshTokenStore).save("new-refresh", memberPublicId, 3600);
+		verify(jwtProperties).getRefreshTokenExpireSeconds();
+		verify(refreshTokenStore).save("new-refresh", memberPublicId, 3600L);
 		verify(authAccessTokenBlacklistUseCase).blacklist(accessToken);
 	}
 }
