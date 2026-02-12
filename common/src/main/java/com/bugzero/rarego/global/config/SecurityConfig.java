@@ -24,6 +24,7 @@ import com.bugzero.rarego.global.security.CustomAuthenticationEntryPoint;
 import com.bugzero.rarego.global.security.JwtAuthenticationFilter;
 import com.bugzero.rarego.global.security.JwtParser;
 import com.bugzero.rarego.global.security.OAuth2SecurityConfigurer;
+import com.bugzero.rarego.global.security.RedisAccessTokenBlacklistChecker;
 import com.bugzero.rarego.global.security.SecurityPaths;
 
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -44,7 +45,8 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http, JwtParser jwtParser,
 		CustomAuthenticationEntryPoint authenticationEntryPoint,
 		CustomAccessDeniedHandler accessDeniedHandler,
-		ObjectProvider<OAuth2SecurityConfigurer> oauth2ConfigurerProvider) throws Exception {
+		ObjectProvider<OAuth2SecurityConfigurer> oauth2ConfigurerProvider,
+		RedisAccessTokenBlacklistChecker accessTokenBlacklistChecker) throws Exception {
 		http.authorizeHttpRequests(
 			auth -> auth
 				.requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
@@ -62,7 +64,7 @@ public class SecurityConfig {
 			.authenticationEntryPoint(authenticationEntryPoint)
 			.accessDeniedHandler(accessDeniedHandler)
 		);
-		http.addFilterBefore(new JwtAuthenticationFilter(jwtParser),
+		http.addFilterBefore(new JwtAuthenticationFilter(jwtParser, accessTokenBlacklistChecker),
 			UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
