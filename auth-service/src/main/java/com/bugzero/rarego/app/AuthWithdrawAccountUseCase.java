@@ -49,7 +49,7 @@ public class AuthWithdrawAccountUseCase {
 
         account.softDelete();
 
-        refreshTokenRepository.deleteByMemberPublicId(publicId);
+        refreshTokenStore.revokeAllByPublicId(publicId);
         authAccessTokenBlacklistUseCase.blacklist(accessToken);
     }
 
