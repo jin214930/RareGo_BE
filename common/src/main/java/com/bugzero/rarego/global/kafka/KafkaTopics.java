@@ -17,6 +17,7 @@ public enum KafkaTopics {
 	PAYMENT_SETTLEMENT_FINISHED("payment-settlement-finished"),
 	PAYMENT_AUCTION_COMPLETED("payment-auction-completed"),
 	PAYMENT_AUCTION_EXPIRING_SOON("payment-auction-expiring-soon"),
+	PAYMENT_TIMEOUT("payment-timeout"),
 
 	// Product events
 	AUCTION_INFO_MANAGEMENT("auction-info-management");

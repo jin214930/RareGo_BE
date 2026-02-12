@@ -18,6 +18,7 @@ import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
 import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
 import com.bugzero.rarego.shared.payment.event.AuctionPaymentCompletedEvent;
 import com.bugzero.rarego.shared.payment.event.AuctionPaymentExpiringSoonEvent;
+import com.bugzero.rarego.shared.payment.event.PaymentTimeoutEvent;
 import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,6 +82,8 @@ public class OutboxUseCase {
 				"Payment", String.valueOf(e.sellerId()), KafkaTopics.PAYMENT_AUCTION_COMPLETED.getTopicName());
 			case AuctionPaymentExpiringSoonEvent e -> new OutboxEventMetadata(
 				"Payment", String.valueOf(e.buyerId()), KafkaTopics.PAYMENT_AUCTION_EXPIRING_SOON.getTopicName());
+			case PaymentTimeoutEvent e -> new OutboxEventMetadata(
+				"Payment", String.valueOf(e.auctionId()), KafkaTopics.PAYMENT_TIMEOUT.getTopicName());
 			default -> null;
 		};
 	}
