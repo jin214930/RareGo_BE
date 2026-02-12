@@ -38,6 +38,7 @@ public class AuctionFacade {
     private final AuctionSupport support;
 
     // 쓰기 작업 (입찰 생성)
+    // TODO: 경매 모듈쪽으로 보증금 홀드하는 api 호출 부분을 카프카 이벤트로 처리 필요
     public SuccessResponseDto<BidResponseDto> createBid(Long auctionId, String memberPublicId, int bidAmount) {
 
         // 보증금 계산 및 선결제(Hold) 요청
