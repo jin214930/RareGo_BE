@@ -85,7 +85,6 @@ class AuctionCreateBidUseCaseTest {
         // Repository와 달리 Support는 Entity를 직접 반환하므로 Optional.of() 제거
         given(support.getPublicMember(BIDDER_PUBLICID)).willReturn(bidder);
 
-        // [중요] UseCase에서 getAuctionWithLock을 호출하므로 맞춰줌
         given(support.findAuctionById(AUCTION_ID)).willReturn(auction);
 
         // 연속 입찰 검증 (Repository 직접 호출 유지)
