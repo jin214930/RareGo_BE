@@ -47,7 +47,7 @@ class AuctionKafkaConnectionTest {
 	@Test
 	@DisplayName("로컬 카프카로 실제 경매 종료 메시지 전송 테스트")
 	void testAuctionEndedRealSend() {
-		AuctionEndedEvent event = new AuctionEndedEvent(999L, 777L, 150000, 888L, "테스트 상품", List.of());
+		AuctionEndedEvent event = new AuctionEndedEvent(999L, 777L, 150000, 888L, "테스트 상품");
 		sendAndLog(TOPIC_AUCTION_ENDED, "999", event);
 	}
 

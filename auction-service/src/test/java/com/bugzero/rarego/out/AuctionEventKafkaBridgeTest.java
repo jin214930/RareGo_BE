@@ -34,7 +34,7 @@ class AuctionEventKafkaBridgeTest {
 
 	@BeforeEach
 	void setUp() {
-		testEvent = new AuctionEndedEvent(123L, 456L, 50000, 789L, "테스트 상품", List.of(1L, 2L));
+		testEvent = new AuctionEndedEvent(123L, 456L, 50000, 789L, "테스트 상품");
 	}
 
     @Test
@@ -64,7 +64,7 @@ class AuctionEventKafkaBridgeTest {
 	void sendAuctionEndedToKafka_UsesAuctionIdAsKey() {
 		// given
 		Long expectedAuctionId = 999L;
-		AuctionEndedEvent event = new AuctionEndedEvent(expectedAuctionId, 100L, 30000, 200L, "테스트 상품", List.of());
+		AuctionEndedEvent event = new AuctionEndedEvent(expectedAuctionId, 100L, 30000, 200L, "테스트 상품");
 
         // when
         auctionEventKafkaBridge.sendAuctionEndedToKafka(event);
@@ -84,7 +84,7 @@ class AuctionEventKafkaBridgeTest {
 	@DisplayName("유찰된 경매 이벤트를 전송한다 (winnerId와 finalPrice가 null)")
 	void sendAuctionEndedToKafka_UnsoldAuction() {
 		// given
-		AuctionEndedEvent unsoldEvent = new AuctionEndedEvent(123L, null, null, 789L, "테스트 상품", List.of());
+		AuctionEndedEvent unsoldEvent = new AuctionEndedEvent(123L, null, null, 789L, "테스트 상품");
 
         // when
         auctionEventKafkaBridge.sendAuctionEndedToKafka(unsoldEvent);
@@ -108,9 +108,9 @@ class AuctionEventKafkaBridgeTest {
 	@DisplayName("여러 이벤트를 순차적으로 전송한다")
 	void sendAuctionEndedToKafka_MultipleEvents() {
 		// given
-		AuctionEndedEvent event1 = new AuctionEndedEvent(1L, 10L, 10000, 100L, "상품1", List.of());
-		AuctionEndedEvent event2 = new AuctionEndedEvent(2L, 20L, 20000, 200L, "상품2", List.of());
-		AuctionEndedEvent event3 = new AuctionEndedEvent(3L, null, null, 300L, "상품3", List.of()); // 유찰
+		AuctionEndedEvent event1 = new AuctionEndedEvent(1L, 10L, 10000, 100L, "상품1");
+		AuctionEndedEvent event2 = new AuctionEndedEvent(2L, 20L, 20000, 200L, "상품2");
+		AuctionEndedEvent event3 = new AuctionEndedEvent(3L, null, null, 300L, "상품3"); // 유찰
 
         // when
         auctionEventKafkaBridge.sendAuctionEndedToKafka(event1);
@@ -128,7 +128,7 @@ class AuctionEventKafkaBridgeTest {
 	@DisplayName("이벤트의 모든 필드가 올바르게 전송된다")
 	void sendAuctionEndedToKafka_AllFieldsPreserved() {
 		// given
-		AuctionEndedEvent fullEvent = new AuctionEndedEvent(555L, 777L, 99999, 888L, "전체 필드 상품", List.of(10L, 20L));
+		AuctionEndedEvent fullEvent = new AuctionEndedEvent(555L, 777L, 99999, 888L, "전체 필드 상품");
 
         // when
         auctionEventKafkaBridge.sendAuctionEndedToKafka(fullEvent);

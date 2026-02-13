@@ -19,7 +19,6 @@ import com.bugzero.rarego.domain.Bid;
 import com.bugzero.rarego.domain.event.AuctionFailedEvent;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.out.AuctionBookmarkRepository;
 import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.out.AuctionOutboxRepository;
 import com.bugzero.rarego.out.AuctionRepository;
@@ -42,7 +41,6 @@ public class AuctionSettlementSupport {
 	private final AuctionOutboxProcessorService auctionOutboxProcessorService;
 	private final ApplicationEventPublisher eventPublisher;
 	private final ProductSearchClient productSearchClient;
-	private final AuctionBookmarkRepository auctionBookmarkRepository;
 
 	private static final int BATCH_SIZE = 100;
 
@@ -91,7 +89,6 @@ public class AuctionSettlementSupport {
 		);
 
 		String productName = getProductName(auction.getProductId());
-		List<Long> bookmarkedMemberIds = auctionBookmarkRepository.findMemberIdsByAuctionId(auction.getId());
 
 		// 아웃박스에 저장 (외부 이벤트)
 		saveOutboxAndSync(
@@ -100,8 +97,7 @@ public class AuctionSettlementSupport {
 				winningBid.getBidderId(),
 				winningBid.getBidAmount(),
 				auction.getProductId(),
-				productName,
-				bookmarkedMemberIds
+				productName
 			)
 		);
 
@@ -116,14 +112,12 @@ public class AuctionSettlementSupport {
 		auctionRepository.save(auction);
 
 		String productName = getProductName(auction.getProductId());
-		List<Long> bookmarkedMemberIds = auctionBookmarkRepository.findMemberIdsByAuctionId(auction.getId());
 
 		eventPublisher.publishEvent(
 			new AuctionFailedEvent(
 				auction.getId(),
 				auction.getProductId(),
-				productName,
-				bookmarkedMemberIds
+				productName
 			)
 		);
 
