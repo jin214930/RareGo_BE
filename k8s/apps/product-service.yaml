@@ -4,7 +4,7 @@ metadata:
   name: product-service
   namespace: rarego
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: product-service
@@ -25,6 +25,18 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8084
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8084
+          initialDelaySeconds: 15
+          periodSeconds: 5
         env:
         - name: JAVA_OPTS
           value: "-Xms128m -Xmx256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
@@ -68,9 +80,11 @@ spec:
               key: SPRING_PROFILES_ACTIVE
         - name: FRONT_URL
           valueFrom:
-            configMapKeyRef:
-              name: global-config
+            secretKeyRef:
+              name: global-secret
               key: FRONT_URL
+        - name: INTERNAL_BACK_URL
+          value: "http://rarego-nginx"
 ---
 apiVersion: v1
 kind: Service

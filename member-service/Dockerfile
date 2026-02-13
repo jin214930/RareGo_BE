@@ -20,4 +20,4 @@ COPY --from=build /app/member-service/build/libs/member-service-*.jar app.jar
 EXPOSE 8081
 
 # 애플리케이션 실행
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
