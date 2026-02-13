@@ -13,8 +13,10 @@ public final class SecurityPaths {
 		"/swagger-ui.html",
 		"/api-docs/**",
 
+		// 스프링 부트 기본 에러 처리 경로
+		"/error",
 
- // OAuth2 로그인 관련
+		// OAuth2 로그인 관련
 		"/oauth2/**",
 		"/login/**",
 
