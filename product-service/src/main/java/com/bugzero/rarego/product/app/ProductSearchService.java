@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,6 +21,7 @@ import com.bugzero.rarego.product.domain.ProductImage;
 import com.bugzero.rarego.product.domain.document.ProductSearchDocument;
 import com.bugzero.rarego.product.out.ProductSearchRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.Category;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -36,7 +38,37 @@ public class ProductSearchService {
 
 	private final ProductSearchRepository searchRepository;
 	private final ElasticsearchClient elasticsearchClient;
-	@Qualifier("openAiEmbeddingModel") private final EmbeddingModel embeddingModel;
+	@Qualifier("openAiEmbeddingModel")
+	private final EmbeddingModel embeddingModel;
+
+	@Transactional
+	public void saveAll(List<Product> products, Map<Long, AuctionInfoResponseDto> auctionMap) {
+		List<ProductSearchDocument> documents = new ArrayList<>();
+
+		for (Product product : products) {
+			AuctionInfoResponseDto auctionInfo = auctionMap.get(product.getId());
+
+			if (auctionInfo == null) {
+				log.warn("경매 정보 누락으로 스킵: productId={}", product.getId());
+				continue;
+			}
+
+			// 공통 메서드로 문서 생성 (임베딩 포함)
+			ProductSearchDocument doc = buildDocument(
+				product,
+				product.getImages(),
+				auctionInfo.auctionId(),
+				auctionInfo.startPrice(),
+				auctionInfo.startedAt()
+			);
+			documents.add(doc);
+		}
+
+		if (!documents.isEmpty()) {
+			searchRepository.saveAll(documents); // ES Bulk Insert 수행
+			log.info("Bulk Insert Completed: {} documents indexed.", documents.size());
+		}
+	}
 
 	// 초기 데이터 적재
 	@Transactional
@@ -47,10 +79,21 @@ public class ProductSearchService {
 		int startPrice,
 		LocalDateTime startedAt
 	) {
+		ProductSearchDocument doc = buildDocument(product, images, auctionId, startPrice, startedAt);
+		searchRepository.save(doc);
+		log.info("Product Indexed (APPROVED): productId={}, auctionId={}", product.getId(), auctionId);
+	}
 
+	private ProductSearchDocument buildDocument(
+		Product product,
+		List<ProductImage> images,
+		Long auctionId,
+		int startPrice,
+		LocalDateTime startedAt
+	) {
 		String docId = ProductSearchDocument.generateId(product.getId(), auctionId);
 
-		// 임베딩 생성
+		// 임베딩 텍스트 생성
 		String textToEmbed = String.format(
 			ProductSearchDocument.EMBEDDING_TEMPLATE,
 			product.getName(),
@@ -59,15 +102,17 @@ public class ProductSearchService {
 			product.getProductCondition()
 		);
 
-		List<Float> vector = generateEmbeddingToFloat(textToEmbed);
+		// 임베딩 벡터 생성
+		List<Float> vector = generateEmbeddingSafe(textToEmbed);
 
-		String imageUrl = images.stream()
+		// 이미지 정렬 및 선택
+		String imageUrl = (images != null && !images.isEmpty()) ? images.stream()
 			.sorted(Comparator.comparingInt(ProductImage::getSortOrder))
 			.map(ProductImage::getImageUrl)
 			.findFirst()
-			.orElse(null);
+			.orElse(null) : null;
 
-		ProductSearchDocument doc = ProductSearchDocument.builder()
+		return ProductSearchDocument.builder()
 			.id(docId)
 			.productId(product.getId())
 			.productName(product.getName())
@@ -77,18 +122,13 @@ public class ProductSearchService {
 			.sellerId(product.getSeller().getId())
 			.imageUrl(imageUrl)
 			.embedding(vector)
-
-			// 경매 정보 매핑
 			.auctionId(auctionId)
 			.startPrice(startPrice)
 			.startedAt(startedAt)
-			.auctionStatus(AuctionStatus.SCHEDULED)
+			.auctionStatus(AuctionStatus.SCHEDULED) // 초기 상태
 			.finalPrice(0)
 			.closedAt(null)
 			.build();
-
-		searchRepository.save(doc);
-		log.info("Product Indexed (APPROVED): productId={}, auctionId={}", product.getId(), auctionId);
 	}
 
 	public void delete(Long productId) {
@@ -154,7 +194,6 @@ public class ProductSearchService {
 		});
 	}
 
-
 	// 키워드(BM25) + 벡터(KNN) + 필터링
 	// 텍스트 매칭 + 벡터 유사도 검색 + 카테고리/상태 필터링
 	public Page<ProductSearchDocument> searchProducts(
@@ -177,7 +216,7 @@ public class ProductSearchService {
 			SearchResponse<ProductSearchDocument> response = elasticsearchClient.search(s -> {
 				// 기본 설정: 인덱스, 페이징
 				s.index("product_search")
-					.from((int) pageable.getOffset())
+					.from((int)pageable.getOffset())
 					.size(pageable.getPageSize());
 
 				// 텍스트 쿼리 구성
@@ -188,18 +227,20 @@ public class ProductSearchService {
 						.filter(filters) // 공통 필터 적용
 					));
 
-					// 벡터(KNN) 쿼리 구성
+					// 벡터(KNN) 쿼리 구성 - 임베딩 실패 시 키워드 검색만 수행
 					String queryText = buildSearchPrompt(keyword, category);
-					List<Float> queryVector = generateEmbeddingToFloat(queryText);
+					List<Float> queryVector = generateEmbeddingSafe(queryText);
 
-					s.knn(k -> k
-						.field("embedding")
-						.queryVector(queryVector)
-						.k(10)
-						.numCandidates(100)
-						.filter(f -> f.bool(b -> b.filter(filters)))
-						.boost(1.5f) // 벡터 점수 비중
-					);
+					if (queryVector != null) {
+						s.knn(k -> k
+							.field("embedding")
+							.queryVector(queryVector)
+							.k(10)
+							.numCandidates(100)
+							.filter(f -> f.bool(b -> b.filter(filters)))
+							.boost(1.5f) // 벡터 점수 비중
+						);
+					}
 				} else {
 					// 키워드 없을 땐 필터만 적용
 					s.query(q -> q.bool(b -> b.filter(filters)));
@@ -225,6 +266,16 @@ public class ProductSearchService {
 	}
 
 	// [Helper Method] //
+
+	// 임베딩 안전 생성 - API 실패 시 null 반환 (키워드 검색은 정상 동작)
+	private List<Float> generateEmbeddingSafe(String text) {
+		try {
+			return generateEmbeddingToFloat(text);
+		} catch (Exception e) {
+			log.warn("임베딩 생성 실패 (API 키 고갈 등), 키워드 검색만 사용됩니다: {}", e.getMessage());
+			return null;
+		}
+	}
 
 	// 임베딩 생성 (Float 리스트로 변환)
 	private List<Float> generateEmbeddingToFloat(String text) {
