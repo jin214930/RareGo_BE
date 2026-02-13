@@ -37,9 +37,9 @@ class PaymentTimeoutSchedulerTest {
 		ReflectionTestUtils.setField(paymentTimeoutScheduler, "paymentTimeoutDays", 3);
 
 		AuctionOrderDto order1 = new AuctionOrderDto(1L, 100L, 10L, 20L, 50000, "PROCESSING",
-			LocalDateTime.now().minusDays(5));
+			LocalDateTime.now().minusDays(5), "테스트 상품");
 		AuctionOrderDto order2 = new AuctionOrderDto(2L, 200L, 11L, 21L, 60000, "PROCESSING",
-			LocalDateTime.now().minusDays(4));
+			LocalDateTime.now().minusDays(4), "테스트 상품");
 
 		given(auctionOrderApiClient.findTimeoutOrders(any(LocalDateTime.class), any()))
 			.willReturn(
@@ -77,11 +77,11 @@ class PaymentTimeoutSchedulerTest {
 		ReflectionTestUtils.setField(paymentTimeoutScheduler, "paymentTimeoutDays", 3);
 
 		AuctionOrderDto order1 = new AuctionOrderDto(1L, 100L, 10L, 20L, 50000, "PROCESSING",
-			LocalDateTime.now().minusDays(5));
+			LocalDateTime.now().minusDays(5), "테스트 상품");
 		AuctionOrderDto order2 = new AuctionOrderDto(2L, 200L, 11L, 21L, 60000, "PROCESSING",
-			LocalDateTime.now().minusDays(4));
+			LocalDateTime.now().minusDays(4), "테스트 상품");
 		AuctionOrderDto order3 = new AuctionOrderDto(3L, 300L, 12L, 22L, 70000, "PROCESSING",
-			LocalDateTime.now().minusDays(4));
+			LocalDateTime.now().minusDays(4), "테스트 상품");
 
 		given(auctionOrderApiClient.findTimeoutOrders(any(LocalDateTime.class), any()))
 			.willReturn(

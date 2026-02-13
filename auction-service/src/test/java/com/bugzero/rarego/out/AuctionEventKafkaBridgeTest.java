@@ -13,6 +13,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 
+import java.util.List;
+
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
 import com.bugzero.rarego.shared.auction.event.AuctionRelistedEvent;
 
@@ -30,10 +32,10 @@ class AuctionEventKafkaBridgeTest {
 
     private AuctionEndedEvent testEvent;
 
-    @BeforeEach
-    void setUp() {
-        testEvent = new AuctionEndedEvent(123L, 456L, 50000, 789L);
-    }
+	@BeforeEach
+	void setUp() {
+		testEvent = new AuctionEndedEvent(123L, 456L, 50000, 789L, "테스트 상품", List.of(1L, 2L));
+	}
 
     @Test
     @DisplayName("경매 종료 이벤트를 Kafka로 정상 전송한다")
@@ -57,12 +59,12 @@ class AuctionEventKafkaBridgeTest {
         assertThat(eventCaptor.getValue()).isEqualTo(testEvent);
     }
 
-    @Test
-    @DisplayName("auctionId를 Key로 사용하여 메시지 순서를 보장한다")
-    void sendAuctionEndedToKafka_UsesAuctionIdAsKey() {
-        // given
-        Long expectedAuctionId = 999L;
-        AuctionEndedEvent event = new AuctionEndedEvent(expectedAuctionId, 100L, 30000, 200L);
+	@Test
+	@DisplayName("auctionId를 Key로 사용하여 메시지 순서를 보장한다")
+	void sendAuctionEndedToKafka_UsesAuctionIdAsKey() {
+		// given
+		Long expectedAuctionId = 999L;
+		AuctionEndedEvent event = new AuctionEndedEvent(expectedAuctionId, 100L, 30000, 200L, "테스트 상품", List.of());
 
         // when
         auctionEventKafkaBridge.sendAuctionEndedToKafka(event);
@@ -78,11 +80,11 @@ class AuctionEventKafkaBridgeTest {
         assertThat(keyCaptor.getValue()).isEqualTo(String.valueOf(expectedAuctionId));
     }
 
-    @Test
-    @DisplayName("유찰된 경매 이벤트를 전송한다 (winnerId와 finalPrice가 null)")
-    void sendAuctionEndedToKafka_UnsoldAuction() {
-        // given
-        AuctionEndedEvent unsoldEvent = new AuctionEndedEvent(123L, null, null, 789L);
+	@Test
+	@DisplayName("유찰된 경매 이벤트를 전송한다 (winnerId와 finalPrice가 null)")
+	void sendAuctionEndedToKafka_UnsoldAuction() {
+		// given
+		AuctionEndedEvent unsoldEvent = new AuctionEndedEvent(123L, null, null, 789L, "테스트 상품", List.of());
 
         // when
         auctionEventKafkaBridge.sendAuctionEndedToKafka(unsoldEvent);
@@ -102,13 +104,13 @@ class AuctionEventKafkaBridgeTest {
         assertThat(capturedEvent.productId()).isEqualTo(789L);
     }
 
-    @Test
-    @DisplayName("여러 이벤트를 순차적으로 전송한다")
-    void sendAuctionEndedToKafka_MultipleEvents() {
-        // given
-        AuctionEndedEvent event1 = new AuctionEndedEvent(1L, 10L, 10000, 100L);
-        AuctionEndedEvent event2 = new AuctionEndedEvent(2L, 20L, 20000, 200L);
-        AuctionEndedEvent event3 = new AuctionEndedEvent(3L, null, null, 300L); // 유찰
+	@Test
+	@DisplayName("여러 이벤트를 순차적으로 전송한다")
+	void sendAuctionEndedToKafka_MultipleEvents() {
+		// given
+		AuctionEndedEvent event1 = new AuctionEndedEvent(1L, 10L, 10000, 100L, "상품1", List.of());
+		AuctionEndedEvent event2 = new AuctionEndedEvent(2L, 20L, 20000, 200L, "상품2", List.of());
+		AuctionEndedEvent event3 = new AuctionEndedEvent(3L, null, null, 300L, "상품3", List.of()); // 유찰
 
         // when
         auctionEventKafkaBridge.sendAuctionEndedToKafka(event1);
@@ -122,11 +124,11 @@ class AuctionEventKafkaBridgeTest {
         verify(kafkaTemplate).send("auction-ended", "3", event3);
     }
 
-    @Test
-    @DisplayName("이벤트의 모든 필드가 올바르게 전송된다")
-    void sendAuctionEndedToKafka_AllFieldsPreserved() {
-        // given
-        AuctionEndedEvent fullEvent = new AuctionEndedEvent(555L, 777L, 99999, 888L);
+	@Test
+	@DisplayName("이벤트의 모든 필드가 올바르게 전송된다")
+	void sendAuctionEndedToKafka_AllFieldsPreserved() {
+		// given
+		AuctionEndedEvent fullEvent = new AuctionEndedEvent(555L, 777L, 99999, 888L, "전체 필드 상품", List.of(10L, 20L));
 
         // when
         auctionEventKafkaBridge.sendAuctionEndedToKafka(fullEvent);
@@ -154,7 +156,9 @@ class AuctionEventKafkaBridgeTest {
             999L,                   // productId
             2001L,                  // newAuctionId
             150000,                 // startPrice
-            LocalDateTime.now()     // startedAt
+            LocalDateTime.now(),    // startedAt
+            "재등록 상품",            // productName
+            List.of(1L, 2L)         // bookmarkedMemberIds
         );
 
         // when
@@ -185,7 +189,9 @@ class AuctionEventKafkaBridgeTest {
             123L,
             expectedNewAuctionId,
             10000,
-            LocalDateTime.now()
+            LocalDateTime.now(),
+            "테스트 상품",
+            List.of()
         );
 
         // when

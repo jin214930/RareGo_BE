@@ -81,7 +81,7 @@ class PaymentAuctionFinalUseCaseTest {
 
 		// Order DTO (낙찰자 ID 일치, 상태 PROCESSING, 날짜 최신)
 		AuctionOrderDto order = new AuctionOrderDto(
-			1L, auctionId, sellerId, memberId, finalPrice, "PROCESSING", LocalDateTime.now());
+			1L, auctionId, sellerId, memberId, finalPrice, "PROCESSING", LocalDateTime.now(), "테스트 상품");
 
 		// 구매자 & 판매자 객체 생성 (Builder 사용 가정)
 		PaymentMember buyer = PaymentMember.builder()
@@ -192,7 +192,7 @@ class PaymentAuctionFinalUseCaseTest {
 		AuctionFinalPaymentRequestDto request = new AuctionFinalPaymentRequestDto(
 			"홍길동", "010-1234-5678", "12345", "서울시", "101호", "문앞");
 		AuctionOrderDto order = new AuctionOrderDto(1L, auctionId, 5L, winnerId, 100000, "PROCESSING",
-			LocalDateTime.now());
+			LocalDateTime.now(), "테스트 상품");
 
 		PaymentMember buyer = mock(PaymentMember.class);
 		given(buyer.getId()).willReturn(memberId);
@@ -218,7 +218,7 @@ class PaymentAuctionFinalUseCaseTest {
 		AuctionFinalPaymentRequestDto request = new AuctionFinalPaymentRequestDto(
 			"홍길동", "010-1234-5678", "12345", "서울시", "101호", "문앞");
 		AuctionOrderDto order = new AuctionOrderDto(1L, auctionId, 5L, memberId, 100000, "SUCCESS",
-			LocalDateTime.now()); // 이미 완료
+			LocalDateTime.now(), "테스트 상품"); // 이미 완료
 
 		PaymentMember buyer = mock(PaymentMember.class);
 		given(buyer.getId()).willReturn(memberId);
@@ -244,7 +244,7 @@ class PaymentAuctionFinalUseCaseTest {
 		AuctionFinalPaymentRequestDto request = new AuctionFinalPaymentRequestDto(
 			"홍길동", "010-1234-5678", "12345", "서울시", "101호", "문앞");
 		AuctionOrderDto order = new AuctionOrderDto(1L, auctionId, 5L, memberId, 100000, "PROCESSING",
-			LocalDateTime.now());
+			LocalDateTime.now(), "테스트 상품");
 
 		PaymentMember buyer = mock(PaymentMember.class);
 		given(buyer.getId()).willReturn(memberId);
@@ -273,7 +273,7 @@ class PaymentAuctionFinalUseCaseTest {
 		AuctionFinalPaymentRequestDto request = new AuctionFinalPaymentRequestDto(
 			"홍길동", "010-1234-5678", "12345", "서울시", "101호", "문앞");
 		AuctionOrderDto order = new AuctionOrderDto(1L, auctionId, 5L, memberId, finalPrice, "PROCESSING",
-			LocalDateTime.now());
+			LocalDateTime.now(), "테스트 상품");
 
 		PaymentMember buyer = mock(PaymentMember.class);
 		given(buyer.getId()).willReturn(memberId);
