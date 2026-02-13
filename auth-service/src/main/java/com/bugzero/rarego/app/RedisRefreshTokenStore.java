@@ -8,6 +8,7 @@ import java.util.HexFormat;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RBatch;
 import org.redisson.api.RSetCache;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Repository;
@@ -38,8 +39,12 @@ public class RedisRefreshTokenStore implements RefreshTokenStore {
 		}
 
 		String tokenKey = key(refreshToken);
-		redisson.<String>getBucket(tokenKey).set(publicId, Duration.ofSeconds(ttlSeconds));
-		redisson.<String>getSetCache(indexKey(publicId)).add(tokenKey, ttlSeconds, TimeUnit.SECONDS);
+		String idxKey = indexKey(publicId);
+
+		RBatch batch = redisson.createBatch();
+		batch.getBucket(tokenKey).setAsync(publicId, Duration.ofSeconds(ttlSeconds));
+		batch.getSetCache(idxKey).addAsync(tokenKey, ttlSeconds, TimeUnit.SECONDS);
+		batch.execute();
 	}
 
 	@Override
