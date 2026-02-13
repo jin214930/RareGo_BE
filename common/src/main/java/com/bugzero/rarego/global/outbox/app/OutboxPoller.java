@@ -35,7 +35,7 @@ public class OutboxPoller {
 	@Scheduled(fixedDelayString = "${outbox.poller.interval-ms:5000}") // 각 모듈에 적합하게 설정
 	@Transactional
 	public void pollAndPublish() {
-		List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatusOrderByCreateDate(
+		List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatusOrderByCreatedAt(
 			OutboxStatus.PENDING,
 			PageRequest.of(0, batchSize)
 		);
