@@ -14,9 +14,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.bugzero.rarego.domain.Auction;
+import com.bugzero.rarego.domain.event.AuctionCreatedEvent;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.out.AuctionRepository;
@@ -25,6 +27,9 @@ import com.bugzero.rarego.out.AuctionRepository;
 class AuctionDetermineStartAuctionUseCaseTest {
 	@Mock
 	AuctionRepository auctionRepository;
+
+	@Mock
+	ApplicationEventPublisher eventPublisher;
 
 	@InjectMocks
 	AuctionDetermineStartAuctionUseCase useCase;
@@ -36,7 +41,6 @@ class AuctionDetermineStartAuctionUseCaseTest {
 	@DisplayName("성공: 시작 시간이 없는 경매의 시작 시간을 확정하면 24시간 뒤 정각으로 설정된다")
 	void determineStartAuction_success() {
 		// given
-		// 시작 시간이 설정되지 않은(null) 경매 객체 생성
 		Auction auction = Auction.builder()
 			.startTime(null)
 			.durationDays(durationDays)
@@ -53,7 +57,6 @@ class AuctionDetermineStartAuctionUseCaseTest {
 		// then
 		assertThat(resultId).isEqualTo(PRODUCT_ID);
 
-		// 캡처를 통해 실제 계산된 시간을 검증
 		ArgumentCaptor<LocalDateTime> timeCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
 		verify(spyAuction).determineStart(timeCaptor.capture());
 
@@ -66,6 +69,12 @@ class AuctionDetermineStartAuctionUseCaseTest {
 			() -> assertThat(capturedTime.getNano()).isZero(),
 			() -> assertThat(capturedTime).isAfter(LocalDateTime.now().plusHours(23))
 		);
+
+		ArgumentCaptor<AuctionCreatedEvent> eventCaptor = ArgumentCaptor.forClass(AuctionCreatedEvent.class);
+		verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+		AuctionCreatedEvent capturedEvent = eventCaptor.getValue();
+		assertThat(capturedEvent.auctionId()).isEqualTo(PRODUCT_ID);
 	}
 
 	@Test
