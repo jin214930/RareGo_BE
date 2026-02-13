@@ -9,5 +9,6 @@ public record AuctionOrderDto(
                 Long bidderId,
                 int finalPrice,
                 String status,
-                LocalDateTime createdAt) {
+                LocalDateTime createdAt,
+                String productName) {
 }
