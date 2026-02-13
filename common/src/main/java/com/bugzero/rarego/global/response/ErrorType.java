@@ -58,6 +58,9 @@ public enum ErrorType {
 	WITHDRAWAL_ACTIVE_SALE_EXISTS(409, 1517, "진행 중인 판매가 있어 탈퇴할 수 없습니다."),
 	WITHDRAWAL_PROCESSING_ORDER_EXISTS(409, 1518, "처리 중인 주문이 있어 탈퇴할 수 없습니다."),
 	AUTH_PROMOTE_SELLER_FAILED(500, 1519, "판매자 승격에 실패했습니다."),
+	AUTH_ACCESS_TOKEN_EXPIRED(401, 1520, "액세스 토큰이 만료되었습니다."),
+	AUTH_ACCESS_TOKEN_INVALID(401, 1521, "유효하지 않은 액세스 토큰입니다."),
+	AUTH_ACCESS_TOKEN_BLACKLISTED(401, 1522, "사용할 수 없는 액세스 토큰입니다."),
 
     // Auction (2000 ~ 2999)
     AUCTION_CREATE_FAILED(500, 2000, "경매 생성에 실패했습니다."),

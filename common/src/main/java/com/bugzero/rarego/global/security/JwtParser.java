@@ -11,6 +11,8 @@ import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.bugzero.rarego.global.response.ErrorType;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -50,44 +52,7 @@ public class JwtParser {
 		return value.toString();
 	}
 
-	// 유효한지 판별
-	public boolean isValid(String jwtStr) {
-		try {
-			Jwts.parser()
-				.verifyWith(jwtSecretKey)
-				.build()
-				.parse(jwtStr);
-
-			return true;
-
-		} catch (ExpiredJwtException e) {
-			log.debug("JWT expired. token={}, msg={}", mask(jwtStr), e.getMessage());
-			return false;
-
-		} catch (SecurityException e) {
-			// 서명 불일치/검증 실패 성격
-			log.debug("JWT signature/security error. token={}, msg={}", mask(jwtStr), e.getMessage());
-			return false;
-
-		} catch (JwtException e) {
-			// 형식 오류, claim 오류 등 JJWT 계열 전반
-			log.debug("JWT invalid. token={}, ex={}, msg={}",
-				mask(jwtStr), e.getClass().getSimpleName(), e.getMessage());
-			return false;
-
-		} catch (IllegalArgumentException e) {
-			// null/blank 등
-			log.debug("JWT illegal argument. token={}, msg={}", mask(jwtStr), e.getMessage());
-			return false;
-
-		} catch (Exception e) {
-			// 정말 예상 못한 케이스
-			log.warn("JWT unexpected error. token={}, ex={}", mask(jwtStr), e.getClass().getName(), e);
-			return false;
-		}
-	}
-
-	// MemberPrincipal 형태로 전환
+	// MemberPrincipal 형태로 전환, 유효하지 않으면 null
 	public MemberPrincipal parsePrincipal(String jwtStr) {
 		Claims claims = claimsOrNull(jwtStr, "principal");
 		if (claims == null)
@@ -98,6 +63,17 @@ public class JwtParser {
 		if (publicId == null || role == null || role.isBlank())
 			return null;
 
+		return new MemberPrincipal(publicId, role);
+	}
+
+	// MemberPrincipal 형태로 전환 (예외 던짐)
+	public MemberPrincipal parsePrincipalOrThrow(String jwtStr) {
+		Claims claims = claimsOrThrow(jwtStr, "principal");
+		String publicId = extractPublicId(claims);
+		String role = toRoleString(claims.get("role"));
+		if (publicId == null || role == null || role.isBlank()) {
+			throw new JwtAuthenticationException(ErrorType.AUTH_ACCESS_TOKEN_INVALID);
+		}
 		return new MemberPrincipal(publicId, role);
 	}
 
@@ -172,6 +148,48 @@ public class JwtParser {
 			log.warn("JWT unexpected error. purpose={}, token={}, ex={}",
 				purpose, mask(jwtStr), e.getClass().getName(), e);
 			return null;
+		}
+	}
+
+	// 본문을 가져오거나 문제가 생기면 특정 에러로 변환 (filter용)
+	private Claims claimsOrThrow(String jwtStr, String purpose) {
+		try {
+			Object payload = Jwts.parser()
+				.verifyWith(jwtSecretKey)
+				.build()
+				.parse(jwtStr)
+				.getPayload();
+
+			if (payload instanceof Claims claims)
+				return claims;
+
+			if (payload instanceof Map<?, ?> map) {
+				@SuppressWarnings("unchecked")
+				Map<String, Object> m = (Map<String, Object>)map;
+				return Jwts.claims().add(m).build();
+			}
+
+			log.debug("JWT payload type is not supported. purpose={}, payloadType={}",
+				purpose, payload == null ? "null" : payload.getClass().getName());
+			throw new JwtAuthenticationException(ErrorType.AUTH_ACCESS_TOKEN_INVALID);
+		} catch (ExpiredJwtException e) {
+			log.debug("JWT expired. purpose={}, token={}, msg={}", purpose, mask(jwtStr), e.getMessage());
+			throw new JwtAuthenticationException(ErrorType.AUTH_ACCESS_TOKEN_EXPIRED);
+		} catch (SecurityException e) {
+			log.debug("JWT signature/security error. purpose={}, token={}, msg={}", purpose, mask(jwtStr),
+				e.getMessage());
+			throw new JwtAuthenticationException(ErrorType.AUTH_ACCESS_TOKEN_INVALID);
+		} catch (JwtException e) {
+			log.debug("JWT invalid. purpose={}, token={}, ex={}, msg={}",
+				purpose, mask(jwtStr), e.getClass().getSimpleName(), e.getMessage());
+			throw new JwtAuthenticationException(ErrorType.AUTH_ACCESS_TOKEN_INVALID);
+		} catch (IllegalArgumentException e) {
+			log.debug("JWT illegal argument. purpose={}, token={}, msg={}", purpose, mask(jwtStr), e.getMessage());
+			throw new JwtAuthenticationException(ErrorType.AUTH_ACCESS_TOKEN_INVALID);
+		} catch (Exception e) {
+			log.warn("JWT unexpected error. purpose={}, token={}, ex={}",
+				purpose, mask(jwtStr), e.getClass().getName(), e);
+			throw new JwtAuthenticationException(ErrorType.AUTH_ACCESS_TOKEN_INVALID);
 		}
 	}
 
