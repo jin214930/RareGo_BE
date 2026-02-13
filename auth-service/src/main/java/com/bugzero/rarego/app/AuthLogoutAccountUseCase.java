@@ -17,13 +17,16 @@ public class AuthLogoutAccountUseCase {
 	@Transactional
 	public void logout(String refreshToken, String accessToken) {
 		authAccessTokenBlacklistUseCase.blacklist(accessToken);
-		String publicId = jwtParser.parseRefreshPublicId(refreshToken);
-
 		if (refreshToken == null || refreshToken.isBlank()) {
 			return;
 		}
 
-		if (!publicId.isBlank() && refreshTokenStore.isValid(refreshToken, publicId)) {
+		String publicId = jwtParser.parseRefreshPublicId(refreshToken);
+		if (publicId == null || publicId.isBlank()) {
+			return;
+		}
+
+		if (refreshTokenStore.isValid(refreshToken, publicId)) {
 			refreshTokenStore.revoke(refreshToken);
 		}
 	}
