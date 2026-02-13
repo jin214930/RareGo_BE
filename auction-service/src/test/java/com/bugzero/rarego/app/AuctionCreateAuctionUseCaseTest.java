@@ -13,8 +13,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.BDDMockito.*;
+import com.bugzero.rarego.domain.Auction;
+import com.bugzero.rarego.domain.AuctionMember;
+import com.bugzero.rarego.out.AuctionRepository;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionCreateAuctionUseCaseTest {
@@ -38,7 +41,7 @@ class AuctionCreateAuctionUseCaseTest {
         // given
         Long productId = 1L;
         int durationDays = 24;
-        ProductAuctionRequestDto requestDto = ProductAuctionRequestDto.builder()
+		ProductAuctionCreateDto requestDto = ProductAuctionCreateDto.builder()
                 .startPrice(10000)
                 .durationDays(durationDays)
                 .build();

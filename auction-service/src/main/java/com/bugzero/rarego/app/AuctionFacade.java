@@ -1,5 +1,11 @@
 package com.bugzero.rarego.app;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.domain.AuctionOrderStatus;
 import com.bugzero.rarego.global.response.PagedResponseDto;
@@ -23,15 +29,12 @@ import com.bugzero.rarego.in.dto.MyBidResponseDto;
 import com.bugzero.rarego.in.dto.MySaleResponseDto;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
+import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j
 @Service
@@ -168,8 +171,8 @@ public class AuctionFacade {
 
     // 경매 정보 생성
     @Transactional
-    public Long createAuction(Long productId, String publicId, ProductAuctionRequestDto productAuctionRequestDto) {
-        return auctionCreateAuctionUseCase.createAuction(productId, publicId, productAuctionRequestDto);
+    public Long createAuction(Long productId, String publicId, ProductAuctionCreateDto productAuctionCreateDto) {
+        return auctionCreateAuctionUseCase.createAuction(productId, publicId, productAuctionCreateDto);
     }
 
     // 경매 정보 수정
