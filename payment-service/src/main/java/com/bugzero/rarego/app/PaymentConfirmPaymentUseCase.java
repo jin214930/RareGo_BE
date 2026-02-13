@@ -73,7 +73,7 @@ public class PaymentConfirmPaymentUseCase {
 					log.info("결제 취소 요청 성공 - orderId: {}, paymentKey: {}", requestDto.orderId(),
 						tossResponse.paymentKey());
 				} catch (Exception e2) {
-					log.error("결체 취소 요청 실패 (스케줄러로 후처리) - orderId: {}, paymentKey: {}, 원인: {}",
+					log.error("결제 취소 요청 실패 (스케줄러로 후처리) - orderId: {}, paymentKey: {}, 원인: {}",
 						requestDto.orderId(), tossResponse.paymentKey(), e2.getMessage(), e2);
 				}
 			}
