@@ -1,5 +1,6 @@
 package com.bugzero.rarego.shared.auction.out;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -138,10 +139,35 @@ public class AuctionApiClient {
 			.retrieve()
 			.onStatus(HttpStatusCode::isError, (req, res) ->
 				errorHandler.handleWithDefault(req, res, ErrorType.AUCTION_NOT_FOUND))
-			.body(new ParameterizedTypeReference<>() {});
+			.body(new ParameterizedTypeReference<>() {
+			});
 
 		return Optional.ofNullable(response)
 			.map(SuccessResponseDto::data)
 			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
+	}
+
+	public List<AuctionInfoResponseDto> getAuctionInfos(List<Long> productIds) {
+		// 1. 방어 로직 (빈 리스트면 호출 안 함)
+		if (productIds == null || productIds.isEmpty()) {
+			return List.of();
+		}
+
+		// 2. bulk 조회 요청
+		SuccessResponseDto<List<AuctionInfoResponseDto>> response = restClient.get()
+			.uri(uriBuilder -> uriBuilder
+				.path("/products")
+				.queryParam("productIds", productIds) // 리스트를 자동으로 콤마(,) 구분으로 변환
+				.build())
+			.header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+			.retrieve()
+			.onStatus(HttpStatusCode::isError, (req, res) ->
+				errorHandler.handleWithDefault(req, res, ErrorType.INTERNAL_SERVER_ERROR))
+			.body(new ParameterizedTypeReference<>() {
+			});
+
+		return Optional.ofNullable(response)
+			.map(SuccessResponseDto::data)
+			.orElse(List.of());
 	}
 }

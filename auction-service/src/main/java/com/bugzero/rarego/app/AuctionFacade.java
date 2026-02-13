@@ -1,5 +1,7 @@
 package com.bugzero.rarego.app;
 
+import java.util.List;
+
 import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.domain.AuctionOrderStatus;
@@ -24,6 +26,7 @@ import com.bugzero.rarego.in.dto.MyBidResponseDto;
 import com.bugzero.rarego.in.dto.MySaleResponseDto;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
@@ -39,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AuctionFacade {
 
     private final AuctionCreateBidUseCase auctionCreateBidUseCase;
@@ -196,7 +200,15 @@ public class AuctionFacade {
         return auctionSubscribeStreamUseCase.getTotalSubscribers();
     }
 
-    public int getAuctionSubscribers(Long auctionId) {
-        return auctionSubscribeStreamUseCase.getAuctionSubscribers(auctionId);
-    }
+	public int getAuctionSubscribers(Long auctionId) {
+		return auctionSubscribeStreamUseCase.getAuctionSubscribers(auctionId);
+	}
+
+	public AuctionInfoResponseDto getAuctionInfoByProductId(Long productId) {
+		return auctionReadUseCase.getAuctionInfoByProductId(productId);
+	}
+
+	public List<AuctionInfoResponseDto> getAuctionInfosByProductIds(List<Long> productIds) {
+		return auctionReadUseCase.getAuctionInfosByProductIds(productIds);
+	}
 }

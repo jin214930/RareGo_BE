@@ -46,6 +46,7 @@ import com.bugzero.rarego.out.BidRepository;
 import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.dto.AuctionSortType;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 
 import lombok.RequiredArgsConstructor;
@@ -283,10 +284,37 @@ public class AuctionReadUseCase {
         return new PagedResponseDto<>(finalDtos, PageDto.from(bookmarkPage));
     }
 
-    // === Helper Methods ===
+	public AuctionInfoResponseDto getAuctionInfoByProductId(Long productId) {
+		Auction auction = support.findAuctionByProductId(productId);
+		return toInfoResponseDto(auction);
+	}
 
-    private List<AuctionListResponseDto> convertToAuctionListDtos(List<Auction> auctions) {
-        if (auctions.isEmpty()) return Collections.emptyList();
+	public List<AuctionInfoResponseDto> getAuctionInfosByProductIds(List<Long> productIds) {
+		if (productIds == null || productIds.isEmpty()) {
+			return List.of();
+		}
+
+		List<Auction> auctions = support.findAllByProductIds(productIds);
+
+		return auctions.stream()
+			.map(this::toInfoResponseDto)
+			.toList();
+	}
+
+	// === Helper Methods ===
+
+	private AuctionInfoResponseDto toInfoResponseDto(Auction auction) {
+		return new AuctionInfoResponseDto(
+			auction.getProductId(),
+			auction.getId(),
+			auction.getStartPrice(),
+			auction.getStartTime()
+		);
+	}
+
+	private List<AuctionListResponseDto> convertToAuctionListDtos(List<Auction> auctions) {
+		if (auctions.isEmpty())
+			return Collections.emptyList();
 
         Set<Long> auctionIds = auctions.stream().map(Auction::getId).collect(Collectors.toSet());
         Set<Long> productIds = auctions.stream().map(Auction::getProductId).collect(Collectors.toSet());
