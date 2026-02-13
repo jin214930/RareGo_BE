@@ -50,6 +50,7 @@ import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.out.BidRepository;
 import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.type.Category;
 
@@ -963,4 +964,116 @@ class AuctionReadUseCaseTest {
             verify(auctionRepository, never()).findAllById(any());
         }
     }
+
+	// ============================
+	// getAuctionInfoByProductId 테스트
+	// ============================
+	@Nested
+	@DisplayName("getAuctionInfoByProductId - 상품 ID로 경매 정보 단건 조회 (Internal)")
+	class GetAuctionInfoByProductIdTest {
+
+		@Test
+		@DisplayName("성공 - 상품 ID에 해당하는 경매 정보를 DTO로 변환하여 반환")
+		void getAuctionInfoByProductId_success() {
+			// given
+			given(support.findAuctionByProductId(productId)).willReturn(auction);
+
+			// when
+			AuctionInfoResponseDto result = auctionReadUseCase.getAuctionInfoByProductId(productId);
+
+			// then
+			assertThat(result.productId()).isEqualTo(productId);
+			assertThat(result.auctionId()).isEqualTo(auctionId);
+			assertThat(result.startPrice()).isEqualTo(10000);
+			assertThat(result.startedAt()).isEqualTo(auction.getStartTime());
+		}
+
+		@Test
+		@DisplayName("실패 - 경매가 존재하지 않으면 Support에서 예외 발생")
+		void getAuctionInfoByProductId_notFound() {
+			// given
+			given(support.findAuctionByProductId(productId))
+				.willThrow(new CustomException(com.bugzero.rarego.global.response.ErrorType.AUCTION_NOT_FOUND));
+
+			// when & then
+			assertThatThrownBy(() -> auctionReadUseCase.getAuctionInfoByProductId(productId))
+				.isInstanceOf(CustomException.class);
+		}
+	}
+
+	// ============================
+	// getAuctionInfosByProductIds 테스트
+	// ============================
+	@Nested
+	@DisplayName("getAuctionInfosByProductIds - 상품 ID 목록으로 경매 정보 일괄 조회 (Internal Batch)")
+	class GetAuctionInfosByProductIdsTest {
+
+		@Test
+		@DisplayName("성공 - 요청한 상품 ID 목록에 해당하는 경매 정보 리스트 반환")
+		void getAuctionInfosByProductIds_success() {
+			// given
+			List<Long> productIds = List.of(productId, 20L);
+
+			Auction auction2 = Auction.builder()
+				.productId(20L)
+				.sellerId(sellerId)
+				.startPrice(20000)
+				.startTime(LocalDateTime.now())
+				.endTime(LocalDateTime.now().plusDays(1))
+				.durationDays(1)
+				.build();
+			ReflectionTestUtils.setField(auction2, "id", 2L);
+			ReflectionTestUtils.setField(auction2, "status", AuctionStatus.SCHEDULED);
+
+			given(support.findAllByProductIds(productIds)).willReturn(List.of(auction, auction2));
+
+			// when
+			List<AuctionInfoResponseDto> results = auctionReadUseCase.getAuctionInfosByProductIds(productIds);
+
+			// then
+			assertThat(results).hasSize(2);
+
+			// 1번 상품 매핑 검증
+			AuctionInfoResponseDto dto1 = results.stream()
+				.filter(d -> d.productId().equals(productId))
+				.findFirst().orElseThrow();
+			assertThat(dto1.auctionId()).isEqualTo(auctionId);
+			assertThat(dto1.startPrice()).isEqualTo(10000);
+
+			// 2번 상품 매핑 검증
+			AuctionInfoResponseDto dto2 = results.stream()
+				.filter(d -> d.productId().equals(20L))
+				.findFirst().orElseThrow();
+			assertThat(dto2.auctionId()).isEqualTo(2L);
+			assertThat(dto2.startPrice()).isEqualTo(20000);
+		}
+
+		@Test
+		@DisplayName("성공 - 빈 리스트 요청 시 DB 조회 없이 빈 리스트 반환 (Early Return)")
+		void getAuctionInfosByProductIds_emptyRequest() {
+			// given
+			List<Long> emptyIds = Collections.emptyList();
+
+			// when
+			List<AuctionInfoResponseDto> results = auctionReadUseCase.getAuctionInfosByProductIds(emptyIds);
+
+			// then
+			assertThat(results).isEmpty();
+			verify(support, never()).findAllByProductIds(any());
+		}
+
+		@Test
+		@DisplayName("성공 - null 요청 시 DB 조회 없이 빈 리스트 반환")
+		void getAuctionInfosByProductIds_nullRequest() {
+			// given
+			List<Long> nullIds = null;
+
+			// when
+			List<AuctionInfoResponseDto> results = auctionReadUseCase.getAuctionInfosByProductIds(nullIds);
+
+			// then
+			assertThat(results).isEmpty();
+			verify(support, never()).findAllByProductIds(any());
+		}
+	}
 }
