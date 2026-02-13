@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OutboxPoller {
 
 	private final OutboxEventRepository outboxEventRepository;
-	private final KafkaTemplate<String, String> kafkaTemplate;
+	private final KafkaTemplate<String, Object> kafkaTemplate;
 
 	@Value("${outbox.poller.batch-size:100}") // 각 모듈에 적합하게 설정
 	private int batchSize;
@@ -37,7 +37,7 @@ public class OutboxPoller {
 	@Scheduled(fixedDelayString = "${outbox.poller.interval-ms:10000}") // 각 모듈에 적합하게 설정
 	@Transactional
 	public void pollAndPublish() {
-		List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatusOrderByCreateDate(
+		List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatusOrderByCreatedAt(
 			OutboxStatus.PENDING,
 			PageRequest.of(0, batchSize)
 		);
