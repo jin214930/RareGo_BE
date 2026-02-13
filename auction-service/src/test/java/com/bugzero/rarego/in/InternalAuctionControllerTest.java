@@ -232,7 +232,8 @@ class InternalAuctionControllerTest {
 			300L,
 			50000,
 			"PROCESSING",
-			LocalDateTime.now()
+			LocalDateTime.now(),
+			"테스트 상품"
 		);
 
 		// Slice Mock 생성 (hasNext = true 상황 가정)

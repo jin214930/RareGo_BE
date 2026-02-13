@@ -1,6 +1,7 @@
 package com.bugzero.rarego.out;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +47,7 @@ class AuctionKafkaConnectionTest {
 	@Test
 	@DisplayName("로컬 카프카로 실제 경매 종료 메시지 전송 테스트")
 	void testAuctionEndedRealSend() {
-		AuctionEndedEvent event = new AuctionEndedEvent(999L, 777L, 150000, 888L);
+		AuctionEndedEvent event = new AuctionEndedEvent(999L, 777L, 150000, 888L, "테스트 상품");
 		sendAndLog(TOPIC_AUCTION_ENDED, "999", event);
 	}
 
@@ -54,7 +55,7 @@ class AuctionKafkaConnectionTest {
 	@DisplayName("로컬 카프카로 실제 재등록 메시지 전송 테스트")
 	void testRelistRealSend() {
 		AuctionRelistedEvent event = new AuctionRelistedEvent(
-			999L, 1001L, 120000, LocalDateTime.now()
+			999L, 1001L, 120000, LocalDateTime.now(), "테스트 상품", List.of()
 		);
 		sendAndLog(TOPIC_AUCTION_RELISTED, "999", event);
 	}
@@ -63,7 +64,7 @@ class AuctionKafkaConnectionTest {
 	@DisplayName("로컬 카프카로 실제 경매 시작 메시지 전송 테스트")
 	void testAuctionStartedRealSend() {
 		AuctionStartedEvent event = new AuctionStartedEvent(
-			777L, 999L, LocalDateTime.now()
+			777L, 999L, LocalDateTime.now(), "테스트 상품", List.of()
 		);
 		sendAndLog(TOPIC_AUCTION_STARTED, "777", event);
 	}

@@ -8,11 +8,14 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionOrder;
 import com.bugzero.rarego.domain.AuctionOrderStatus;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.out.AuctionOrderRepository;
+import com.bugzero.rarego.out.AuctionRepository;
+import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuctionOrderService {
 	private final AuctionOrderRepository auctionOrderRepository;
+	private final AuctionRepository auctionRepository;
+	private final ProductSearchClient productSearchClient;
 
 	public Optional<AuctionOrderDto> findByAuctionId(Long auctionId) {
 		return auctionOrderRepository.findByAuctionId(auctionId)
@@ -70,6 +75,12 @@ public class AuctionOrderService {
 	}
 
 	private AuctionOrderDto from(AuctionOrder order) {
+		String productName = auctionRepository.findById(order.getAuctionId())
+			.map(Auction::getProductId)
+			.flatMap(productSearchClient::getProduct)
+			.map(product -> product.name())
+			.orElse("Unknown Product");
+
 		return new AuctionOrderDto(
 			order.getId(),
 			order.getAuctionId(),
@@ -77,6 +88,7 @@ public class AuctionOrderService {
 			order.getBidderId(),
 			order.getFinalPrice(),
 			order.getStatus().name(),
-			order.getCreatedAt());
+			order.getCreatedAt(),
+			productName);
 	}
 }
