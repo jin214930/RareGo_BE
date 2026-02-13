@@ -1,16 +1,12 @@
 package com.bugzero.rarego.app;
 
-import com.bugzero.rarego.domain.Auction;
-import com.bugzero.rarego.domain.AuctionMember;
-import com.bugzero.rarego.domain.Bid;
-import com.bugzero.rarego.config.AuctionMetrics;
-import com.bugzero.rarego.domain.event.AuctionBidCreatedEvent;
-import com.bugzero.rarego.global.exception.CustomException;
-import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.in.dto.BidResponseDto;
-import com.bugzero.rarego.out.BidRepository;
-import com.bugzero.rarego.shared.auction.type.AuctionStatus;
-import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,14 +16,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
+import com.bugzero.rarego.config.AuctionMetrics;
+import com.bugzero.rarego.domain.Auction;
+import com.bugzero.rarego.domain.AuctionMember;
+import com.bugzero.rarego.domain.Bid;
+import com.bugzero.rarego.domain.event.AuctionBidCreatedEvent;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.in.dto.BidResponseDto;
+import com.bugzero.rarego.out.BidRepository;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionCreateBidUseCaseTest {
@@ -86,8 +85,7 @@ class AuctionCreateBidUseCaseTest {
         // Repository와 달리 Support는 Entity를 직접 반환하므로 Optional.of() 제거
         given(support.getPublicMember(BIDDER_PUBLICID)).willReturn(bidder);
 
-        // [중요] UseCase에서 getAuctionWithLock을 호출하므로 맞춰줌
-        given(support.getAuctionWithLock(AUCTION_ID)).willReturn(auction);
+        given(support.findAuctionById(AUCTION_ID)).willReturn(auction);
 
         // 연속 입찰 검증 (Repository 직접 호출 유지)
         given(bidRepository.findTopByAuctionIdOrderByBidTimeDesc(AUCTION_ID)).willReturn(Optional.empty());
@@ -126,7 +124,7 @@ class AuctionCreateBidUseCaseTest {
 
         // [수정] Support Mocking
         given(support.getPublicMember(SELLER_PUBLICID)).willReturn(seller);
-        given(support.getAuctionWithLock(AUCTION_ID)).willReturn(auction);
+        given(support.findAuctionById(AUCTION_ID)).willReturn(auction);
 
         // when & then
         assertThatThrownBy(() ->
@@ -162,7 +160,7 @@ class AuctionCreateBidUseCaseTest {
 
         // [수정] Support Mocking
         given(support.getPublicMember(BIDDER_PUBLICID)).willReturn(bidder);
-        given(support.getAuctionWithLock(AUCTION_ID)).willReturn(auction);
+        given(support.findAuctionById(AUCTION_ID)).willReturn(auction);
 
         // 이전 입찰 기록이 있는 상태로 설정
         Bid lastBid = Bid.builder().bidderId(999L).build();

@@ -1,22 +1,30 @@
 package com.bugzero.rarego.out.es;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import com.bugzero.rarego.in.dto.es.ProductSearchDocumentDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
+import com.bugzero.rarego.shared.product.type.Category;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-
-import com.bugzero.rarego.in.dto.es.ProductSearchDocumentDto;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
-import com.bugzero.rarego.shared.product.type.Category;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -31,7 +39,8 @@ public class ProductSearchClient {
 	 * (ProductApiClient.getProduct 대응)
 	 */
 	public Optional<ProductAuctionResponseDto> getProduct(Long productId) {
-		if (productId == null) return Optional.empty();
+		if (productId == null)
+			return Optional.empty();
 
 		// 단건 조회도 search 쿼리를 사용 (findByProductId와 동일 효과)
 		// 복합키 구조라면 term 쿼리로 productId 필드를 검색해야 함
@@ -44,7 +53,8 @@ public class ProductSearchClient {
 	 * (ProductApiClient.getProducts 대응)
 	 */
 	public Map<Long, ProductAuctionResponseDto> getProducts(Collection<Long> productIds) {
-		if (productIds == null || productIds.isEmpty()) return Collections.emptyMap();
+		if (productIds == null || productIds.isEmpty())
+			return Collections.emptyMap();
 
 		try {
 			List<FieldValue> values = productIds.stream().map(FieldValue::of).toList();
@@ -60,7 +70,7 @@ public class ProductSearchClient {
 				.map(Hit::source)
 				.filter(Objects::nonNull)
 				.collect(Collectors.toMap(
-					ProductSearchDocumentDto::getProductId,
+					ProductSearchDocumentDto::productId,
 					this::convertToDto,
 					(existing, replacement) -> existing // 중복 시 기존 것 유지 (또는 최신 것 선택)
 				));
@@ -76,7 +86,8 @@ public class ProductSearchClient {
 	 * (ProductApiClient.getProductIdsBySellerId 대응)
 	 */
 	public List<Long> getProductIdsBySellerId(Long sellerId) {
-		if (sellerId == null) return Collections.emptyList();
+		if (sellerId == null)
+			return Collections.emptyList();
 
 		try {
 			SearchResponse<ProductSearchDocumentDto> response = elasticsearchClient.search(s -> s
@@ -90,7 +101,7 @@ public class ProductSearchClient {
 			return response.hits().hits().stream()
 				.map(Hit::source)
 				.filter(Objects::nonNull)
-				.map(ProductSearchDocumentDto::getProductId)
+				.map(ProductSearchDocumentDto::productId)
 				.distinct()
 				.toList();
 		} catch (IOException e) {
@@ -130,7 +141,7 @@ public class ProductSearchClient {
 			return response.hits().hits().stream()
 				.map(Hit::source)
 				.filter(Objects::nonNull)
-				.map(ProductSearchDocumentDto::getProductId)
+				.map(ProductSearchDocumentDto::productId)
 				.distinct()
 				.toList();
 
@@ -159,7 +170,7 @@ public class ProductSearchClient {
 			return response.hits().hits().stream()
 				.map(Hit::source)
 				.filter(Objects::nonNull)
-				.map(ProductSearchDocumentDto::getProductId)
+				.map(ProductSearchDocumentDto::productId)
 				.distinct()
 				.toList();
 		} catch (IOException e) {
@@ -170,14 +181,14 @@ public class ProductSearchClient {
 
 	// Helper: DTO 변환 (Builder 패턴 적용)
 	private ProductAuctionResponseDto convertToDto(ProductSearchDocumentDto doc) {
-		String imageUrl = doc.getImageUrl() != null ? doc.getImageUrl() : "";
+		String imageUrl = doc.imageUrl() != null ? doc.imageUrl() : "";
 
 		return ProductAuctionResponseDto.builder()
-			.id(doc.getProductId())
-			.sellerId(doc.getSellerId())
-			.name(doc.getProductName())
-			.description(doc.getDescription())
-			.category(doc.getCategory())
+			.id(doc.productId())
+			.sellerId(doc.sellerId())
+			.name(doc.productName())
+			.description(doc.description())
+			.category(doc.category())
 			.thumbnailUrl(imageUrl)
 			.imageUrls(List.of(imageUrl)) // 목록형에서는 1장만 있어도 무방
 			.build();
