@@ -3,6 +3,7 @@ package com.bugzero.rarego.app;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import java.util.Collections;
 import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
@@ -22,9 +23,12 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.AuctionRelistRequestDto;
 import com.bugzero.rarego.in.dto.AuctionRelistResponseDto;
+import com.bugzero.rarego.out.AuctionBookmarkRepository;
 import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.out.AuctionRepository;
+import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionRelistUseCaseTest {
@@ -40,6 +44,10 @@ class AuctionRelistUseCaseTest {
 	private AuctionOrderRepository auctionOrderRepository;
 	@Mock
 	private ApplicationEventPublisher eventPublisher;
+	@Mock
+	private ProductSearchClient productSearchClient;
+	@Mock
+	private AuctionBookmarkRepository auctionBookmarkRepository;
 
 	@Test
 	@DisplayName("재경매 성공: 유찰된 상품(주문 없음)을 재등록한다")
@@ -75,6 +83,11 @@ class AuctionRelistUseCaseTest {
 
 		given(auctionRepository.save(any(Auction.class))).willReturn(savedAuction);
 
+		// ProductSearchClient, BookmarkRepository Mocking
+		given(productSearchClient.getProduct(50L)).willReturn(
+			Optional.of(ProductAuctionResponseDto.builder().name("테스트 상품").build()));
+		given(auctionBookmarkRepository.findMemberIdsByAuctionId(oldAuctionId)).willReturn(Collections.emptyList());
+
 		// when
 		AuctionRelistResponseDto result = auctionRelistUseCase.relistAuction(oldAuctionId, memberPublicId, request);
 
@@ -109,6 +122,11 @@ class AuctionRelistUseCaseTest {
 		Auction newAuction = Auction.builder().productId(50L).durationDays(1).build();
 		ReflectionTestUtils.setField(newAuction, "status", AuctionStatus.SCHEDULED);
 		given(auctionRepository.save(any(Auction.class))).willReturn(newAuction);
+
+		// ProductSearchClient, BookmarkRepository Mocking
+		given(productSearchClient.getProduct(anyLong())).willReturn(
+			Optional.of(ProductAuctionResponseDto.builder().name("테스트 상품").build()));
+		given(auctionBookmarkRepository.findMemberIdsByAuctionId(oldAuctionId)).willReturn(Collections.emptyList());
 
 		// when
 		AuctionRelistResponseDto result =
