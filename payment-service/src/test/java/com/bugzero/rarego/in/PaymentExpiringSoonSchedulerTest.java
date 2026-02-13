@@ -149,7 +149,8 @@ class PaymentExpiringSoonSchedulerTest {
 			300L,     // sellerId
 			10000,
 			"PROCESSING",
-			LocalDateTime.now()
+			LocalDateTime.now(),
+			"테스트 상품"
 		);
 	}
 }
