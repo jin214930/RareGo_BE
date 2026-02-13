@@ -71,22 +71,24 @@ public class AuctionWithdrawUseCase {
 		auction.withdraw();
 
 		log.info("판매 포기 처리 완료 - auctionId: {}, sellerId: {}", auctionId, member.getId());
-
-		return AuctionWithdrawResponseDto.of(auctionId, auction.getProductId(), beforeStatus);
+    
+    return AuctionWithdrawResponseDto.of(auctionId, auction.getProductId(), beforeStatus);
 	}
 
-	public boolean hasActiveBids(String publicId) {
-		return bidRepository.existsActiveBidByPublicId(publicId);
-	}
+    @Transactional(readOnly = true)
+    public boolean hasActiveBids(String publicId) {
+        return bidRepository.existsActiveBidByPublicId(publicId);
+    }
 
-	public boolean hasActiveSales(String publicId) {
-		return auctionRepository.existsActiveSaleByPublicId(publicId);
-	}
+    @Transactional(readOnly = true)
+    public boolean hasActiveSales(String publicId) {
+        return auctionRepository.existsActiveSaleByPublicId(publicId);
+    }
 
-	public boolean hasProcessingOrders(String publicId) {
-		return auctionOrderRepository.existsByBuyerPublicIdAndStatus(
-			publicId, AuctionOrderStatus.PROCESSING
-		);
-	}
-
+    @Transactional(readOnly = true)
+    public boolean hasProcessingOrders(String publicId) {
+        return auctionOrderRepository.existsByBuyerPublicIdAndStatus(
+                publicId, AuctionOrderStatus.PROCESSING
+        );
+    }
 }
