@@ -60,8 +60,8 @@ public class OutboxPoller {
 		try {
 			event.markProcessing();
 
-			// 1. ProducerRecord 직접 생성 (String 데이터임을 명시)
-			ProducerRecord<String, String> record = new ProducerRecord<>(
+			// 1. ProducerRecord 직접 생성 (Object 데이터임을 명시)
+			ProducerRecord<String, Object> record = new ProducerRecord<>(
 				event.getTopic(),
 				event.getAggregateId(),
 				event.getPayload()
