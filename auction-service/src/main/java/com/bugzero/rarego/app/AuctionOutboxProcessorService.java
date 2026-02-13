@@ -1,5 +1,7 @@
 package com.bugzero.rarego.app;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -114,22 +116,29 @@ public class AuctionOutboxProcessorService {
 		return payload;
 	}
 
+	@SuppressWarnings("unchecked")
 	private void publishAuctionEndedEvent(Map<String, Object> payload) {
 		Long auctionId = ((Number)payload.get("auctionId")).longValue();
 		Long bidderId = ((Number)payload.get("bidderId")).longValue();
 		Integer bidAmount = ((Number)payload.get("bidAmount")).intValue();
 		Long productId = ((Number)payload.get("productId")).longValue();
+		String productName = (String)payload.get("productName");
+		List<Long> bookmarkedMemberIds = payload.get("bookmarkedMemberIds") instanceof List
+			? ((List<Number>)payload.get("bookmarkedMemberIds")).stream().map(Number::longValue).toList()
+			: Collections.emptyList();
 
 		eventPublisher.publishEvent(new AuctionEndedEvent(
 			auctionId,
 			bidderId,
 			bidAmount,
-			productId
+			productId,
+			productName,
+			bookmarkedMemberIds
 		));
 
 		log.debug(
-			"경매 종료 이벤트 발행: auctionId={}, bidderId={}, bidAmount={}, productId={}",
-			auctionId, bidderId, bidAmount, productId
+			"경매 종료 이벤트 발행: auctionId={}, bidderId={}, bidAmount={}, productId={}, productName={}",
+			auctionId, bidderId, bidAmount, productId, productName
 		);
 	}
 }

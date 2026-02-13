@@ -1,5 +1,7 @@
 package com.bugzero.rarego.domain;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.bugzero.rarego.global.jpa.entity.BaseIdAndTime;
@@ -46,14 +48,17 @@ public class AuctionOutbox extends BaseIdAndTime {
 		Long auctionId,
 		Long bidderId,
 		Integer bidAmount,
-		Long productId
+		Long productId,
+		String productName,
+		List<Long> bookmarkedMemberIds
 	) {
-		Map<String, Object> payload = Map.of(
-			"auctionId", auctionId,
-			"bidderId", bidderId,
-			"bidAmount", bidAmount,
-			"productId", productId
-		);
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("auctionId", auctionId);
+		payload.put("bidderId", bidderId);
+		payload.put("bidAmount", bidAmount);
+		payload.put("productId", productId);
+		payload.put("productName", productName);
+		payload.put("bookmarkedMemberIds", bookmarkedMemberIds);
 
 		return AuctionOutbox.builder()
 			.type(AuctionOutboxType.AUCTION_ENDED)
