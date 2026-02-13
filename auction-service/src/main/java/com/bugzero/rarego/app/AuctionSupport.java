@@ -1,22 +1,23 @@
 package com.bugzero.rarego.app;
 
-import com.bugzero.rarego.domain.Auction;
-import com.bugzero.rarego.domain.AuctionMember;
-import com.bugzero.rarego.domain.AuctionOrder;
-import com.bugzero.rarego.out.AuctionMemberRepository;
-import com.bugzero.rarego.out.AuctionOrderRepository;
-import com.bugzero.rarego.out.AuctionRepository;
-import com.bugzero.rarego.global.exception.CustomException;
-import com.bugzero.rarego.global.response.ErrorType;
-import com.bugzero.rarego.shared.auction.type.AuctionStatus;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
-import com.bugzero.rarego.shared.product.out.ProductApiClient;
-import lombok.RequiredArgsConstructor;
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import com.bugzero.rarego.domain.Auction;
+import com.bugzero.rarego.domain.AuctionMember;
+import com.bugzero.rarego.domain.AuctionOrder;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.out.AuctionMemberRepository;
+import com.bugzero.rarego.out.AuctionOrderRepository;
+import com.bugzero.rarego.out.AuctionRepository;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
+import com.bugzero.rarego.shared.product.out.ProductApiClient;
 
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -35,12 +36,6 @@ public class AuctionSupport {
 
     public Auction getAuctionByProductId(Long productId) {
         return auctionRepository.findByProductId(productId)
-                .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
-    }
-
-    @Transactional
-    public Auction getAuctionWithLock(Long auctionId) {
-        return auctionRepository.findByIdWithLock(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
     }
 
