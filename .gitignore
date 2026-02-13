@@ -89,6 +89,7 @@ AGENTS.md
 ### Terraform ###
 .terraform/
 *.tfstate
+*.tfstate.*
 *.tfstate.backup
 .terraform.lock.hcl
 *.tfvars
