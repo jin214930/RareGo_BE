@@ -2,10 +2,12 @@ package com.bugzero.rarego.app;
 
 import java.time.LocalDateTime;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Auction;
+import com.bugzero.rarego.domain.event.AuctionCreatedEvent;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.out.AuctionRepository;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class AuctionDetermineStartAuctionUseCase {
 
 	private final AuctionRepository auctionRepository;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
 	public Long determineStartAuction(Long productId) {
@@ -26,6 +29,14 @@ public class AuctionDetermineStartAuctionUseCase {
 			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
 
 		auction.determineStart(determineStartTime());
+
+		// 경매 생성 이벤트 발행
+		eventPublisher.publishEvent(
+			new AuctionCreatedEvent(
+				auction.getId(),
+				auction.getEndTime()
+			)
+		);
 
 		return auction.getId();
 	}
