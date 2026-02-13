@@ -119,17 +119,19 @@ public class AuctionOutboxProcessorService {
 		Long bidderId = ((Number)payload.get("bidderId")).longValue();
 		Integer bidAmount = ((Number)payload.get("bidAmount")).intValue();
 		Long productId = ((Number)payload.get("productId")).longValue();
+		String productName = (String)payload.get("productName");
 
 		eventPublisher.publishEvent(new AuctionEndedEvent(
 			auctionId,
 			bidderId,
 			bidAmount,
-			productId
+			productId,
+			productName
 		));
 
 		log.debug(
-			"경매 종료 이벤트 발행: auctionId={}, bidderId={}, bidAmount={}, productId={}",
-			auctionId, bidderId, bidAmount, productId
+			"경매 종료 이벤트 발행: auctionId={}, bidderId={}, bidAmount={}, productId={}, productName={}",
+			auctionId, bidderId, bidAmount, productId, productName
 		);
 	}
 }
