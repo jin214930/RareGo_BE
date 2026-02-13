@@ -113,7 +113,7 @@ class AuctionControllerTest {
 		// given
 		Long auctionId = 1L;
 		BidLogResponseDto logDto = new BidLogResponseDto(
-			10L, "user_***", LocalDateTime.now(), 50000);
+			10L, "user_***", "입찰자닉네임", LocalDateTime.now(), 50000);
 
 		PagedResponseDto<BidLogResponseDto> response = new PagedResponseDto<>(
 			List.of(logDto), new PageDto(1, 10, 1, 1, false, false));
@@ -130,6 +130,7 @@ class AuctionControllerTest {
 			.andDo(print())
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.data[0].publicId").value("user_***"))
+			.andExpect(jsonPath("$.data[0].nickname").value("입찰자닉네임"))
 			.andExpect(jsonPath("$.data[0].bidAmount").value(50000));
 	}
 

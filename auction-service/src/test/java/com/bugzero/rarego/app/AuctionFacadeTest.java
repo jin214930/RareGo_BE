@@ -120,7 +120,7 @@ class AuctionFacadeTest {
         Long auctionId = 1L;
         Pageable pageable = PageRequest.of(0, 10);
 
-        BidLogResponseDto logDto = new BidLogResponseDto(1L, "user_masked", LocalDateTime.now(), 50000);
+        BidLogResponseDto logDto = new BidLogResponseDto(1L, "user_masked", "입찰자닉네임", LocalDateTime.now(), 50000);
         PagedResponseDto<BidLogResponseDto> expectedResponse = new PagedResponseDto<>(
             List.of(logDto), new PageDto(1, 10, 1, 1, false, false)
         );
@@ -134,6 +134,7 @@ class AuctionFacadeTest {
         // then
         assertThat(result.data()).hasSize(1);
         assertThat(result.data().get(0).publicId()).isEqualTo("user_masked");
+        assertThat(result.data().get(0).nickname()).isEqualTo("입찰자닉네임");
         assertThat(result.data().get(0).bidAmount()).isEqualTo(50000);
 
         verify(auctionReadUseCase).getBidLogs(eq(auctionId), any(Pageable.class));

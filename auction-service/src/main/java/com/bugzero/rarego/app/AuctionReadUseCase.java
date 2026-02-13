@@ -68,15 +68,15 @@ public class AuctionReadUseCase {
     // 경매 입찰 기록 조회
     public PagedResponseDto<BidLogResponseDto> getBidLogs(Long auctionId, Pageable pageable) {
         Page<Bid> bidPage = bidRepository.findAllByAuctionIdOrderByBidTimeDesc(auctionId, pageable);
-        Map<Long, String> bidderMap = getBidderPublicIdMap(bidPage.getContent());
+        Map<Long, AuctionMember> bidderMap = getBidderMap(bidPage.getContent());
 
         Page<BidLogResponseDto> dtoPage = bidPage.map(bid -> {
-            String publicId = bidderMap.get(bid.getBidderId());
-            if (publicId == null) {
+            AuctionMember bidder = bidderMap.get(bid.getBidderId());
+            if (bidder == null) {
                 log.warn("입찰자 정보 누락됨: bidId={}, bidderId={}", bid.getId(), bid.getBidderId());
-                publicId = "unknown";
+                return BidLogResponseDto.from(bid, "unknown", "unknown");
             }
-            return BidLogResponseDto.from(bid, publicId);
+            return BidLogResponseDto.from(bid, bidder.getPublicId(), bidder.getNickname());
         });
 
         return new PagedResponseDto<>(dtoPage.getContent(), PageDto.from(dtoPage));
@@ -313,11 +313,11 @@ public class AuctionReadUseCase {
             .toList();
     }
 
-    private Map<Long, String> getBidderPublicIdMap(List<Bid> bids) {
+    private Map<Long, AuctionMember> getBidderMap(List<Bid> bids) {
         if (bids.isEmpty()) return Collections.emptyMap();
         Set<Long> bidderIds = bids.stream().map(Bid::getBidderId).collect(Collectors.toSet());
         return auctionMemberRepository.findAllById(bidderIds).stream()
-            .collect(Collectors.toMap(AuctionMember::getId, AuctionMember::getPublicId));
+            .collect(Collectors.toMap(AuctionMember::getId, Function.identity()));
     }
 
     private Map<Long, Auction> getAuctionMap(List<Bid> bids) {
