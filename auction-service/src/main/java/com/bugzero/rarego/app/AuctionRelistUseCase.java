@@ -1,6 +1,7 @@
 package com.bugzero.rarego.app;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -13,8 +14,10 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.AuctionRelistRequestDto;
 import com.bugzero.rarego.in.dto.AuctionRelistResponseDto;
+import com.bugzero.rarego.out.AuctionBookmarkRepository;
 import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.out.AuctionRepository;
+import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.event.AuctionRelistedEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,8 @@ public class AuctionRelistUseCase {
 	private final AuctionRepository auctionRepository;
 	private final AuctionOrderRepository auctionOrderRepository;
 	private final ApplicationEventPublisher eventPublisher;
+	private final ProductSearchClient productSearchClient;
+	private final AuctionBookmarkRepository auctionBookmarkRepository;
 
 	@Transactional
 	public AuctionRelistResponseDto relistAuction(Long oldAuctionId, String memberPublicId,
@@ -56,11 +61,18 @@ public class AuctionRelistUseCase {
 		// Scheduled로 해놓고 start 스케줄러가 바꿔주는 식으로 구성
 		Auction savedAuction = auctionRepository.save(newAuction);
 
+		String productName = productSearchClient.getProduct(savedAuction.getProductId())
+			.map(product -> product.name())
+			.orElse("Unknown Product");
+		List<Long> bookmarkedMemberIds = auctionBookmarkRepository.findMemberIdsByAuctionId(oldAuctionId);
+
 		eventPublisher.publishEvent(new AuctionRelistedEvent(
 			savedAuction.getProductId(),
 			savedAuction.getId(),
 			savedAuction.getStartPrice(),
-			savedAuction.getStartTime()
+			savedAuction.getStartTime(),
+			productName,
+			bookmarkedMemberIds
 		));
 
 		return AuctionRelistResponseDto.builder()

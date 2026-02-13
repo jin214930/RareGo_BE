@@ -23,6 +23,7 @@ import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.out.AuctionOutboxRepository;
 import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.out.BidRepository;
+import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class AuctionSettlementSupport {
 	private final AuctionOutboxRepository auctionOutboxRepository;
 	private final AuctionOutboxProcessorService auctionOutboxProcessorService;
 	private final ApplicationEventPublisher eventPublisher;
+	private final ProductSearchClient productSearchClient;
 
 	private static final int BATCH_SIZE = 100;
 
@@ -86,13 +88,16 @@ public class AuctionSettlementSupport {
 				.build()
 		);
 
+		String productName = getProductName(auction.getProductId());
+
 		// 아웃박스에 저장 (외부 이벤트)
 		saveOutboxAndSync(
 			AuctionOutbox.createAuctionEnded(
 				auction.getId(),
 				winningBid.getBidderId(),
 				winningBid.getBidAmount(),
-				auction.getProductId()
+				auction.getProductId(),
+				productName
 			)
 		);
 
@@ -106,10 +111,13 @@ public class AuctionSettlementSupport {
 		auction.end();
 		auctionRepository.save(auction);
 
+		String productName = getProductName(auction.getProductId());
+
 		eventPublisher.publishEvent(
 			new AuctionFailedEvent(
 				auction.getId(),
-				auction.getProductId()
+				auction.getProductId(),
+				productName
 			)
 		);
 
@@ -117,6 +125,12 @@ public class AuctionSettlementSupport {
 			"유찰 정산 완료: auctionId={}, productId={}",
 			auction.getId(), auction.getProductId()
 		);
+	}
+
+	private String getProductName(Long productId) {
+		return productSearchClient.getProduct(productId)
+			.map(product -> product.name())
+			.orElse("Unknown Product");
 	}
 
 	private void saveOutboxAndSync(AuctionOutbox outbox) {

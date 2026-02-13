@@ -63,7 +63,8 @@ class PaymentAuctionTimeoutUseCaseTest {
 	void processTimeout_Success_PublishesEvent() {
 		// given
 		AuctionOrderDto order = new AuctionOrderDto(
-			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "PROCESSING", LocalDateTime.now().minusDays(4));
+			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "PROCESSING", LocalDateTime.now().minusDays(4),
+			"테스트 상품");
 
 		PaymentMember buyer = createMockMember(BIDDER_ID);
 		PaymentMember seller = createMockMember(SELLER_ID);
@@ -97,7 +98,8 @@ class PaymentAuctionTimeoutUseCaseTest {
 	void processTimeout_Success_ForfeitsDepositAndFailsOrder() {
 		// given
 		AuctionOrderDto order = new AuctionOrderDto(
-			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "PROCESSING", LocalDateTime.now().minusDays(4));
+			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "PROCESSING", LocalDateTime.now().minusDays(4),
+			"테스트 상품");
 
 		PaymentMember buyer = createMockMember(BIDDER_ID);
 		PaymentMember seller = createMockMember(SELLER_ID);
@@ -141,7 +143,8 @@ class PaymentAuctionTimeoutUseCaseTest {
 	void processTimeout_Fail_InvalidOrderStatus() {
 		// given
 		AuctionOrderDto order = new AuctionOrderDto(
-			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now().minusDays(4));
+			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now().minusDays(4),
+			"테스트 상품");
 
 		given(auctionOrderApiClient.getOrder(AUCTION_ID)).willReturn(order);
 
