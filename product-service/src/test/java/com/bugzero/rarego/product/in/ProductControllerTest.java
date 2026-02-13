@@ -32,7 +32,7 @@ import com.bugzero.rarego.global.security.MemberPrincipal;
 import com.bugzero.rarego.product.app.ProductFacade;
 import com.bugzero.rarego.product.domain.dto.ProductCreateResponseDto;
 import com.bugzero.rarego.product.domain.dto.ProductUpdateResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
@@ -185,7 +185,7 @@ class ProductControllerTest {
 			name,
 			Category.STARWARS,
 			"설명",
-			new ProductAuctionRequestDto(price, duration),
+			new ProductAuctionCreateDto(price, duration),
 			List.of(new ProductImageRequestDto("https://s3.image.com/test.jpg", 1))
 		);
 	}

@@ -20,7 +20,7 @@ public record ProductCreateRequestDto(
 	String description,
 	@Valid
 	@NotNull(message = "경매 정보는 필수입니다.")
-	ProductAuctionRequestDto productAuctionRequestDto,
+	ProductAuctionCreateDto productAuctionCreateDto,
 	@NotEmpty(message = "이미지는 최소 1장 이상 등록해야 합니다.")
 	List<@Valid ProductImageRequestDto> productImageRequestDto
 ) {
