@@ -56,7 +56,7 @@ class PaymentRefundUseCaseTest {
 	void processRefund_Success() {
 		// given
 		AuctionOrderDto order = new AuctionOrderDto(
-			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now());
+			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now(), "테스트 상품");
 
 		PaymentMember buyer = createMockMember(BIDDER_ID);
 		Wallet wallet = Wallet.builder().balance(50000).holdingAmount(0).build();
@@ -94,7 +94,7 @@ class PaymentRefundUseCaseTest {
 		// given
 		given(auctionOrderApiClient.refundOrder(AUCTION_ID))
 			.willReturn(new AuctionOrderDto(1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS",
-				LocalDateTime.now()));
+				LocalDateTime.now(), "테스트 상품"));
 		given(settlementRepository.findByAuctionIdForUpdate(AUCTION_ID)).willReturn(Optional.empty());
 
 		// when & then
@@ -123,7 +123,7 @@ class PaymentRefundUseCaseTest {
 	void processRefund_Fail_SettlementAlreadyCompleted() {
 		// given
 		AuctionOrderDto order = new AuctionOrderDto(
-			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now());
+			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now(), "테스트 상품");
 
 		Settlement settlement = Settlement.create(AUCTION_ID, createMockMember(SELLER_ID), FINAL_PRICE);
 		settlement.complete(); // DONE 상태 - 환불 불가

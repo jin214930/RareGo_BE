@@ -26,7 +26,9 @@ import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.out.AuctionOutboxRepository;
 import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.out.BidRepository;
+import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionSettlementSupportTest {
@@ -46,6 +48,8 @@ class AuctionSettlementSupportTest {
 	private AuctionOutboxProcessorService auctionOutboxProcessorService;
 	@Mock
 	private ApplicationEventPublisher eventPublisher;
+	@Mock
+	private ProductSearchClient productSearchClient;
 
 	@Test
 	@DisplayName("입찰자가 있을 경우 낙찰 처리가 진행되고 주문 정보와 아웃박스가 저장된다")
@@ -90,6 +94,9 @@ class AuctionSettlementSupportTest {
 
 		given(auctionOutboxRepository.save(any(AuctionOutbox.class))).willReturn(mockOutbox);
 
+		given(productSearchClient.getProduct(productId)).willReturn(
+			Optional.of(ProductAuctionResponseDto.builder().name("테스트 상품").build()));
+
 		// when
 		auctionSettlementSupport.processSettlement(auctionId);
 
@@ -119,6 +126,9 @@ class AuctionSettlementSupportTest {
 
 		given(auctionRepository.findByIdWithLock(auctionId)).willReturn(Optional.of(auction));
 		given(bidRepository.existsByAuctionId(auctionId)).willReturn(false);
+
+		given(productSearchClient.getProduct(productId)).willReturn(
+			Optional.of(ProductAuctionResponseDto.builder().name("테스트 상품").build()));
 
 		// when
 		auctionSettlementSupport.processSettlement(auctionId);
