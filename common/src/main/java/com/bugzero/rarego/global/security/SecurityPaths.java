@@ -29,8 +29,6 @@ public final class SecurityPaths {
 
 		// 테스트코드
 		"/api/v1/auth/test/login",
-		"/api/v1/auth/test/check",
-		"/api/v1/auth/test/admin",
 		"/api/v1/payments/settlement",
 		"/actuator/**"
 	};
