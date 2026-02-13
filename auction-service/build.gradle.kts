@@ -69,6 +69,8 @@ dependencies {
     implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.6.0")
 }
 
+tasks.register("prepareKotlinBuildScriptModel"){}
+
 tasks.withType<Test> {
     useJUnitPlatform()
     systemProperty("spring.profiles.active", "test")
