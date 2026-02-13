@@ -23,6 +23,8 @@ spring:
             port: ${SPRING_DATA_REDIS_PORT:6379}
     kafka:
         bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+        consumer:
+            group-id: ${spring.application.name}-group
 
 jwt:
     secret: ${JWT_SECRET}
