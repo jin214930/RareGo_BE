@@ -42,14 +42,14 @@ import lombok.RequiredArgsConstructor;
 @Hidden
 public class InternalAuctionController {
 
-	private final AuctionSettleAuctionFacade facade;
+	private final AuctionSettleAuctionFacade auctionSettleAuctionFacade;
 	private final AuctionFacade auctionFacade;
 	private final AuctionOrderService auctionOrderService;
 
 	@Operation(summary = "경매 정산", description = "종료된 경매를 정산합니다")
 	@PostMapping("/settle")
 	public SuccessResponseDto<AuctionAutoSettleResponseDto> settle() {
-		return SuccessResponseDto.from(SuccessType.OK, facade.settle());
+		return SuccessResponseDto.from(SuccessType.OK, auctionSettleAuctionFacade.settle());
 	}
 
 	@Operation(summary = "진행 중인 입찰이 있는지 확인", description = "진행 중인 입찰이 있는지 확인합니다")
