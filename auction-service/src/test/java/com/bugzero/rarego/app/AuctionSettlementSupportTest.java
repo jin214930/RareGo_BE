@@ -4,7 +4,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -23,7 +22,6 @@ import com.bugzero.rarego.domain.AuctionOrder;
 import com.bugzero.rarego.domain.AuctionOutbox;
 import com.bugzero.rarego.domain.Bid;
 import com.bugzero.rarego.domain.event.AuctionFailedEvent;
-import com.bugzero.rarego.out.AuctionBookmarkRepository;
 import com.bugzero.rarego.out.AuctionOrderRepository;
 import com.bugzero.rarego.out.AuctionOutboxRepository;
 import com.bugzero.rarego.out.AuctionRepository;
@@ -52,8 +50,6 @@ class AuctionSettlementSupportTest {
 	private ApplicationEventPublisher eventPublisher;
 	@Mock
 	private ProductSearchClient productSearchClient;
-	@Mock
-	private AuctionBookmarkRepository auctionBookmarkRepository;
 
 	@Test
 	@DisplayName("입찰자가 있을 경우 낙찰 처리가 진행되고 주문 정보와 아웃박스가 저장된다")
@@ -100,7 +96,6 @@ class AuctionSettlementSupportTest {
 
 		given(productSearchClient.getProduct(productId)).willReturn(
 			Optional.of(ProductAuctionResponseDto.builder().name("테스트 상품").build()));
-		given(auctionBookmarkRepository.findMemberIdsByAuctionId(auctionId)).willReturn(Collections.emptyList());
 
 		// when
 		auctionSettlementSupport.processSettlement(auctionId);
@@ -134,7 +129,6 @@ class AuctionSettlementSupportTest {
 
 		given(productSearchClient.getProduct(productId)).willReturn(
 			Optional.of(ProductAuctionResponseDto.builder().name("테스트 상품").build()));
-		given(auctionBookmarkRepository.findMemberIdsByAuctionId(auctionId)).willReturn(Collections.emptyList());
 
 		// when
 		auctionSettlementSupport.processSettlement(auctionId);
