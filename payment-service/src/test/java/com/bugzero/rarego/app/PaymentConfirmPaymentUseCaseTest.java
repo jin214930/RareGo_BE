@@ -18,7 +18,7 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.PaymentConfirmRequestDto;
 import com.bugzero.rarego.in.dto.PaymentConfirmResponseDto;
-import com.bugzero.rarego.in.dto.TossPaymentsConfirmResponseDto;
+import com.bugzero.rarego.in.dto.TossPaymentsResponseDto;
 import com.bugzero.rarego.out.PaymentRepository;
 import com.bugzero.rarego.out.TossPaymentsApiClient;
 
@@ -62,7 +62,7 @@ class PaymentConfirmPaymentUseCaseTest {
 			.status(PaymentStatus.PENDING)
 			.build());
 
-		TossPaymentsConfirmResponseDto tossResponse = new TossPaymentsConfirmResponseDto(orderId, "paymentKey", amount);
+		TossPaymentsResponseDto tossResponse = new TossPaymentsResponseDto(orderId, "paymentKey", "status", amount);
 		PaymentConfirmResponseDto expectedResponse = new PaymentConfirmResponseDto(orderId, amount, 20000);
 
 		given(paymentSupport.findMemberByPublicId(memberPublicId)).willReturn(member);
@@ -138,7 +138,7 @@ class PaymentConfirmPaymentUseCaseTest {
 	}
 
 	@Test
-	@DisplayName("실패: 예상치 못한 시스템 에러(Exception) 발생 시에도 FAILED로 변경하고 저장한다")
+	@DisplayName("실패: 예상치 못한 시스템 에러(Exception) 발생 시에 상태가 PENDING으로 유지된다.")
 	void confirmPayment_fail_unexpected_system_error() {
 		// given
 		String memberPublicId = "user-uuid";
@@ -155,20 +155,16 @@ class PaymentConfirmPaymentUseCaseTest {
 		given(paymentSupport.findPaymentByOrderId(anyString())).willReturn(payment);
 
 		// finalizePayment 도중 런타임 에러 발생 (DB 연결 끊김 등)
-		given(tossApiClient.confirm(any())).willReturn(mock(TossPaymentsConfirmResponseDto.class));
+		given(tossApiClient.confirm(any())).willReturn(mock(TossPaymentsResponseDto.class));
 		given(paymentConfirmFinalizer.finalizePayment(any(), any())).willThrow(new RuntimeException("DB Error"));
 
 		// when & then
 		assertThatThrownBy(() -> useCase.confirmPayment(memberPublicId, requestDto))
 			.isInstanceOf(RuntimeException.class);
-
-		// then: Exception catch 블록에서 handleFail 호출 확인
-		assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
-		verify(paymentRepository).save(payment);
 	}
 
 	@Test
-	@DisplayName("실패: 결제 승인은 성공했으나 내부 시스템 에러 발생 시, 보상 트랜잭션(cancel)이 호출되어야 한다")
+	@DisplayName("실패: 결제 승인은 성공했으나 내부 시스템 에러 발생 시 상태가 PENDING으로 유지된다.")
 	void confirmPayment_fail_system_error_trigger_compensation() {
 		// given
 		String memberPublicId = "user-uuid";
@@ -183,7 +179,7 @@ class PaymentConfirmPaymentUseCaseTest {
 			.status(PaymentStatus.PENDING)
 			.build();
 
-		TossPaymentsConfirmResponseDto tossResponse = new TossPaymentsConfirmResponseDto(orderId, paymentKey, 10000);
+		TossPaymentsResponseDto tossResponse = new TossPaymentsResponseDto(orderId, paymentKey, "status", 10000);
 
 		given(paymentSupport.findMemberByPublicId(memberPublicId)).willReturn(member);
 		given(paymentSupport.findPaymentByOrderId(anyString())).willReturn(payment);
@@ -199,11 +195,7 @@ class PaymentConfirmPaymentUseCaseTest {
 			.isInstanceOf(RuntimeException.class);
 
 		// then
-		// 1. 상태가 FAILED로 변경되어야 함
-		assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
-		verify(paymentRepository).save(payment);
-
-		// [핵심] 2. 보상 트랜잭션(취소 API)이 호출되었는지 검증
-		verify(tossApiClient).cancel(eq(paymentKey), anyString());
+		// 1. 상태가 PENDING으로 유지되어야 한다.
+		assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PENDING);
 	}
 }
