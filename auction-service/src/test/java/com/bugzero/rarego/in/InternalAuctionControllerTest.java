@@ -30,7 +30,7 @@ import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.global.response.SuccessType;
 import com.bugzero.rarego.in.dto.AuctionAutoSettleResponseDto;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
 import tools.jackson.databind.ObjectMapper;
@@ -120,12 +120,12 @@ class InternalAuctionControllerTest {
 			// given
 			Long productId = 1L;
 			String publicId = "1L";
-			ProductAuctionCreateDto requestDto = ProductAuctionCreateDto.builder()
+			ProductAuctionRequestDto requestDto = ProductAuctionRequestDto.builder()
 				.startPrice(10000)
 				.durationDays(7)
 				.build();
 
-			given(auctionFacade.createAuction(eq(productId), eq(publicId), any(ProductAuctionCreateDto.class)))
+			given(auctionFacade.createAuction(eq(productId), eq(publicId), any(ProductAuctionRequestDto.class)))
 				.willReturn(10L);
 
 			// when & then
@@ -143,7 +143,7 @@ class InternalAuctionControllerTest {
 			Long productId = 1L;
 			String sellerUUID = "1L";
 
-			ProductAuctionCreateDto invalidDto = ProductAuctionCreateDto.builder()
+			ProductAuctionRequestDto invalidDto = ProductAuctionRequestDto.builder()
 				.startPrice(50) // @Min(100) 위반
 				.durationDays(7)
 				.build();
@@ -162,7 +162,7 @@ class InternalAuctionControllerTest {
 			Long productId = 1L;
 			String sellerUUID = "1L";
 
-			ProductAuctionCreateDto invalidDto = ProductAuctionCreateDto.builder()
+			ProductAuctionRequestDto invalidDto = ProductAuctionRequestDto.builder()
 				.startPrice(10000) // @Min(100) 위반
 				.durationDays(100)
 				.build();
@@ -232,7 +232,8 @@ class InternalAuctionControllerTest {
 			300L,
 			50000,
 			"PROCESSING",
-			LocalDateTime.now()
+			LocalDateTime.now(),
+			"테스트 상품"
 		);
 
 		// Slice Mock 생성 (hasNext = true 상황 가정)
@@ -277,5 +278,84 @@ class InternalAuctionControllerTest {
 
 		// Service 호출 검증
 		verify(auctionOrderService).markAsNoticed(orderId);
+	}
+
+	@Test
+	@DisplayName("성공 - 상품 ID로 경매 단건 정보를 조회한다")
+	void getAuctionInfo_Success() throws Exception {
+		// given
+		Long productId = 10L;
+		AuctionInfoResponseDto responseDto = new AuctionInfoResponseDto(
+			productId,
+			100L,
+			10000,
+			LocalDateTime.now()
+		);
+
+		given(auctionFacade.getAuctionInfoByProductId(productId)).willReturn(responseDto);
+
+		// when & then
+		mockMvc.perform(get("/api/v1/internal/auctions/products/{productId}", productId)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andDo(print())
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value(200))
+			.andExpect(jsonPath("$.data.productId").value(productId))
+			.andExpect(jsonPath("$.data.auctionId").value(100L))
+			.andExpect(jsonPath("$.data.startPrice").value(10000));
+
+		verify(auctionFacade).getAuctionInfoByProductId(productId);
+	}
+
+	@Test
+	@DisplayName("성공 - 여러 상품 ID로 경매 정보를 일괄 조회한다 (Batch)")
+	void getAuctionInfos_Success() throws Exception {
+		// given
+		List<Long> productIds = List.of(10L, 20L);
+		String productIdsParam = "10,20"; // param은 콤마로 구분
+
+		AuctionInfoResponseDto dto1 = new AuctionInfoResponseDto(
+			10L, 100L, 10000, LocalDateTime.now()
+		);
+		AuctionInfoResponseDto dto2 = new AuctionInfoResponseDto(
+			20L, 200L, 20000, LocalDateTime.now().plusDays(1)
+		);
+
+		given(auctionFacade.getAuctionInfosByProductIds(productIds)).willReturn(List.of(dto1, dto2));
+
+		// when & then
+		mockMvc.perform(get("/api/v1/internal/auctions/products")
+				.param("productIds", productIdsParam)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andDo(print())
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value(200))
+			.andExpect(jsonPath("$.data").isArray())
+			.andExpect(jsonPath("$.data.length()").value(2))
+			// 첫 번째 데이터 검증
+			.andExpect(jsonPath("$.data[0].productId").value(10L))
+			// 두 번째 데이터 검증
+			.andExpect(jsonPath("$.data[1].productId").value(20L));
+
+		verify(auctionFacade).getAuctionInfosByProductIds(productIds);
+	}
+
+	@Test
+	@DisplayName("성공 - 일괄 조회 시 결과가 없으면 빈 리스트를 반환한다")
+	void getAuctionInfos_Empty() throws Exception {
+		// given
+		List<Long> productIds = List.of(99L);
+		given(auctionFacade.getAuctionInfosByProductIds(productIds)).willReturn(List.of());
+
+		// when & then
+		mockMvc.perform(get("/api/v1/internal/auctions/products")
+				.param("productIds", "99")
+				.contentType(MediaType.APPLICATION_JSON))
+			.andDo(print())
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data").isArray())
+			.andExpect(jsonPath("$.data").isEmpty());
+
+		verify(auctionFacade).getAuctionInfosByProductIds(productIds);
 	}
 }
