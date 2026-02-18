@@ -21,4 +21,4 @@ COPY --from=build /app/notification-service/build/libs/notification-service-*.ja
 EXPOSE 8085
 
 # 애플리케이션 실행
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
