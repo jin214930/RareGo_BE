@@ -21,4 +21,4 @@ COPY --from=build /app/auction-service/build/libs/auction-service-*.jar app.jar
 EXPOSE 8083
 
 # 애플리케이션 실행
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
