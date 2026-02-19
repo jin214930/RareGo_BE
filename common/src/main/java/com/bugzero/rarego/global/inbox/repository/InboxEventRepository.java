@@ -1,0 +1,15 @@
+package com.bugzero.rarego.global.inbox.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.bugzero.rarego.global.inbox.domain.InboxEvent;
+
+public interface InboxEventRepository extends JpaRepository<InboxEvent, Long> {
+	/**
+	 * 특정 메시지 ID와 컨슈머 그룹의 조합이 이미 존재하는지 확인합니다.
+     * @param messageId "AggregateType-ID" 형식의 식별자
+     * @param consumerGroup 리스너의 그룹 ID
+     * @return 존재 여부 (true: 이미 처리됨, false: 처음 유입됨)
+     */
+	boolean existsByMessageIdAndConsumerGroup(String messageId, String consumerGroup);
+}
