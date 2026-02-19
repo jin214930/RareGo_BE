@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
 @Builder
-public record ProductAuctionRequestDto(
+public record ProductAuctionCreateDto(
 	@Min(value = 100, message = "입찰 시작가는 최소100원 이상입니다.")
 	int startPrice,
 	@NotNull

@@ -24,8 +24,8 @@ public class AuctionEndedMapper implements NotificationMapper<AuctionEndedEvent>
 
 	@Override
 	public List<Notification> map(AuctionEndedEvent event) {
-		String message = "축하합니다. %d번 경매의 상품을 %d원에 낙찰받았습니다.%n결제를 진행해주세요."
-			.formatted(event.auctionId(), event.finalPrice());
+		String message = "축하합니다. '%s' 상품을 %d원에 낙찰받았습니다.%n결제를 진행해주세요."
+			.formatted(event.productName(), event.finalPrice());
 
 		NotificationMember member = notificationSupport.findMemberById(event.winnerId());
 
