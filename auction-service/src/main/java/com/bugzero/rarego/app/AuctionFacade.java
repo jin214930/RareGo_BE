@@ -1,5 +1,12 @@
 package com.bugzero.rarego.app;
 
+import java.util.List;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.domain.AuctionOrderStatus;
@@ -25,20 +32,17 @@ import com.bugzero.rarego.in.dto.MySaleResponseDto;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
 import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.springframework.transaction.annotation.Transactional;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AuctionFacade {
 
     private final AuctionCreateBidUseCase auctionCreateBidUseCase;
@@ -170,8 +174,8 @@ public class AuctionFacade {
     }
 
     // 경매 정보 생성
-    public Long createAuction(Long productId, String publicId, ProductAuctionRequestDto productAuctionRequestDto) {
-        return auctionCreateAuctionUseCase.createAuction(productId, publicId, productAuctionRequestDto);
+    public Long createAuction(Long productId, String publicId, ProductAuctionCreateDto productAuctionCreateDto) {
+        return auctionCreateAuctionUseCase.createAuction(productId, publicId, productAuctionCreateDto);
     }
 
     // 경매 정보 수정
@@ -196,7 +200,15 @@ public class AuctionFacade {
         return auctionSubscribeStreamUseCase.getTotalSubscribers();
     }
 
-    public int getAuctionSubscribers(Long auctionId) {
-        return auctionSubscribeStreamUseCase.getAuctionSubscribers(auctionId);
-    }
+	public int getAuctionSubscribers(Long auctionId) {
+		return auctionSubscribeStreamUseCase.getAuctionSubscribers(auctionId);
+	}
+
+	public AuctionInfoResponseDto getAuctionInfoByProductId(Long productId) {
+		return auctionReadUseCase.getAuctionInfoByProductId(productId);
+	}
+
+	public List<AuctionInfoResponseDto> getAuctionInfosByProductIds(List<Long> productIds) {
+		return auctionReadUseCase.getAuctionInfosByProductIds(productIds);
+	}
 }

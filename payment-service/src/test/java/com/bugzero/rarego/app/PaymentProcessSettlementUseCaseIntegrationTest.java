@@ -188,6 +188,7 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 			.seller(seller)
 			.salesAmount(settlementAmount + feeAmount)
 			.feeAmount(feeAmount)
+			.productName("레고")
 			.settlementAmount(settlementAmount)
 			.status(SettlementStatus.READY)
 			.build();

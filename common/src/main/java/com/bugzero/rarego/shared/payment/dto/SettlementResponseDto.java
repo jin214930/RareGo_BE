@@ -9,6 +9,7 @@ public record SettlementResponseDto(
 	int salesAmount,
 	int feeAmount,
 	int settlementAmount,
+	String productName,
 	String status,
 	LocalDateTime createdAt
 ) {

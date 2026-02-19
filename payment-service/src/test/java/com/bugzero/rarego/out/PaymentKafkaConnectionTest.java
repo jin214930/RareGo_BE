@@ -48,7 +48,7 @@ class PaymentKafkaConnectionTest {
 	@DisplayName("1. 정산 완료 이벤트(SettlementFinishedEvent) 전송 테스트")
 	void testSend_SettlementFinished() {
 		SettlementResponseDto dto1 = new SettlementResponseDto(
-			1L, 100L, 200L, 10000, 1000, 9000, "COMPLETED", LocalDateTime.now()
+			1L, 100L, 200L, 10000, 1000, 9000, "레고", "COMPLETED", LocalDateTime.now()
 		);
 		List<SettlementResponseDto> settlements = List.of(dto1);
 		SettlementFinishedEvent event = new SettlementFinishedEvent(settlements, 1, 9000);
@@ -60,7 +60,7 @@ class PaymentKafkaConnectionTest {
 	@DisplayName("2. 낙찰 결제 완료 이벤트(AuctionPaymentCompletedEvent) 전송 테스트")
 	void testSend_AuctionPaymentCompleted() {
 		AuctionPaymentCompletedEvent event = new AuctionPaymentCompletedEvent(
-			123L, 456L, 999L, 789L, 15000
+			123L, 456L, 999L, 789L, "레고", 15000
 		);
 		sendAndLog(TOPIC_PAYMENT_COMPLETED, String.valueOf(event.auctionId()), event);
 	}
@@ -69,7 +69,7 @@ class PaymentKafkaConnectionTest {
 	@DisplayName("3. 마감 임박 알림 이벤트(AuctionPaymentExpiringSoonEvent) 전송 테스트")
 	void testSend_ExpiringSoon() {
 		AuctionPaymentExpiringSoonEvent event = new AuctionPaymentExpiringSoonEvent(
-			111L, 222L, 333L, 444L, 20000, LocalDateTime.now().plusHours(12)
+			111L, 222L, 333L, 444L, "레고", 20000, LocalDateTime.now().plusHours(12)
 		);
 		sendAndLog(TOPIC_EXPIRING_SOON, String.valueOf(event.auctionId()), event);
 	}

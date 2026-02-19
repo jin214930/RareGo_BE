@@ -1,5 +1,6 @@
 package com.bugzero.rarego.app;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -81,13 +82,22 @@ public class AuctionSupport {
         }
     }
 
-    // 경매정보 수정 가능상태 확인
-    public void isAbleToChange(AuctionMember auctionMember, Auction auction) {
-        if (!auction.isSeller(auctionMember.getId())) {
-            throw new CustomException(ErrorType.UNAUTHORIZED_AUCTION_SELLER);
-        }
-        if (auction.hasStartTime()) {
-            throw new CustomException(ErrorType.AUCTION_ALREADY_IN_PROGRESS);
-        }
-    }
+	// 경매정보 수정 가능상태 확인
+	public void isAbleToChange(AuctionMember auctionMember, Auction auction) {
+		if (!auction.isSeller(auctionMember.getId())) {
+			throw new CustomException(ErrorType.UNAUTHORIZED_AUCTION_SELLER);
+		}
+		if (auction.hasStartTime()) {
+			throw new CustomException(ErrorType.AUCTION_ALREADY_IN_PROGRESS);
+		}
+	}
+
+	public Auction findAuctionByProductId(Long productId) {
+		return auctionRepository.findByProductId(productId)
+			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
+	}
+
+	public List<Auction> findAllByProductIds(List<Long> productIds) {
+		return auctionRepository.findAllByProductIdIn(productIds);
+	}
 }

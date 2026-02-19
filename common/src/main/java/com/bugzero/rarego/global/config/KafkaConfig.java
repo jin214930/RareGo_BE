@@ -18,9 +18,15 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
-import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
-import org.springframework.kafka.support.serializer.JacksonJsonDeserializer;
-import org.springframework.kafka.support.serializer.JacksonJsonSerializer;
+import org.springframework.kafka.support.converter.JsonMessageConverter;
+import org.springframework.kafka.support.converter.RecordMessageConverter;
+import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
+import org.springframework.kafka.support.mapping.Jackson2JavaTypeMapper;
+
+import com.bugzero.rarego.shared.product.event.ProductCreateAuctionEvent;
+import com.bugzero.rarego.shared.product.event.ProductDeleteAuctionEvent;
+import com.bugzero.rarego.shared.product.event.ProductUpdateAuctionEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @EnableKafka
 @Configuration
@@ -31,19 +37,17 @@ public class KafkaConfig {
 	@Value("${spring.application.name}")
 	private String applicationName;
 
-	/**
-	 * Producer Factory 설정
-	 */
+	// ==========================
+	// 1. Producer 설정 (Outbox 전용)
+	// ==========================
 	@Bean
 	public ProducerFactory<String, Object> producerFactory() {
 		Map<String, Object> config = new HashMap<>();
 		config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-
-		// key-serializer: StringSerializer
 		config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 
-		// value-serializer: JacksonJsonSerializer (Spring Kafka의 JsonSerializer 사용)
-		config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JacksonJsonSerializer.class);
+		// 중요: DB의 JSON String을 그대로 내보내기 위해 StringSerializer 사용
+		config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 
 		return new DefaultKafkaProducerFactory<>(config);
 	}
@@ -53,46 +57,52 @@ public class KafkaConfig {
 		return new KafkaTemplate<>(producerFactory());
 	}
 
-	/**
-	 * Consumer Factory 설정
-	 */
+	// ==========================
+	// 2. Consumer 설정 (다중 타입 매핑)
+	// ==========================
 	@Bean
 	public ConsumerFactory<String, Object> consumerFactory() {
 		Map<String, Object> config = new HashMap<>();
 		config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-
-		// group-id: ${spring.application.name}-group
 		config.put(ConsumerConfig.GROUP_ID_CONFIG, applicationName + "-group");
-
-		// auto-offset-reset: earliest
 		config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-		// key-deserializer: StringDeserializer
+		// 리시버는 일단 String으로 받고, 아래의 Converter가 객체로 변환합니다.
 		config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-
-		// value-deserializer: ErrorHandlingDeserializer
-		config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
-
-		// ErrorHandlingDeserializer 설정 (Delegator -> JacksonJsonDeserializer)
-		config.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JacksonJsonDeserializer.class);
-
-		// trusted.packages: com.bugzero.rarego 하위의 모든 DTO와 Java 기본 객체만 역직렬화 허용
-		config.put(JacksonJsonDeserializer.TRUSTED_PACKAGES, "com.bugzero.rarego.*, java.util.*, java.lang.*");
+		config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
 		return new DefaultKafkaConsumerFactory<>(config);
 	}
 
-	/**
-	 * Listener Container Factory 설정
-	 */
 	@Bean
-	public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory() {
+	public RecordMessageConverter multiTypeConverter(ObjectMapper objectMapper) {
+		// 전송 시 헤더에 담긴 __TypeId__를 보고 어떤 객체로 바꿀지 결정합니다.
+		JsonMessageConverter converter = new JsonMessageConverter(objectMapper);
+		DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
+
+		typeMapper.setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence.TYPE_ID);
+		typeMapper.addTrustedPackages("com.bugzero.rarego.*", "java.util.*", "java.lang.*");
+
+		// 이벤트 타입별 클래스 매핑
+		Map<String, Class<?>> mappings = new HashMap<>();
+		mappings.put("ProductCreateAuctionEvent", ProductCreateAuctionEvent.class);
+		mappings.put("ProductUpdateAuctionEvent", ProductUpdateAuctionEvent.class);
+		mappings.put("ProductDeleteAuctionEvent", ProductDeleteAuctionEvent.class);
+
+		typeMapper.setIdClassMapping(mappings);
+		converter.setTypeMapper(typeMapper);
+
+		return converter;
+	}
+
+	@Bean
+	public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(
+		RecordMessageConverter multiTypeConverter) {
 		ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactory());
+		factory.setRecordMessageConverter(multiTypeConverter); // 이 컨버터가 핵심!
 
-		// ack-mode: batch
 		factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
-
 		return factory;
 	}
 }

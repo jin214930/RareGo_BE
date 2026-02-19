@@ -1,5 +1,6 @@
 package com.bugzero.rarego.shared.auction.out;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -13,9 +14,9 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.exception.InternalApiErrorHandler;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
-import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.global.security.SystemAuthTokenProvider;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
 @Service
@@ -34,12 +35,12 @@ public class AuctionApiClient {
 		this.systemAuthTokenProvider = systemAuthTokenProvider;
 	}
 
-	public Long createAuction(Long productId, String publicId, ProductAuctionRequestDto productAuctionRequestDto) {
+	public Long createAuction(Long productId, String publicId, ProductAuctionCreateDto productAuctionCreateDto) {
 		SuccessResponseDto<Long> response = restClient.post()
 			.uri("/{productId}/{publicId}", productId, publicId)
 			.header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
 			.contentType(MediaType.APPLICATION_JSON)
-			.body(productAuctionRequestDto)
+			.body(productAuctionCreateDto)
 			.retrieve()
 			.onStatus(HttpStatusCode::isError,
 				(httpRequest, httpResponse) -> errorHandler.handleWithDefault(httpRequest, httpResponse,
@@ -138,10 +139,35 @@ public class AuctionApiClient {
 			.retrieve()
 			.onStatus(HttpStatusCode::isError, (req, res) ->
 				errorHandler.handleWithDefault(req, res, ErrorType.AUCTION_NOT_FOUND))
-			.body(new ParameterizedTypeReference<>() {});
+			.body(new ParameterizedTypeReference<>() {
+			});
 
 		return Optional.ofNullable(response)
 			.map(SuccessResponseDto::data)
 			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
+	}
+
+	public List<AuctionInfoResponseDto> getAuctionInfos(List<Long> productIds) {
+		// 1. 방어 로직 (빈 리스트면 호출 안 함)
+		if (productIds == null || productIds.isEmpty()) {
+			return List.of();
+		}
+
+		// 2. bulk 조회 요청
+		SuccessResponseDto<List<AuctionInfoResponseDto>> response = restClient.get()
+			.uri(uriBuilder -> uriBuilder
+				.path("/products")
+				.queryParam("productIds", productIds) // 리스트를 자동으로 콤마(,) 구분으로 변환
+				.build())
+			.header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+			.retrieve()
+			.onStatus(HttpStatusCode::isError, (req, res) ->
+				errorHandler.handleWithDefault(req, res, ErrorType.INTERNAL_SERVER_ERROR))
+			.body(new ParameterizedTypeReference<>() {
+			});
+
+		return Optional.ofNullable(response)
+			.map(SuccessResponseDto::data)
+			.orElse(List.of());
 	}
 }
