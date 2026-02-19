@@ -41,7 +41,7 @@ public class AuctionSettlementSupport {
 
 	private static final int BATCH_SIZE = 100;
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public List<Auction> findExpiredAuctions(LocalDateTime now) {
 		return auctionRepository.findExpiredInProgressAuctionsWithLock(
 			now, PageRequest.of(0, BATCH_SIZE)
