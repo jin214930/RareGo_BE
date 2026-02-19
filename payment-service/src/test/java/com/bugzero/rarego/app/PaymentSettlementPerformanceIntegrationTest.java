@@ -120,6 +120,7 @@ class PaymentSettlementPerformanceIntegrationTest {
 				.auctionId(System.nanoTime() + i)
 				.seller(seller)
 				.salesAmount(11000)
+				.productName("레고")
 				.settlementAmount(10000)
 				.feeAmount(1000)
 				.status(SettlementStatus.READY)
