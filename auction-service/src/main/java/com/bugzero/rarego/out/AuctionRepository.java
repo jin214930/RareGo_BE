@@ -49,6 +49,8 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, JpaSpec
 	// 필터링 없는 조건
 	Page<Auction> findAllByProductIdIn(Collection<Long> productIds, Pageable pageable);
 
+	List<Auction> findAllByProductIdIn(Collection<Long> productIds);
+
 	// 상태 필터링이 있을 때
 	Page<Auction> findAllByProductIdInAndStatusIn(
 		Collection<Long> productIds,

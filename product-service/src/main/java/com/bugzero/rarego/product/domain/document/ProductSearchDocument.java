@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -12,6 +13,7 @@ import org.springframework.data.elasticsearch.annotations.Setting;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -57,10 +59,12 @@ public class ProductSearchDocument {
 	@Field(type = FieldType.Integer)
 	private int finalPrice;
 
-	@Field(type = FieldType.Date)
+	@Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
 	private LocalDateTime startedAt;
 
-	@Field(type = FieldType.Date)
+	@Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
 	private LocalDateTime closedAt;
 
 	// 경매 쪽 상품 정보 통신 위해서 필요
