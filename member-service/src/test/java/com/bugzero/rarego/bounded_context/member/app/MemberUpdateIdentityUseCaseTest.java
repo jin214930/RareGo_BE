@@ -3,6 +3,7 @@ package com.bugzero.rarego.bounded_context.member.app;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,13 +11,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 import com.bugzero.rarego.app.MemberSupport;
 import com.bugzero.rarego.app.MemberUpdateIdentityUseCase;
 import com.bugzero.rarego.domain.Member;
 import com.bugzero.rarego.domain.MemberUpdateIdentityRequestDto;
 import com.bugzero.rarego.domain.MemberUpdateResponseDto;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.out.MemberRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
@@ -31,7 +32,7 @@ class MemberUpdateIdentityUseCaseTest {
 	private MemberRepository memberRepository;
 
 	@Mock
-	private ApplicationEventPublisher eventPublisher;
+	private OutboxUseCase outboxUseCase;
 
 	@InjectMocks
 	private MemberUpdateIdentityUseCase memberUpdateIdentityUseCase;
@@ -59,6 +60,7 @@ class MemberUpdateIdentityUseCaseTest {
 		assertThat(response.contactPhone()).isEqualTo("01012345678");
 		assertThat(response.realName()).isEqualTo("Alice");
 		verify(memberRepository).saveAndFlush(member);
+		verify(outboxUseCase).saveOutbox(any());
 	}
 
 	@Test
@@ -88,6 +90,7 @@ class MemberUpdateIdentityUseCaseTest {
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_IDENTITY_ALREADY_VERIFIED);
 		verify(memberRepository, never()).saveAndFlush(any(Member.class));
+		verifyNoInteractions(outboxUseCase);
 	}
 
 	@Test
@@ -114,6 +117,7 @@ class MemberUpdateIdentityUseCaseTest {
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_IDENTITY_REQUIRED);
 		verify(memberRepository, never()).saveAndFlush(any(Member.class));
+		verifyNoInteractions(outboxUseCase);
 	}
 
 	@Test
@@ -140,6 +144,7 @@ class MemberUpdateIdentityUseCaseTest {
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_INVALID_PHONE_NUMBER);
 		verify(memberRepository, never()).saveAndFlush(any(Member.class));
+		verifyNoInteractions(outboxUseCase);
 	}
 
 	@Test
@@ -166,6 +171,7 @@ class MemberUpdateIdentityUseCaseTest {
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_INVALID_REALNAME);
 		verify(memberRepository, never()).saveAndFlush(any(Member.class));
+		verifyNoInteractions(outboxUseCase);
 	}
 
 	private Member baseMember(String contactPhone, String realName) {
