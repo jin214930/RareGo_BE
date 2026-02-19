@@ -10,6 +10,8 @@ resources:
   - infra/elasticsearch.yaml
   - infra/prometheus.yaml
   - infra/grafana.yaml
+  - infra/cert-issuer.yaml
+  - infra/rarego-tls-certificate.yaml
   - apps/auth-service.yaml
   - apps/member-service.yaml
   - apps/auction-service.yaml
