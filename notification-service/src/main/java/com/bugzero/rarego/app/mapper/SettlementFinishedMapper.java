@@ -33,8 +33,8 @@ public class SettlementFinishedMapper implements NotificationMapper<SettlementFi
 	private Notification createNotificationFromDto(SettlementResponseDto dto) {
 		NotificationMember seller = notificationSupport.findMemberById(dto.sellerId());
 
-		String message = "%d번 경매의 판매 대금 %d원이 정산되었습니다."
-			.formatted(dto.auctionId(), dto.settlementAmount());
+		String message = "%s 상품의 판매 대금 %d원이 정산되었습니다."
+			.formatted(dto.productName(), dto.settlementAmount());
 
 		return Notification.builder()
 			.message(message)
