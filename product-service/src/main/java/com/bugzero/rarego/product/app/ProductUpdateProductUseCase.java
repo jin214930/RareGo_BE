@@ -12,7 +12,7 @@ import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.dto.ProductUpdateResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductImageUpdateDto;
 import com.bugzero.rarego.shared.product.dto.ProductUpdateDto;
-import com.bugzero.rarego.shared.product.event.AuctionUpdateEvent;
+import com.bugzero.rarego.shared.product.event.ProductUpdateAuctionEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageConfirmEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageDeleteEvent;
 
@@ -53,7 +53,7 @@ public class ProductUpdateProductUseCase {
 		eventPublisher.publish(new S3ImageConfirmEvent(pathToUpdate));
 
 		//아웃박스 이벤트 저장
-		outboxUseCase.saveOutbox(AuctionUpdateEvent.builder()
+		outboxUseCase.saveOutbox(ProductUpdateAuctionEvent.builder()
 			.productId(productId)
 			.publicId(publicId)
 			.dto(dto.productAuctionUpdateDto())

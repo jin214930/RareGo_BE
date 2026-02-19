@@ -7,9 +7,9 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
 import com.bugzero.rarego.app.AuctionFacade;
-import com.bugzero.rarego.shared.product.event.AuctionCreateEvent;
-import com.bugzero.rarego.shared.product.event.AuctionDeleteEvent;
-import com.bugzero.rarego.shared.product.event.AuctionUpdateEvent;
+import com.bugzero.rarego.shared.product.event.ProductCreateAuctionEvent;
+import com.bugzero.rarego.shared.product.event.ProductDeleteAuctionEvent;
+import com.bugzero.rarego.shared.product.event.ProductUpdateAuctionEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ public class AuctionProductEventListener {
 	private final AuctionFacade auctionFacade;
 
 	@KafkaHandler
-	public void onAuctionEvent(@Payload AuctionCreateEvent event, @Header("messageId") String messageId) {
+	public void onAuctionEvent(@Payload ProductCreateAuctionEvent event, @Header("messageId") String messageId) {
 		log.info("카프카 이벤트 수신: Type={}, ProductId={}, messageId={}",
 			event.getClass().getName(), event.productId(), messageId);
 
@@ -31,7 +31,7 @@ public class AuctionProductEventListener {
 	}
 
 	@KafkaHandler
-	public void onAuctionEvent(@Payload AuctionUpdateEvent event, @Header("messageId") String messageId) {
+	public void onAuctionEvent(@Payload ProductUpdateAuctionEvent event, @Header("messageId") String messageId) {
 		log.info("카프카 이벤트 수신: Type={}, ProductId={}, messageId={}",
 			event.getClass().getName(), event.productId(), messageId);
 
@@ -39,7 +39,7 @@ public class AuctionProductEventListener {
 	}
 
 	@KafkaHandler
-	public void onAuctionEvent(@Payload AuctionDeleteEvent event, @Header("messageId") String messageId) {
+	public void onAuctionEvent(@Payload ProductDeleteAuctionEvent event, @Header("messageId") String messageId) {
 		log.info("카프카 이벤트 수신: Type={}, ProductId={}, messageId={}",
 			event.getClass().getName(), event.productId(), messageId);
 

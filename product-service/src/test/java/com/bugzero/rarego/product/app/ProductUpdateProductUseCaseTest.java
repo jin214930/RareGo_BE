@@ -24,7 +24,7 @@ import com.bugzero.rarego.product.domain.dto.ProductUpdateResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 import com.bugzero.rarego.shared.product.dto.ProductImageUpdateDto;
 import com.bugzero.rarego.shared.product.dto.ProductUpdateDto;
-import com.bugzero.rarego.shared.product.event.AuctionUpdateEvent;
+import com.bugzero.rarego.shared.product.event.ProductUpdateAuctionEvent;
 import com.bugzero.rarego.shared.product.type.Category;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,10 +84,10 @@ class ProductUpdateProductUseCaseTest {
 
 		// then
 		// 1. 아웃박스 저장 검증 (가장 중요한 변경점)
-		ArgumentCaptor<AuctionUpdateEvent> outboxCaptor = ArgumentCaptor.forClass(AuctionUpdateEvent.class);
+		ArgumentCaptor<ProductUpdateAuctionEvent> outboxCaptor = ArgumentCaptor.forClass(ProductUpdateAuctionEvent.class);
 		verify(outboxUseCase).saveOutbox(outboxCaptor.capture());
 
-		AuctionUpdateEvent savedEvent = outboxCaptor.getValue();
+		ProductUpdateAuctionEvent savedEvent = outboxCaptor.getValue();
 		assertThat(savedEvent.productId()).isEqualTo(PRODUCT_ID);
 		assertThat(savedEvent.publicId()).isEqualTo(PUBLIC_ID);
 

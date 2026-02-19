@@ -20,7 +20,7 @@ import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.product.domain.Product;
 import com.bugzero.rarego.product.domain.ProductImage;
 import com.bugzero.rarego.product.domain.ProductMember;
-import com.bugzero.rarego.shared.product.event.AuctionDeleteEvent;
+import com.bugzero.rarego.shared.product.event.ProductDeleteAuctionEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageDeleteEvent;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,10 +84,10 @@ class ProductDeleteProductUseCaseTest {
 		assertThat(spyProduct.getImages()).isEmpty();
 
 		// 2. 아웃박스 저장 검증 (핵심 변경 사항)
-		ArgumentCaptor<AuctionDeleteEvent> outboxCaptor = ArgumentCaptor.forClass(AuctionDeleteEvent.class);
+		ArgumentCaptor<ProductDeleteAuctionEvent> outboxCaptor = ArgumentCaptor.forClass(ProductDeleteAuctionEvent.class);
 		verify(outboxUseCase).saveOutbox(outboxCaptor.capture());
 
-		AuctionDeleteEvent savedEvent = outboxCaptor.getValue();
+		ProductDeleteAuctionEvent savedEvent = outboxCaptor.getValue();
 		assertThat(savedEvent.productId()).isEqualTo(PRODUCT_ID);
 		assertThat(savedEvent.publicId()).isEqualTo(PUBLIC_ID);
 

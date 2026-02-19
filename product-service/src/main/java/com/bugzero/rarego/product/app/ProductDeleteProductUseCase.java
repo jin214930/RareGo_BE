@@ -10,7 +10,7 @@ import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.product.domain.Product;
 import com.bugzero.rarego.product.domain.ProductImage;
 import com.bugzero.rarego.product.domain.ProductMember;
-import com.bugzero.rarego.shared.product.event.AuctionDeleteEvent;
+import com.bugzero.rarego.shared.product.event.ProductDeleteAuctionEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageDeleteEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class ProductDeleteProductUseCase {
 		product.getImages().clear();
 
 		//아웃박스 이벤트 저장
-		outboxUseCase.saveOutbox(AuctionDeleteEvent.builder()
+		outboxUseCase.saveOutbox(ProductDeleteAuctionEvent.builder()
 			.productId(productId)
 			.publicId(publicId)
 			.build());
