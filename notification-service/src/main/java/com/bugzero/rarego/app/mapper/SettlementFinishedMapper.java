@@ -26,14 +26,14 @@ public class SettlementFinishedMapper implements NotificationMapper<SettlementFi
 	@Override
 	public List<Notification> map(SettlementFinishedEvent event) {
 		return event.settlements().stream()
-			.map(this::createNotificationFromDto)
+			.map(this::createNotification)
 			.toList();
 	}
 
-	private Notification createNotificationFromDto(SettlementResponseDto dto) {
+	private Notification createNotification(SettlementResponseDto dto) {
 		NotificationMember seller = notificationSupport.findMemberById(dto.sellerId());
 
-		String message = "%s 상품의 판매 대금 %d원이 정산되었습니다."
+		String message = "상품 '%s'의 판매 대금 %d원이 정산되었습니다."
 			.formatted(dto.productName(), dto.settlementAmount());
 
 		return Notification.builder()

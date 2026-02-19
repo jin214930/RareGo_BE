@@ -30,7 +30,7 @@ public class AuctionPaymentExpiringSoonMapper implements NotificationMapper<Auct
 		NotificationMember buyer = notificationSupport.findMemberById(event.buyerId());
 		String deadline = event.expiredAt().format(FORMATTER);
 
-		String message = "%s 상품의 결제 마감 시간이 임박했습니다.%n%s까지 결제를 완료해주세요."
+		String message = "상품 '%s'의 결제 마감 시간이 임박했습니다.%n%s까지 결제를 완료해주세요."
 			.formatted(event.productName(), deadline);
 
 		Notification notification = Notification.builder()

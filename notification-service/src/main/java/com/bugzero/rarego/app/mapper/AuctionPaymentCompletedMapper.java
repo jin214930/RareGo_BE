@@ -27,7 +27,7 @@ public class AuctionPaymentCompletedMapper implements NotificationMapper<Auction
 		NotificationMember buyer = notificationSupport.findMemberById(event.buyerId());
 		NotificationMember seller = notificationSupport.findMemberById(event.sellerId());
 
-		String message = "%s님이 %s 상품의 결제를 완료했습니다.%n판매 대금은 정산 이후 지급됩니다."
+		String message = "%s님이 상품 '%s'의 결제를 완료했습니다.%n판매 대금은 정산 이후 지급됩니다."
 			.formatted(buyer.getNickname(), event.productName());
 
 		Notification notification = Notification.builder()
