@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.bugzero.rarego.app.NotificationFacade;
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
+import com.bugzero.rarego.shared.auction.event.AuctionStartedEvent;
 import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
 import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
 import com.bugzero.rarego.shared.payment.event.AuctionPaymentCompletedEvent;
@@ -69,11 +70,11 @@ public class NotificationConsumer {
 	/**
 	 * 관심 경매 시작
 	 */
-	// @KafkaListener(topics = "auction-started", groupId = GROUP_ID)
-	// public void consumeAuctionStarted(AuctionStartedEvent event) {
-	// 	log.info(">> [Kafka] 관심 경매 시작 이벤트 수신: auctionId={}", event.auctionId());
-	// 	notificationService.createNotification(event);
-	// }
+	@KafkaListener(topics = "auction-started", groupId = GROUP_ID)
+	public void consumeAuctionStarted(AuctionStartedEvent event) {
+		log.info(">> [Kafka] 관심 경매 시작 이벤트 수신: auctionId={}", event.auctionId());
+		notificationFacade.createNotification(event);
+	}
 
 	/**
 	 * notificationMember 생성 동기화

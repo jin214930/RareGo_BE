@@ -3,7 +3,6 @@ package com.bugzero.rarego.app;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +10,7 @@ import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.domain.AuctionOrderStatus;
 import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.AuctionRelistRequestDto;
 import com.bugzero.rarego.in.dto.AuctionRelistResponseDto;
@@ -21,7 +21,9 @@ import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.event.AuctionRelistedEvent;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuctionRelistUseCase {
@@ -29,26 +31,22 @@ public class AuctionRelistUseCase {
 	private final AuctionSupport support; // 기존 Support 재사용
 	private final AuctionRepository auctionRepository;
 	private final AuctionOrderRepository auctionOrderRepository;
-	private final ApplicationEventPublisher eventPublisher;
+	private final OutboxUseCase outboxUseCase;
 	private final ProductSearchClient productSearchClient;
 	private final AuctionBookmarkRepository auctionBookmarkRepository;
 
 	@Transactional
 	public AuctionRelistResponseDto relistAuction(Long oldAuctionId, String memberPublicId,
 		AuctionRelistRequestDto request) {
-		// 회원 및 기존 경매 조회
+
 		AuctionMember seller = support.getPublicMember(memberPublicId);
 		Auction oldAuction = support.findAuctionById(oldAuctionId);
 
 		support.validateSeller(oldAuction, seller.getId());
 		support.validateAuctionEnded(oldAuction);
-
-		// 판매 완료 여부 검증 (이미 결제 완료된 건은 재등록 불가)
 		validateCanRelist(oldAuction.getId());
 
-		// 새 경매 생성
 		Auction newAuction = Auction.builder()
-			// 기존 상품 Id 재사용
 			.productId(oldAuction.getProductId())
 			.sellerId(seller.getId())
 			.startPrice(request.getStartPrice().intValue())
@@ -57,23 +55,23 @@ public class AuctionRelistUseCase {
 			.durationDays(request.getDurationDays())
 			.build();
 
-		// *참고: Auction 생성자에서 status는 기본적으로 SCHEDULED로 설정됨
-		// Scheduled로 해놓고 start 스케줄러가 바꿔주는 식으로 구성
 		Auction savedAuction = auctionRepository.save(newAuction);
 
-		String productName = productSearchClient.getProduct(savedAuction.getProductId())
-			.map(product -> product.name())
-			.orElse("Unknown Product");
+		String productName = getProductName(savedAuction.getProductId());
 		List<Long> bookmarkedMemberIds = auctionBookmarkRepository.findMemberIdsByAuctionId(oldAuctionId);
 
-		eventPublisher.publishEvent(new AuctionRelistedEvent(
+		AuctionRelistedEvent event = new AuctionRelistedEvent(
 			savedAuction.getProductId(),
 			savedAuction.getId(),
 			savedAuction.getStartPrice(),
 			savedAuction.getStartTime(),
 			productName,
 			bookmarkedMemberIds
-		));
+		);
+		outboxUseCase.saveOutbox(event);
+
+		log.info("경매 재등록 아웃박스 저장 완료: oldAuctionId={}, newAuctionId={}",
+			oldAuctionId, savedAuction.getId());
 
 		return AuctionRelistResponseDto.builder()
 			.newAuctionId(savedAuction.getId())
@@ -83,7 +81,18 @@ public class AuctionRelistUseCase {
 			.build();
 	}
 
-	// 재등록 가능 여부 확인 (낙찰되었으나 결제 완료된 건이 있는지)
+	// ES 호출 실패가 재등록 트랜잭션 롤백으로 이어지지 않도록 예외를 삼킴
+	private String getProductName(Long productId) {
+		try {
+			return productSearchClient.getProduct(productId)
+				.map(product -> product.name())
+				.orElse("Unknown Product");
+		} catch (Exception e) {
+			log.warn("상품명 조회 실패, 기본값 사용. productId={}", productId, e);
+			return "Unknown Product";
+		}
+	}
+
 	private void validateCanRelist(Long auctionId) {
 		support.findOrder(auctionId).ifPresent(order -> {
 			if (order.getStatus() == AuctionOrderStatus.SUCCESS) {

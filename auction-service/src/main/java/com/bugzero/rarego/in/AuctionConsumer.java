@@ -14,9 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 public class AuctionConsumer {
+	private static final String GROUP_ID = "${spring.kafka.consumer.group-id}";
+
 	private final AuctionFacade auctionFacade;
 
-	@KafkaListener(topics = "member-joined")
+	@KafkaListener(topics = "member-joined", groupId = GROUP_ID)
 	public void handleMemberJoined(MemberJoinedEvent event) {
 		try {
 			auctionFacade.syncMember(event.memberDto());
@@ -27,7 +29,7 @@ public class AuctionConsumer {
 		}
 	}
 
-	@KafkaListener(topics = "member-updated")
+	@KafkaListener(topics = "member-updated", groupId = GROUP_ID)
 	public void handleMemberUpdated(MemberUpdatedEvent event) {
 		try {
 			auctionFacade.syncMember(event.memberDto());
