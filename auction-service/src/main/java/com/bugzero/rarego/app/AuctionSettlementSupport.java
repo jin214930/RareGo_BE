@@ -2,29 +2,27 @@ package com.bugzero.rarego.app;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionOrder;
-import com.bugzero.rarego.domain.AuctionOutbox;
 import com.bugzero.rarego.domain.Bid;
 import com.bugzero.rarego.domain.event.AuctionFailedEvent;
 import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.out.AuctionOrderRepository;
-import com.bugzero.rarego.out.AuctionOutboxRepository;
 import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.out.BidRepository;
 import com.bugzero.rarego.out.es.ProductSearchClient;
+import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +35,7 @@ public class AuctionSettlementSupport {
 	private final AuctionRepository auctionRepository;
 	private final BidRepository bidRepository;
 	private final AuctionOrderRepository auctionOrderRepository;
-	private final AuctionOutboxRepository auctionOutboxRepository;
-	private final AuctionOutboxProcessorService auctionOutboxProcessorService;
+	private final OutboxUseCase outboxUseCase;
 	private final ApplicationEventPublisher eventPublisher;
 	private final ProductSearchClient productSearchClient;
 
@@ -90,20 +87,18 @@ public class AuctionSettlementSupport {
 
 		String productName = getProductName(auction.getProductId());
 
-		// 아웃박스에 저장 (외부 이벤트)
-		saveOutboxAndSync(
-			AuctionOutbox.createAuctionEnded(
-				auction.getId(),
-				winningBid.getBidderId(),
-				winningBid.getBidAmount(),
-				auction.getProductId(),
-				productName
-			)
+		AuctionEndedEvent event = new AuctionEndedEvent(
+			auction.getId(),
+			winningBid.getBidderId(),
+			winningBid.getBidAmount(),
+			auction.getProductId(),
+			productName
 		);
+		outboxUseCase.saveOutbox(event);
 
 		log.info(
-			"낙찰 정산 완료: auctionId={}, bidderId={}, bidAmount={}",
-			auction.getId(), winningBid.getBidderId(), winningBid.getBidAmount()
+			"낙찰 정산 완료: auctionId={}, bidderId={}, bidAmount={}, productName={}",
+			auction.getId(), winningBid.getBidderId(), winningBid.getBidAmount(), productName
 		);
 	}
 
@@ -122,57 +117,23 @@ public class AuctionSettlementSupport {
 		);
 
 		log.info(
-			"유찰 정산 완료: auctionId={}, productId={}",
-			auction.getId(), auction.getProductId()
+			"유찰 정산 완료: auctionId={}, productId={}, productName={}",
+			auction.getId(), auction.getProductId(), productName
 		);
 	}
 
 	private String getProductName(Long productId) {
-		return productSearchClient.getProduct(productId)
-			.map(product -> product.name())
-			.orElse("Unknown Product");
-	}
-
-	private void saveOutboxAndSync(AuctionOutbox outbox) {
-		AuctionOutbox saved = auctionOutboxRepository.save(outbox);
-
-		Map<String, Object> payload = saved.getPayloadAsMap();
-		Long auctionId = ((Number)payload.get("auctionId")).longValue();
-
-		log.debug(
-			"아웃박스 생성: outboxId={}, auctionId={}, type={}",
-			saved.getId(), auctionId, saved.getType()
-		);
-
-		if (TransactionSynchronizationManager.isSynchronizationActive()) {
-			TransactionSynchronizationManager.registerSynchronization(
-				new TransactionSynchronization() {
-					@Override
-					public void afterCommit() {
-						try {
-							auctionOutboxProcessorService.process(saved.getId());
-
-							log.info(
-								"아웃박스 처리 성공: outboxId={}, auctionId={}, type={}",
-								saved.getId(), auctionId, saved.getType()
-							);
-
-						} catch (Exception e) {
-							log.error(
-								"아웃박스 처리 실패 (커밋 후 콜백): " +
-									"outboxId={}, auctionId={}, type={}, error={}",
-								saved.getId(), auctionId,
-								saved.getType(), e.getMessage(), e
-							);
-							// 스케줄러가 재시도함
-						}
-					}
-				}
-			);
+		try {
+			return productSearchClient.getProduct(productId)
+				.map(ProductAuctionResponseDto::name)
+				.orElse("Unknown Product");
+		} catch (Exception e) {
+			log.warn("상품명 조회 실패, 기본값 사용. productId={}", productId, e);
+			return "Unknown Product";
 		}
 	}
 
-	// 헬퍼 메서드들
+	// ==================== 헬퍼 메서드 ====================
 
 	@Transactional(readOnly = true)
 	public boolean hasBids(Long auctionId) {
