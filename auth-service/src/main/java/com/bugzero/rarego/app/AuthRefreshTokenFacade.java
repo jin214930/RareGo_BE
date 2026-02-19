@@ -1,7 +1,6 @@
 package com.bugzero.rarego.app;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.config.JwtProperties;
 import com.bugzero.rarego.domain.Account;
@@ -23,7 +22,6 @@ public class AuthRefreshTokenFacade {
 	private final RefreshTokenStore refreshTokenStore;
 	private final JwtProperties jwtProperties;
 
-	@Transactional
 	public TokenPairDto refresh(String refreshToken, String accessToken) {
 
 		// 1. refresh token 입력 검증
