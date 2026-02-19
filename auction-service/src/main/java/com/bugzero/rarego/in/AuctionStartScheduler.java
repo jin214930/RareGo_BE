@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Auction;
@@ -70,7 +69,7 @@ public class AuctionStartScheduler {
 		}
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	@Transactional
 	public void processStart(Long auctionId) {
 		Auction auction = auctionRepository.findByIdWithLock(auctionId)
 			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
