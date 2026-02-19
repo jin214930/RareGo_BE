@@ -49,6 +49,7 @@ public class PaymentGetSettlementsUseCase {
 			settlement.getSalesAmount(),
 			settlement.getFeeAmount(),
 			settlement.getSettlementAmount(),
+			settlement.getProductName(),
 			settlement.getStatus().name(), // Enum -> String 변환
 			settlement.getCreatedAt()
 		);

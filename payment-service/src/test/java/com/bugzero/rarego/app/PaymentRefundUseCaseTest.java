@@ -38,6 +38,8 @@ class PaymentRefundUseCaseTest {
 	private static final Long BIDDER_ID = 1L;
 	private static final Long SELLER_ID = 2L;
 	private static final int FINAL_PRICE = 100000;
+	private static final String PRODUCT_NAME = "레고";
+
 	@InjectMocks
 	private PaymentRefundUseCase paymentRefundUseCase;
 	@Mock
@@ -56,11 +58,11 @@ class PaymentRefundUseCaseTest {
 	void processRefund_Success() {
 		// given
 		AuctionOrderDto order = new AuctionOrderDto(
-			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now(), "테스트 상품");
+			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now(), PRODUCT_NAME);
 
 		PaymentMember buyer = createMockMember(BIDDER_ID);
 		Wallet wallet = Wallet.builder().balance(50000).holdingAmount(0).build();
-		Settlement settlement = Settlement.create(AUCTION_ID, createMockMember(SELLER_ID), FINAL_PRICE);
+		Settlement settlement = Settlement.create(AUCTION_ID, PRODUCT_NAME, createMockMember(SELLER_ID), FINAL_PRICE);
 		// Settlement 상태는 READY (환불 가능)
 
 		given(auctionOrderApiClient.refundOrder(AUCTION_ID)).willReturn(order);
@@ -123,9 +125,9 @@ class PaymentRefundUseCaseTest {
 	void processRefund_Fail_SettlementAlreadyCompleted() {
 		// given
 		AuctionOrderDto order = new AuctionOrderDto(
-			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now(), "테스트 상품");
+			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "SUCCESS", LocalDateTime.now(), PRODUCT_NAME);
 
-		Settlement settlement = Settlement.create(AUCTION_ID, createMockMember(SELLER_ID), FINAL_PRICE);
+		Settlement settlement = Settlement.create(AUCTION_ID, PRODUCT_NAME, createMockMember(SELLER_ID), FINAL_PRICE);
 		settlement.complete(); // DONE 상태 - 환불 불가
 
 		given(auctionOrderApiClient.refundOrder(AUCTION_ID)).willReturn(order);
