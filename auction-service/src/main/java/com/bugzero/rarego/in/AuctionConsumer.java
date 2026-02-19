@@ -24,7 +24,7 @@ public class AuctionConsumer {
 			auctionFacade.syncMember(event.memberDto());
 			log.info("[auction] 회원 레플리카 등록 완료 - memberPublicId: {}", event.memberDto().publicId());
 		} catch (Exception e) {
-			log.error("회원 레플리카 등록 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
+			log.error("[auction] 회원 레플리카 등록 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
 			throw e;
 		}
 	}
@@ -35,7 +35,7 @@ public class AuctionConsumer {
 			auctionFacade.syncMember(event.memberDto());
 			log.info("[auction] 회원 레플리카 수정 완료 - memberPublicId: {}", event.memberDto().publicId());
 		} catch (Exception e) {
-			log.error("회원 레플리카 수정 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
+			log.error("[auction] 회원 레플리카 수정 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
 			throw e;
 		}
 	}
