@@ -17,7 +17,7 @@ import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionMember;
 import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionCreateAuctionUseCaseTest {
@@ -35,20 +35,20 @@ class AuctionCreateAuctionUseCaseTest {
 
 	private final String PUBLIC_ID = "seller-uuid";
 
-	@Test
-	@DisplayName("상품 ID와 기간을 입력받아 경매 정보를 정상적으로 생성한다")
-	void createAuction_Success() {
-		// given
-		Long productId = 1L;
-		int durationDays = 24;
-		ProductAuctionRequestDto requestDto = ProductAuctionRequestDto.builder()
-			.startPrice(10000)
-			.durationDays(durationDays)
-			.build();
-		AuctionMember commonSeller = AuctionMember.builder()
-			.id(1L)
-			.publicId(PUBLIC_ID)
-			.build();
+    @Test
+    @DisplayName("상품 ID와 기간을 입력받아 경매 정보를 정상적으로 생성한다")
+    void createAuction_Success() {
+        // given
+        Long productId = 1L;
+        int durationDays = 24;
+		ProductAuctionCreateDto requestDto = ProductAuctionCreateDto.builder()
+                .startPrice(10000)
+                .durationDays(durationDays)
+                .build();
+        AuctionMember commonSeller = AuctionMember.builder()
+                .id(1L)
+                .publicId(PUBLIC_ID)
+                .build();
 
 		// Mocking: 저장 시 ID가 100인 객체가 반환된다고 가정
 		Auction mockAuction = Auction.builder()

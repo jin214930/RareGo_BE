@@ -6,10 +6,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.global.event.EventPublisher;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.product.domain.Product;
 import com.bugzero.rarego.product.domain.ProductImage;
 import com.bugzero.rarego.product.domain.ProductMember;
-import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
+import com.bugzero.rarego.shared.product.event.AuctionDeleteEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageDeleteEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class ProductDeleteProductUseCase {
 
 	private final ProductSupport productSupport;
-	private final AuctionApiClient auctionApiClient;
+	private final OutboxUseCase outboxUseCase;
 	private final EventPublisher eventPublisher;
 
 	@Transactional
@@ -37,7 +38,10 @@ public class ProductDeleteProductUseCase {
 		eventPublisher.publish(new S3ImageDeleteEvent(pathToDelete));
 		product.getImages().clear();
 
-		//경매 정보 삭제 api 호출
-		auctionApiClient.deleteAuction(publicId, productId);
+		//아웃박스 이벤트 저장
+		outboxUseCase.saveOutbox(AuctionDeleteEvent.builder()
+			.productId(productId)
+			.publicId(publicId)
+			.build());
 	}
 }
