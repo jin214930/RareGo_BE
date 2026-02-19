@@ -1,6 +1,6 @@
 package com.bugzero.rarego.ai.app;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
@@ -77,5 +77,22 @@ class AiGetInternalPriceUseCaseTest {
 		// 검증: 각 의존성이 정확히 한 번씩 호출되었는지 확인
 		verify(embeddingModel, times(1)).embed(anyString());
 		verify(elasticsearchOperations, times(1)).search(any(NativeQuery.class), eq(ProductSearchDocument.class));
+	}
+
+	@Test
+	@DisplayName("임베딩 생성 실패 시 빈 리스트를 반환하고 예외가 발생하지 않는다")
+	void findTopSimilarProducts_ReturnsEmptyWhenEmbeddingFails() {
+		// given
+		AiInternalPriceRequestDto dto = new AiInternalPriceRequestDto(
+			Category.STARWARS, TemporaryCondition.MISB, "레고 팔콘", "미개봉");
+
+		when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("API 키 고갈"));
+
+		// when
+		List<AiInternalPriceResponseDto> result = useCase.findTopSimilarProducts(dto);
+
+		// then
+		assertThat(result).isEmpty();
+		verify(elasticsearchOperations, never()).search(any(NativeQuery.class), eq(ProductSearchDocument.class));
 	}
 }

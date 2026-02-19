@@ -20,7 +20,6 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
 		Pageable pageable
 	);
 
-
 	@Modifying
 	@Query("DELETE FROM OutboxEvent o WHERE o.status = 'SENT' AND o.sentDate < :before")
 	int deleteSentEventsBefore(@Param("before") LocalDateTime before);

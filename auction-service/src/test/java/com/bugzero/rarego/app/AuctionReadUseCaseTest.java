@@ -105,8 +105,13 @@ class AuctionReadUseCaseTest {
     // === Helper Methods ===
 
     private AuctionMember createMember(Long id, String publicId) {
+        return createMember(id, publicId, "nickname_" + id);
+    }
+
+    private AuctionMember createMember(Long id, String publicId, String nickname) {
         AuctionMember member = AuctionMember.builder()
                 .publicId(publicId)
+                .nickname(nickname)
                 .contactPhone("010-1234-5678")
                 .build();
         ReflectionTestUtils.setField(member, "id", id);
@@ -155,7 +160,7 @@ class AuctionReadUseCaseTest {
     class GetBidLogsTest {
 
         @Test
-        @DisplayName("성공 - 입찰 기록이 있을 때 publicId와 함께 반환")
+        @DisplayName("성공 - 입찰 기록이 있을 때 publicId와 nickname이 함께 반환")
         void getBidLogs_success() {
             // given
             Long bidderId = 50L;
@@ -164,7 +169,7 @@ class AuctionReadUseCaseTest {
             Page<Bid> bidPage = new PageImpl<>(List.of(bid), pageable, 1);
             given(bidRepository.findAllByAuctionIdOrderByBidTimeDesc(auctionId, pageable)).willReturn(bidPage);
 
-            AuctionMember bidder = createMember(bidderId, "bidder_pub");
+            AuctionMember bidder = createMember(bidderId, "bidder_pub", "입찰자닉네임");
             given(auctionMemberRepository.findAllById(Set.of(bidderId))).willReturn(List.of(bidder));
 
             // when
@@ -175,6 +180,7 @@ class AuctionReadUseCaseTest {
             BidLogResponseDto dto = result.data().get(0);
             assertThat(dto.id()).isEqualTo(1L);
             assertThat(dto.publicId()).isEqualTo("bidder_pub");
+            assertThat(dto.nickname()).isEqualTo("입찰자닉네임");
             assertThat(dto.bidAmount()).isEqualTo(15000);
             assertThat(dto.bidTime()).isNotNull();
         }
@@ -195,7 +201,7 @@ class AuctionReadUseCaseTest {
         }
 
         @Test
-        @DisplayName("입찰자 정보가 없을 때 publicId가 unknown으로 반환")
+        @DisplayName("입찰자 정보가 없을 때 publicId와 nickname이 unknown으로 반환")
         void getBidLogs_unknownBidder() {
             // given
             Bid bid = createBid(1L, auctionId, 999L, 20000);
@@ -211,6 +217,7 @@ class AuctionReadUseCaseTest {
             // then
             assertThat(result.data()).hasSize(1);
             assertThat(result.data().get(0).publicId()).isEqualTo("unknown");
+            assertThat(result.data().get(0).nickname()).isEqualTo("unknown");
         }
     }
 
