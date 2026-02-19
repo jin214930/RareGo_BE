@@ -15,7 +15,7 @@ import com.bugzero.rarego.product.domain.dto.ProductCreateResponseDto;
 import com.bugzero.rarego.product.out.ProductRepository;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
-import com.bugzero.rarego.shared.product.event.AuctionCreateEvent;
+import com.bugzero.rarego.shared.product.event.ProductCreateAuctionEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageConfirmEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class ProductCreateProductUseCase {
 		Product savedProduct = productRepository.save(product);
 
 		// 3. 아웃박스 이벤트 저장 (DB 트랜잭션의 일부)
-		outboxUseCase.saveOutbox(AuctionCreateEvent.builder()
+		outboxUseCase.saveOutbox(ProductCreateAuctionEvent.builder()
 			.productId(savedProduct.getId())
 			.publicId(publicId)
 			.dto(dto.productAuctionCreateDto())

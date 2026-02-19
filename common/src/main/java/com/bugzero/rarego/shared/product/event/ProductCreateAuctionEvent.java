@@ -5,7 +5,7 @@ import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import lombok.Builder;
 
 @Builder
-public record AuctionCreateEvent(
+public record ProductCreateAuctionEvent(
 	Long productId,
 	String publicId,
 	ProductAuctionCreateDto dto
