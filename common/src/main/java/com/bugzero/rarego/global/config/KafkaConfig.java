@@ -23,6 +23,9 @@ import org.springframework.kafka.support.converter.RecordMessageConverter;
 import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
 import org.springframework.kafka.support.mapping.Jackson2JavaTypeMapper;
 
+import com.bugzero.rarego.shared.product.event.AuctionCreateEvent;
+import com.bugzero.rarego.shared.product.event.AuctionDeleteEvent;
+import com.bugzero.rarego.shared.product.event.AuctionUpdateEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @EnableKafka
@@ -82,9 +85,9 @@ public class KafkaConfig {
 
 		// 이벤트 타입별 클래스 매핑
 		Map<String, Class<?>> mappings = new HashMap<>();
-		// mappings.put("AuctionCreateEvent", AuctionCreateEvent.class);
-		// mappings.put("AuctionUpdateEvent", AuctionUpdateEvent.class);
-		// mappings.put("AuctionDeleteEvent", AuctionDeleteEvent.class);
+		mappings.put("AuctionCreateEvent", AuctionCreateEvent.class);
+		mappings.put("AuctionUpdateEvent", AuctionUpdateEvent.class);
+		mappings.put("AuctionDeleteEvent", AuctionDeleteEvent.class);
 
 		typeMapper.setIdClassMapping(mappings);
 		converter.setTypeMapper(typeMapper);

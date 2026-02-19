@@ -31,7 +31,7 @@ import com.bugzero.rarego.global.response.SuccessType;
 import com.bugzero.rarego.in.dto.AuctionAutoSettleResponseDto;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
 import tools.jackson.databind.ObjectMapper;
@@ -121,12 +121,12 @@ class InternalAuctionControllerTest {
 			// given
 			Long productId = 1L;
 			String publicId = "1L";
-			ProductAuctionRequestDto requestDto = ProductAuctionRequestDto.builder()
+			ProductAuctionCreateDto requestDto = ProductAuctionCreateDto.builder()
 				.startPrice(10000)
 				.durationDays(7)
 				.build();
 
-			given(auctionFacade.createAuction(eq(productId), eq(publicId), any(ProductAuctionRequestDto.class)))
+			given(auctionFacade.createAuction(eq(productId), eq(publicId), any(ProductAuctionCreateDto.class)))
 				.willReturn(10L);
 
 			// when & then
@@ -144,7 +144,7 @@ class InternalAuctionControllerTest {
 			Long productId = 1L;
 			String sellerUUID = "1L";
 
-			ProductAuctionRequestDto invalidDto = ProductAuctionRequestDto.builder()
+			ProductAuctionCreateDto invalidDto = ProductAuctionCreateDto.builder()
 				.startPrice(50) // @Min(100) 위반
 				.durationDays(7)
 				.build();
@@ -163,7 +163,7 @@ class InternalAuctionControllerTest {
 			Long productId = 1L;
 			String sellerUUID = "1L";
 
-			ProductAuctionRequestDto invalidDto = ProductAuctionRequestDto.builder()
+			ProductAuctionCreateDto invalidDto = ProductAuctionCreateDto.builder()
 				.startPrice(10000) // @Min(100) 위반
 				.durationDays(100)
 				.build();
