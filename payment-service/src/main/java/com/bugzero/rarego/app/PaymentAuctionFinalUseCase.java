@@ -81,7 +81,7 @@ public class PaymentAuctionFinalUseCase {
 
 		// 8. 정산 정보 생성 (status = READY)
 		PaymentMember seller = paymentSupport.findMemberById(order.sellerId());
-		Settlement settlement = Settlement.create(auctionId, seller, finalPrice);
+		Settlement settlement = Settlement.create(auctionId, order.productName(), seller, finalPrice);
 		settlementRepository.save(settlement);
 
 		log.info("낙찰 결제 완료: auctionId={}, memberId={}, finalPrice={}, paid={}, settlementId={}",
@@ -93,6 +93,7 @@ public class PaymentAuctionFinalUseCase {
 			auctionId,
 			order.sellerId(),
 			memberId,
+			order.productName(),
 			finalPrice));
 
 		return AuctionFinalPaymentResponseDto.of(
