@@ -5,6 +5,7 @@ public record AuctionPaymentCompletedEvent(
 	Long auctionId,
 	Long sellerId,
 	Long buyerId,
+	String productName,
 	int amount
 ) {
 }

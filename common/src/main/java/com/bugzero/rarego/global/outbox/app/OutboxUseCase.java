@@ -20,6 +20,9 @@ import com.bugzero.rarego.shared.payment.event.AuctionPaymentCompletedEvent;
 import com.bugzero.rarego.shared.payment.event.AuctionPaymentExpiringSoonEvent;
 import com.bugzero.rarego.shared.payment.event.PaymentTimeoutEvent;
 import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
+import com.bugzero.rarego.shared.product.event.ProductCreateAuctionEvent;
+import com.bugzero.rarego.shared.product.event.ProductDeleteAuctionEvent;
+import com.bugzero.rarego.shared.product.event.ProductUpdateAuctionEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -84,6 +87,12 @@ public class OutboxUseCase {
 				"Payment", String.valueOf(e.buyerId()), KafkaTopics.PAYMENT_AUCTION_EXPIRING_SOON.getTopicName());
 			case PaymentTimeoutEvent e -> new OutboxEventMetadata(
 				"Payment", String.valueOf(e.auctionId()), KafkaTopics.PAYMENT_TIMEOUT.getTopicName());
+			case ProductCreateAuctionEvent e -> new OutboxEventMetadata(
+				"Product", String.valueOf(e.productId()), KafkaTopics.AUCTION_INFO_MANAGEMENT.getTopicName());
+			case ProductUpdateAuctionEvent e -> new OutboxEventMetadata(
+				"Product", String.valueOf(e.productId()), KafkaTopics.AUCTION_INFO_MANAGEMENT.getTopicName());
+			case ProductDeleteAuctionEvent e -> new OutboxEventMetadata(
+				"Product", String.valueOf(e.productId()), KafkaTopics.AUCTION_INFO_MANAGEMENT.getTopicName());
 			default -> null;
 		};
 	}

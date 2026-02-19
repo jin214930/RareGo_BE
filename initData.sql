@@ -526,14 +526,15 @@ VALUES (0, NOW(), NOW(), 24, 8, 80000, 6, 'PROCESSING'),
 /* ==================================================================================
    [STEP 11] PAYMENT_SETTLEMENT 생성 (정산 상태)
    ================================================================================== */
-INSERT INTO payment_settlement (deleted, created_at, updated_at, auction_id, seller_id, sales_amount, fee_amount,
+INSERT INTO payment_settlement (deleted, created_at, updated_at, auction_id, seller_id, product_name, sales_amount,
+                                fee_amount,
                                 settlement_amount, status, try_count)
-VALUES (0, NOW(), NOW(), 26, 7, 400000, 40000, 360000, 'READY', 0),
-       (0, NOW(), NOW(), 30, 3, 600000, 60000, 540000, 'READY', 0),
-       (0, NOW(), NOW(), 31, 4, 20000, 0, 20000, 'READY', 0), -- 몰수금 정산
-       (0, NOW(), NOW(), 41, 5, 180000, 18000, 162000, 'READY', 0),
-       (0, NOW(), NOW(), 42, 3, 40000, 0, 40000, 'READY', 0), -- 몰수금 정산
-       (0, NOW(), NOW(), 43, 4, 70000, 7000, 63000, 'DONE', 0);
+VALUES (0, NOW(), NOW(), 26, 7, '레고 데스스타', 400000, 40000, 360000, 'READY', 0),
+       (0, NOW(), NOW(), 30, 3, '레고 모듈러 경찰서', 600000, 60000, 540000, 'READY', 0),
+       (0, NOW(), NOW(), 31, 4, '레고 배틀팩', 20000, 0, 20000, 'READY', 0),     -- 몰수금 정산
+       (0, NOW(), NOW(), 41, 5, '레고 시티 경찰서', 180000, 18000, 162000, 'READY', 0),
+       (0, NOW(), NOW(), 42, 3, '레고 테크닉 부가티', 40000, 0, 40000, 'READY', 0), -- 몰수금 정산
+       (0, NOW(), NOW(), 43, 4, '레고 꽃다발', 70000, 7000, 63000, 'DONE', 0);
 
 
 /* ==================================================================================
