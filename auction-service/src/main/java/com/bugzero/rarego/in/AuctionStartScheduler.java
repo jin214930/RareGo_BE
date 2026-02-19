@@ -3,33 +3,50 @@ package com.bugzero.rarego.in;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Auction;
+import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
+import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.out.AuctionBookmarkRepository;
 import com.bugzero.rarego.out.AuctionRepository;
 import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.event.AuctionStartedEvent;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class AuctionStartScheduler {
 
 	private final AuctionRepository auctionRepository;
 	private final AuctionBookmarkRepository auctionBookmarkRepository;
 	private final OutboxUseCase outboxUseCase;
 	private final ProductSearchClient productSearchClient;
+	private final AuctionStartScheduler self; // self-injection for REQUIRES_NEW
+
+	public AuctionStartScheduler(
+		AuctionRepository auctionRepository,
+		AuctionBookmarkRepository auctionBookmarkRepository,
+		OutboxUseCase outboxUseCase,
+		ProductSearchClient productSearchClient,
+		@Lazy AuctionStartScheduler self
+	) {
+		this.auctionRepository = auctionRepository;
+		this.auctionBookmarkRepository = auctionBookmarkRepository;
+		this.outboxUseCase = outboxUseCase;
+		this.productSearchClient = productSearchClient;
+		this.self = self;
+	}
 
 	@Scheduled(cron = "0 * * * * *")
-	@Transactional
 	public void autoStartAuctions() {
 		LocalDateTime now = LocalDateTime.now();
 
@@ -45,36 +62,48 @@ public class AuctionStartScheduler {
 
 		for (Auction auction : pendingAuctions) {
 			try {
-				auction.start();
-
-				List<Long> bookmarkedMemberIds = auctionBookmarkRepository
-					.findMemberIdsByAuctionId(auction.getId());
-
-				String productName = getProductName(auction.getProductId());
-
-				AuctionStartedEvent event = new AuctionStartedEvent(
-					auction.getId(),
-					auction.getProductId(),
-					auction.getStartTime(),
-					productName,
-					bookmarkedMemberIds
-				);
-				outboxUseCase.saveOutbox(event);
-
-				log.info("경매 시작 아웃박스 저장 완료: auctionId={}, bookmarkedCount={}",
-					auction.getId(), bookmarkedMemberIds.size());
-
+				// REQUIRES_NEW로 경매별 독립 트랜잭션 - 하나 실패해도 다른 경매에 영향 없음
+				self.processStart(auction.getId());
 			} catch (Exception e) {
 				log.error("경매 ID {} 시작 처리 중 오류 발생", auction.getId(), e);
 			}
 		}
 	}
 
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void processStart(Long auctionId) {
+		Auction auction = auctionRepository.findByIdWithLock(auctionId)
+			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_NOT_FOUND));
+
+		if (auction.getStatus() != AuctionStatus.SCHEDULED) {
+			throw new CustomException(ErrorType.AUCTION_NOT_SCHEDULED);
+		}
+
+		auction.start();
+
+		List<Long> bookmarkedMemberIds = auctionBookmarkRepository
+			.findMemberIdsByAuctionId(auction.getId());
+
+		String productName = getProductName(auction.getProductId());
+
+		AuctionStartedEvent event = new AuctionStartedEvent(
+			auction.getId(),
+			auction.getProductId(),
+			auction.getStartTime(),
+			productName,
+			bookmarkedMemberIds
+		);
+		outboxUseCase.saveOutbox(event);
+
+		log.info("경매 시작 처리 완료: auctionId={}, bookmarkedCount={}",
+			auction.getId(), bookmarkedMemberIds.size());
+	}
+
 	// ES 호출 실패가 경매 시작 트랜잭션 롤백으로 이어지지 않도록 예외를 삼킴
 	private String getProductName(Long productId) {
 		try {
 			return productSearchClient.getProduct(productId)
-				.map(product -> product.name())
+				.map(ProductAuctionResponseDto::name)
 				.orElse("Unknown Product");
 		} catch (Exception e) {
 			log.warn("상품명 조회 실패, 기본값 사용. productId={}", productId, e);
