@@ -103,7 +103,7 @@ public class ProductSearchService {
 		);
 
 		// 임베딩 벡터 생성
-		List<Float> vector = generateEmbeddingToFloat(textToEmbed);
+		List<Float> vector = generateEmbeddingSafe(textToEmbed);
 
 		// 이미지 정렬 및 선택
 		String imageUrl = (images != null && !images.isEmpty()) ? images.stream()
@@ -227,18 +227,20 @@ public class ProductSearchService {
 						.filter(filters) // 공통 필터 적용
 					));
 
-					// 벡터(KNN) 쿼리 구성
+					// 벡터(KNN) 쿼리 구성 - 임베딩 실패 시 키워드 검색만 수행
 					String queryText = buildSearchPrompt(keyword, category);
-					List<Float> queryVector = generateEmbeddingToFloat(queryText);
+					List<Float> queryVector = generateEmbeddingSafe(queryText);
 
-					s.knn(k -> k
-						.field("embedding")
-						.queryVector(queryVector)
-						.k(10)
-						.numCandidates(100)
-						.filter(f -> f.bool(b -> b.filter(filters)))
-						.boost(1.5f) // 벡터 점수 비중
-					);
+					if (queryVector != null) {
+						s.knn(k -> k
+							.field("embedding")
+							.queryVector(queryVector)
+							.k(10)
+							.numCandidates(100)
+							.filter(f -> f.bool(b -> b.filter(filters)))
+							.boost(1.5f) // 벡터 점수 비중
+						);
+					}
 				} else {
 					// 키워드 없을 땐 필터만 적용
 					s.query(q -> q.bool(b -> b.filter(filters)));
@@ -264,6 +266,16 @@ public class ProductSearchService {
 	}
 
 	// [Helper Method] //
+
+	// 임베딩 안전 생성 - API 실패 시 null 반환 (키워드 검색은 정상 동작)
+	private List<Float> generateEmbeddingSafe(String text) {
+		try {
+			return generateEmbeddingToFloat(text);
+		} catch (Exception e) {
+			log.warn("임베딩 생성 실패 (API 키 고갈 등), 키워드 검색만 사용됩니다: {}", e.getMessage());
+			return null;
+		}
+	}
 
 	// 임베딩 생성 (Float 리스트로 변환)
 	private List<Float> generateEmbeddingToFloat(String text) {
