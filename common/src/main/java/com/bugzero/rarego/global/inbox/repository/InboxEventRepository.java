@@ -1,6 +1,10 @@
 package com.bugzero.rarego.global.inbox.repository;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import com.bugzero.rarego.global.inbox.domain.InboxEvent;
 
@@ -12,4 +16,11 @@ public interface InboxEventRepository extends JpaRepository<InboxEvent, Long> {
      * @return 존재 여부 (true: 이미 처리됨, false: 처음 유입됨)
      */
 	boolean existsByMessageIdAndConsumerGroup(String messageId, String consumerGroup);
+
+	/**
+	 * 특정 시간 이전에 생성된 인박스 이벤트를 삭제합니다.
+	 */
+	@Modifying
+	@Query("DELETE FROM InboxEvent i WHERE i.createdAt < :dateTime")
+	void deleteByCreatedAtBefore(LocalDateTime dateTime);
 }
