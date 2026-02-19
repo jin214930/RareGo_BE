@@ -114,6 +114,7 @@ public class ProductImageS3UseCase {
 				log.info("S3 이미지 확정 완료: {} -> {}", tempPath, destinationPath);
 			} catch (Exception e) {
 				log.error("S3 이미지 확정 중 오류 발생 (path: {}): {}", tempPath, e.getMessage());
+				//TODO DB에 저장된  S3 이미지저장경로 불일치 문제 해결 재시도 or DB에서 데이터 삭제
 			}
 		}
 	}

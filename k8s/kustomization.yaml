@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - global-config.yaml
+  - secret.yaml
+  - infra/mysql.yaml
+  - infra/redis.yaml
+  - infra/kafka.yaml
+  - infra/elasticsearch.yaml
+  - infra/prometheus.yaml
+  - infra/grafana.yaml
+  - infra/cert-issuer.yaml
+  - infra/rarego-tls-certificate.yaml
+  - apps/auth-service.yaml
+  - apps/member-service.yaml
+  - apps/auction-service.yaml
+  - apps/product-service.yaml
+  - apps/payment-service.yaml
+  - apps/notification-service.yaml
+  - ingress/ingress.yaml
+  - ingress/monitoring-ingress.yaml
+  - infra/internal-gateway.yaml
+
+images:
+  - name: rarego-auth-service
+    newName: ghcr.io/prgrms-be-adv-devcourse/beadv4_4_bugzero_be-auth-service
+    newTag: v1.0.0-dev
+  - name: rarego-member-service
+    newName: ghcr.io/prgrms-be-adv-devcourse/beadv4_4_bugzero_be-member-service
+    newTag: v1.0.0-dev
+  - name: rarego-auction-service
+    newName: ghcr.io/prgrms-be-adv-devcourse/beadv4_4_bugzero_be-auction-service
+    newTag: v1.0.0-dev
+  - name: rarego-product-service
+    newName: ghcr.io/prgrms-be-adv-devcourse/beadv4_4_bugzero_be-product-service
+    newTag: v1.0.0-dev
+  - name: rarego-payment-service
+    newName: ghcr.io/prgrms-be-adv-devcourse/beadv4_4_bugzero_be-payment-service
+    newTag: v1.0.0-dev
+  - name: rarego-notification-service
+    newName: ghcr.io/prgrms-be-adv-devcourse/beadv4_4_bugzero_be-notification-service
+    newTag: v1.0.0-dev

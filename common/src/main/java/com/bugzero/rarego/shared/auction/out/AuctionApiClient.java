@@ -14,9 +14,9 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.exception.InternalApiErrorHandler;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
-import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.global.security.SystemAuthTokenProvider;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
 @Service
@@ -35,12 +35,12 @@ public class AuctionApiClient {
 		this.systemAuthTokenProvider = systemAuthTokenProvider;
 	}
 
-	public Long createAuction(Long productId, String publicId, ProductAuctionRequestDto productAuctionRequestDto) {
+	public Long createAuction(Long productId, String publicId, ProductAuctionCreateDto productAuctionCreateDto) {
 		SuccessResponseDto<Long> response = restClient.post()
 			.uri("/{productId}/{publicId}", productId, publicId)
 			.header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
 			.contentType(MediaType.APPLICATION_JSON)
-			.body(productAuctionRequestDto)
+			.body(productAuctionCreateDto)
 			.retrieve()
 			.onStatus(HttpStatusCode::isError,
 				(httpRequest, httpResponse) -> errorHandler.handleWithDefault(httpRequest, httpResponse,

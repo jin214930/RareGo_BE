@@ -1,0 +1,118 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rarego-ingress
+  namespace: rarego
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - rarego.duckdns.org
+    secretName: rarego-tls
+  rules:
+  - host: rarego.duckdns.org
+    http:
+      paths:
+      # Auth Service
+      - path: /api/v1/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 8089
+      - path: /oauth2
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 8089
+      - path: /login/oauth2
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 8089
+      # Auction Service (Specific Member activities)
+      - path: /api/v1/members/me/bids
+        pathType: Prefix
+        backend:
+          service:
+            name: auction-service
+            port:
+              number: 8083
+      - path: /api/v1/members/me/sales
+        pathType: Prefix
+        backend:
+          service:
+            name: auction-service
+            port:
+              number: 8083
+      - path: /api/v1/members/me/orders
+        pathType: Prefix
+        backend:
+          service:
+            name: auction-service
+            port:
+              number: 8083
+      - path: /api/v1/members/me/bookmarks
+        pathType: Prefix
+        backend:
+          service:
+            name: auction-service
+            port:
+              number: 8083
+      # Member Service
+      - path: /api/v1/members
+        pathType: Prefix
+        backend:
+          service:
+            name: member-service
+            port:
+              number: 8081
+      # Auction Service (General)
+      - path: /api/v1/auctions
+        pathType: Prefix
+        backend:
+          service:
+            name: auction-service
+            port:
+              number: 8083
+      # Product Service
+      - path: /api/v1/products
+        pathType: Prefix
+        backend:
+          service:
+            name: product-service
+            port:
+              number: 8084
+      # Payment Service
+      - path: /api/v1/payments
+        pathType: Prefix
+        backend:
+          service:
+            name: payment-service
+            port:
+              number: 8082
+      # Notification Service
+      - path: /api/v1/notifications
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
+            port:
+              number: 8085
+      # Frontend Service (Default route)
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 3000

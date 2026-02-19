@@ -43,6 +43,9 @@ public class Settlement extends BaseIdAndTime {
 	@Column(nullable = false)
 	private int settlementAmount;
 
+	@Column(nullable = false)
+	private String productName;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	@Builder.Default
@@ -52,7 +55,7 @@ public class Settlement extends BaseIdAndTime {
 	@Column(nullable = false)
 	private int tryCount = 0;
 
-	public static Settlement create(Long auctionId, PaymentMember seller, int salesAmount) {
+	public static Settlement create(Long auctionId, String productName, PaymentMember seller, int salesAmount) {
 		int feeAmount = (int)(salesAmount * FEE_RATE);
 		int settlementAmount = salesAmount - feeAmount;
 
@@ -62,6 +65,7 @@ public class Settlement extends BaseIdAndTime {
 			.salesAmount(salesAmount)
 			.feeAmount(feeAmount)
 			.settlementAmount(settlementAmount)
+			.productName(productName)
 			.status(SettlementStatus.READY)
 			.build();
 	}

@@ -27,7 +27,7 @@ import com.bugzero.rarego.global.response.SuccessType;
 import com.bugzero.rarego.in.dto.AuctionAutoSettleResponseDto;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
-import com.bugzero.rarego.shared.product.dto.ProductAuctionRequestDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 
 import io.swagger.v3.oas.annotations.Hidden;
@@ -142,10 +142,10 @@ public class InternalAuctionController {
 	public SuccessResponseDto<Long> createAuction(
 		@PathVariable Long productId,
 		@PathVariable String publicId,
-		@Valid @RequestBody ProductAuctionRequestDto productAuctionRequestDto
+		@Valid @RequestBody ProductAuctionCreateDto productAuctionCreateDto
 	) {
 		return SuccessResponseDto.from(SuccessType.CREATED,
-			auctionFacade.createAuction(productId, publicId, productAuctionRequestDto));
+			auctionFacade.createAuction(productId, publicId, productAuctionCreateDto));
 	}
 
 	@Operation(summary = "경매정보 수정", description = "검수 확정 전인 경매 정보를 수정합니다.")
