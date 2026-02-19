@@ -7,6 +7,7 @@ public record AuctionPaymentExpiringSoonEvent(
 	Long auctionId,
 	Long buyerId,
 	Long sellerId,
+	String productName,
 	int amount,
 	LocalDateTime expiredAt
 ) {
