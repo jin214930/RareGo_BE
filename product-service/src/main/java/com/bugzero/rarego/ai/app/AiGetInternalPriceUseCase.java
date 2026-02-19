@@ -19,7 +19,9 @@ import com.bugzero.rarego.shared.product.type.Category;
 import co.elastic.clients.elasticsearch._types.KnnSearch;
 import co.elastic.clients.json.JsonData;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiGetInternalPriceUseCase {
@@ -35,7 +37,16 @@ public class AiGetInternalPriceUseCase {
 		String searchQuery = String.format(ProductSearchDocument.EMBEDDING_TEMPLATE,
 			dto.name(), dto.description(), dto.category(), dto.condition());
 
-		NativeQuery nativeQuery = buildNativeQuery(searchQuery, dto.category(), dto.condition());
+		// 임베딩 생성 실패 시 빈 리스트 반환 (AI 시세 추정은 벡터 필수)
+		List<Float> vectorList;
+		try {
+			vectorList = generateEmbeddingToFloat(searchQuery);
+		} catch (Exception e) {
+			log.warn("임베딩 생성 실패로 AI 시세 추정 불가: {}", e.getMessage());
+			return List.of();
+		}
+
+		NativeQuery nativeQuery = buildNativeQuery(vectorList, dto.category(), dto.condition());
 
 		// 검색 실행 및 결과 매핑
 		SearchHits<ProductSearchDocument> hits = elasticsearchOperations.search(nativeQuery,
@@ -62,11 +73,7 @@ public class AiGetInternalPriceUseCase {
 			.collect(Collectors.toList());
 	}
 
-	private NativeQuery buildNativeQuery(String query, Category category, TemporaryCondition condition) {
-
-		// 사용자 입력 텍스트를 벡터로 변환
-		List<Float> vectorList = generateEmbeddingToFloat(query);
-
+	private NativeQuery buildNativeQuery(List<Float> vectorList, Category category, TemporaryCondition condition) {
 		return NativeQuery.builder()
 			.withKnnSearches(KnnSearch.of(ks -> ks
 				.field("embedding")

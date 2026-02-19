@@ -185,6 +185,30 @@ class ProductSearchServiceTest {
 		assertThat(captor.getValue().getAuctionStatus()).isEqualTo(AuctionStatus.IN_PROGRESS);
 	}
 
+	@Test
+	@DisplayName("임베딩 생성 실패 시에도 ES 적재가 정상 수행된다 (embedding = null)")
+	void save_shouldSucceedWhenEmbeddingFails() {
+		// given
+		given(embeddingModel.embed(anyString())).willThrow(new RuntimeException("API 키 고갈"));
+
+		Product mockProduct = createMockProduct(10L, "테스트 상품", "설명", Category.STARWARS);
+		ProductImage mockImage = createMockImage("http://image.url", 0);
+
+		// when & then - 예외 없이 정상 수행
+		assertThatCode(() ->
+			productSearchService.save(mockProduct, List.of(mockImage), 100L, 500000, LocalDateTime.now())
+		).doesNotThrowAnyException();
+
+		// ES 저장이 호출되었는지 확인
+		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
+		verify(searchRepository).save(captor.capture());
+
+		ProductSearchDocument savedDoc = captor.getValue();
+		assertThat(savedDoc.getProductId()).isEqualTo(10L);
+		assertThat(savedDoc.getEmbedding()).isNull();
+		assertThat(savedDoc.getAuctionStatus()).isEqualTo(AuctionStatus.SCHEDULED);
+	}
+
 	// === Helper Methods ===
 
 	private Product createMockProduct(Long id, String name, String description, Category category) {
