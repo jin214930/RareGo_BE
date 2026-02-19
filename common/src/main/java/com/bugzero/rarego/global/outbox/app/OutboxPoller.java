@@ -70,7 +70,7 @@ public class OutboxPoller {
 			// 2. 헤더 직접 추가 (스프링 카프카 표준 헤더 사용)
 			// 카프카 헤더는 바이트 배열을 받으므로 getBytes() 처리가 필요합니다.
 			record.headers().add("__TypeId__", event.getEventType().getBytes(StandardCharsets.UTF_8));
-			record.headers().add("messageId", event.getId().toString().getBytes(StandardCharsets.UTF_8));
+			record.headers().add("messageId", event.generateMessageId().getBytes(StandardCharsets.UTF_8));
 			record.headers().add("aggregateType", event.getAggregateType().getBytes(StandardCharsets.UTF_8));
 
 			// 3. 전송 (StringSerializer가 이 레코드를 정상적으로 처리합니다)
