@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class PaymentReconcileScheduler {
-	PaymentFacade paymentFacade;
+	private final PaymentFacade paymentFacade;
 
 	@Scheduled(cron = "0 0/10 * * * *") // 10분마다 실행
 	public void scheduleRecovery() {
