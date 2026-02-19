@@ -304,7 +304,7 @@ jobs:
             --parameters commands="[
               \"mkdir -p /tmp/k8s\",
               \"echo '$K8S_FILES_BASE64' | base64 -d | tar -xzf - -C /tmp/k8s\",
-              \"kubectl apply -k /tmp/k8s/\",
+              \"kubectl --kubeconfig /etc/kubernetes/admin.conf apply -k /tmp/k8s/\",
               \"rm -rf /tmp/k8s\"
             ]" \
             --output text
