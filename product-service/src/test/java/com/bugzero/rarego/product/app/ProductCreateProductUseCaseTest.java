@@ -23,7 +23,7 @@ import com.bugzero.rarego.product.out.ProductRepository;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
-import com.bugzero.rarego.shared.product.event.AuctionCreateEvent;
+import com.bugzero.rarego.shared.product.event.ProductCreateAuctionEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageConfirmEvent;
 import com.bugzero.rarego.shared.product.type.Category;
 
@@ -77,10 +77,10 @@ class ProductCreateProductUseCaseTest {
 
 		// then
 		// 1. 아웃박스 저장 검증 (핵심)
-		ArgumentCaptor<AuctionCreateEvent> outboxCaptor = ArgumentCaptor.forClass(AuctionCreateEvent.class);
+		ArgumentCaptor<ProductCreateAuctionEvent> outboxCaptor = ArgumentCaptor.forClass(ProductCreateAuctionEvent.class);
 		verify(outboxUseCase).saveOutbox(outboxCaptor.capture());
 
-		AuctionCreateEvent savedEvent = outboxCaptor.getValue();
+		ProductCreateAuctionEvent savedEvent = outboxCaptor.getValue();
 		assertThat(savedEvent.productId()).isEqualTo(1L);
 		assertThat(savedEvent.publicId()).isEqualTo(publicId);
 
