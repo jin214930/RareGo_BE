@@ -23,6 +23,10 @@ import org.springframework.kafka.support.converter.RecordMessageConverter;
 import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
 import org.springframework.kafka.support.mapping.Jackson2JavaTypeMapper;
 
+import com.bugzero.rarego.shared.payment.event.AuctionPaymentCompletedEvent;
+import com.bugzero.rarego.shared.payment.event.AuctionPaymentExpiringSoonEvent;
+import com.bugzero.rarego.shared.payment.event.PaymentTimeoutEvent;
+import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
 import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
 import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
 import com.bugzero.rarego.shared.product.event.ProductCreateAuctionEvent;
@@ -92,6 +96,12 @@ public class KafkaConfig {
 		mappings.put("ProductDeleteAuctionEvent", ProductDeleteAuctionEvent.class);
 		mappings.put("MemberJoinedEvent", MemberJoinedEvent.class);
 		mappings.put("MemberUpdatedEvent", MemberUpdatedEvent.class);
+
+		// payment
+		mappings.put("AuctionPaymentCompletedEvent", AuctionPaymentCompletedEvent.class);
+		mappings.put("AuctionPaymentExpiringSoonEvent", AuctionPaymentExpiringSoonEvent.class);
+		mappings.put("SettlementFinishedEvent", SettlementFinishedEvent.class);
+		mappings.put("PaymentTimeoutEvent", PaymentTimeoutEvent.class);
 
 		typeMapper.setIdClassMapping(mappings);
 		converter.setTypeMapper(typeMapper);
