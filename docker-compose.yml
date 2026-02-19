@@ -64,7 +64,7 @@ services:
 
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-rarego}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       FRONT_URL: ${FRONT_URL:-http://localhost:3000}
     depends_on:
@@ -94,7 +94,7 @@ services:
 
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-rarego}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       SPRING_ELASTICSEARCH_URIS: ${ELASTICSEARCH_URIS:-http://elasticsearch:9200}
       FRONT_URL: ${FRONT_URL:-http://localhost:3000}
@@ -125,7 +125,7 @@ services:
 
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-rarego}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       FRONT_URL: ${FRONT_URL:-http://localhost:3000}
     depends_on:
@@ -155,7 +155,7 @@ services:
 
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-rarego}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       FRONT_URL: ${FRONT_URL:-http://localhost:3000}
     depends_on:
@@ -187,7 +187,7 @@ services:
 
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-rarego}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       SPRING_ELASTICSEARCH_URIS: ${ELASTICSEARCH_URIS:-http://elasticsearch:9200}
       FRONT_URL: ${FRONT_URL:-http://localhost:3000}
@@ -220,7 +220,7 @@ services:
       # Infra endpoints
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-rarego}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
 
       # Social Login (OAuth2)
@@ -242,7 +242,16 @@ services:
     container_name: rarego-redis
     ports:
       - "${REDIS_PORT:-6379}:6379"
-    command: [ "redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-rarego}" ]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    # 쉘(sh)을 이용해 REDIS_PASSWORD 값이 있을 때만 --requirepass 옵션을 붙여서 실행
+    command: >
+      /bin/sh -c '
+      if [ -n "$REDIS_PASSWORD" ]; then
+        redis-server --appendonly yes --requirepass "$REDIS_PASSWORD";
+      else
+        redis-server --appendonly yes;
+      fi'
     volumes:
       - redis_data:/data
     restart: always
