@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.global.outbox.domain.OutboxEvent;
 import com.bugzero.rarego.global.outbox.domain.OutboxStatus;
-import com.bugzero.rarego.global.outbox.repository.OutboxEventRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OutboxPoller {
 
-	private final OutboxEventRepository outboxEventRepository;
+	private final OutboxUseCase outboxUseCase;
 	private final KafkaTemplate<String, Object> kafkaTemplate;
 
 	@Value("${outbox.poller.batch-size:100}") // 각 모듈에 적합하게 설정
@@ -37,7 +36,7 @@ public class OutboxPoller {
 	@Scheduled(fixedDelayString = "${outbox.poller.interval-ms:10000}") // 각 모듈에 적합하게 설정
 	@Transactional
 	public void pollAndPublish() {
-		List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatusOrderByCreatedAt(
+		List<OutboxEvent> pendingEvents = outboxUseCase.findByStatusOrderByCreatedAt(
 			OutboxStatus.PENDING,
 			PageRequest.of(0, batchSize)
 		);
@@ -86,12 +85,32 @@ public class OutboxPoller {
 	}
 
 	@Scheduled(cron = "${outbox.cleanup.cron:0 0 3 * * *}")
-	@Transactional
 	public void cleanupOldEvents() {
 		LocalDateTime threshold = LocalDateTime.now().minusDays(7);
-		int deletedCount = outboxEventRepository.deleteSentEventsBefore(threshold);
-		if (deletedCount > 0) {
-			log.info("전송완료된 아웃박스 데이터가 {} 개 삭제되었습니다.", deletedCount);
+		int batchSize = 100; // 소규모 배치 (인박스와 동일)
+		long totalDeleted = 0;
+
+		log.info("[OutboxCleanup] {} 이전의 전송 완료된 데이터 정리를 시작합니다.", threshold);
+
+		// 최대 50번 시도 (총 5,000건) - 무한 루프 방지
+		for (int i = 0; i < 50; i++) {
+			try {
+				int deletedCount = outboxUseCase.deleteSentEventsBatch(threshold, batchSize);
+				totalDeleted += deletedCount;
+
+				if (deletedCount < batchSize) {
+					break; // 더 이상 지울 데이터가 없음
+				}
+
+				Thread.sleep(50); // DB 숨 고르기
+
+			} catch (Exception e) {
+				log.error("[OutboxCleanup] {}번째 배치 처리 중 오류 발생. 다음 배치를 계속합니다.", i + 1, e);
+			}
+		}
+
+		if (totalDeleted > 0) {
+			log.info("[OutboxCleanup] 정리 완료. 총 {}건 삭제되었습니다.", totalDeleted);
 		}
 	}
 

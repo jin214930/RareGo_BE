@@ -2,6 +2,10 @@ package com.bugzero.rarego.global.outbox.app;
 
 import static com.bugzero.rarego.global.response.ErrorType.*;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.kafka.KafkaTopics;
 import com.bugzero.rarego.global.outbox.domain.OutboxEvent;
+import com.bugzero.rarego.global.outbox.domain.OutboxStatus;
 import com.bugzero.rarego.global.outbox.repository.OutboxEventRepository;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
@@ -102,5 +107,14 @@ public class OutboxUseCase {
 
 	public String generateId(Long productId, Long auctionId) {
 		return productId + "_" + auctionId;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public int deleteSentEventsBatch(LocalDateTime threshold, int batchSize) {
+		return outboxEventRepository.deleteSentEventsBatch(threshold, batchSize);
+	}
+
+	public List<OutboxEvent> findByStatusOrderByCreatedAt(OutboxStatus status, PageRequest pageRequest) {
+		return outboxEventRepository.findByStatusOrderByCreatedAt(status, pageRequest);
 	}
 }
