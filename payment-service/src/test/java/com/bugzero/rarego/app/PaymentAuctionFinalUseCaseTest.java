@@ -22,8 +22,8 @@ import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.PaymentTransaction;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.Wallet;
-import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.AuctionFinalPaymentRequestDto;
 import com.bugzero.rarego.in.dto.AuctionFinalPaymentResponseDto;
@@ -56,7 +56,7 @@ class PaymentAuctionFinalUseCaseTest {
 	private PaymentSupport paymentSupport;
 
 	@Mock
-	private EventPublisher eventPublisher;
+	private OutboxUseCase outboxUseCase;
 
 	@BeforeEach
 	void setUp() {
@@ -151,7 +151,7 @@ class PaymentAuctionFinalUseCaseTest {
 		verify(transactionRepository, times(2)).save(any(PaymentTransaction.class)); // 거래내역 2건
 		verify(auctionOrderApiClient).completeOrder(auctionId); // 주문 완료 요청
 		verify(settlementRepository).save(any(Settlement.class)); // 정산 정보 저장 (NEW)
-		verify(eventPublisher).publish(any(AuctionPaymentCompletedEvent.class)); // 이벤트 발행 (NEW)
+		verify(outboxUseCase).saveOutbox(any(AuctionPaymentCompletedEvent.class));
 	}
 
 	@Test
