@@ -7,7 +7,7 @@ server:
 
 spring:
     application:
-        name: rarego
+        name: product-service
     config:
         import: optional:file:.env[.properties]
     profiles:

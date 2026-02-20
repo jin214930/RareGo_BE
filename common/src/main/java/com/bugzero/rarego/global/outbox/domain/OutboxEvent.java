@@ -81,4 +81,8 @@ public class OutboxEvent extends BaseIdAndTime {
 		this.status = OutboxStatus.PROCESSING;
 	}
 
+	public String generateMessageId() {
+		return String.format("%s-%d", this.aggregateType, this.getId());
+	}
+
 }

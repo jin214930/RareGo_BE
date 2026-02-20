@@ -10,11 +10,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 import com.bugzero.rarego.app.MemberSupport;
 import com.bugzero.rarego.app.MemberWithdrawMemberUseCase;
 import com.bugzero.rarego.domain.Member;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.out.MemberRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
@@ -29,7 +29,7 @@ class MemberWithdrawMemberUseCaseTest {
 	private MemberRepository memberRepository;
 
 	@Mock
-	private ApplicationEventPublisher eventPublisher;
+	private OutboxUseCase outboxUseCase;
 
 	@InjectMocks
 	private MemberWithdrawMemberUseCase memberWithdrawMemberUseCase;
@@ -45,7 +45,7 @@ class MemberWithdrawMemberUseCaseTest {
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_NOT_FOUND);
 
-		verifyNoInteractions(memberRepository, eventPublisher);
+		verifyNoInteractions(memberRepository, outboxUseCase);
 	}
 
 	@Test
@@ -65,7 +65,7 @@ class MemberWithdrawMemberUseCaseTest {
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_MEMBER_DELETED);
 
-		verifyNoInteractions(memberRepository, eventPublisher);
+		verifyNoInteractions(memberRepository, outboxUseCase);
 	}
 
 	@Test
@@ -87,7 +87,7 @@ class MemberWithdrawMemberUseCaseTest {
 		verify(memberRepository).saveAndFlush(member);
 
 		ArgumentCaptor<MemberUpdatedEvent> captor = ArgumentCaptor.forClass(MemberUpdatedEvent.class);
-		verify(eventPublisher).publishEvent(captor.capture());
+		verify(outboxUseCase).saveOutbox(captor.capture());
 		assertThat(captor.getValue().memberDto().publicId()).isEqualTo("public-id");
 	}
 }

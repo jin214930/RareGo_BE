@@ -13,8 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.bugzero.rarego.domain.Account;
 import com.bugzero.rarego.domain.AuthRole;
 import com.bugzero.rarego.domain.Provider;
+import com.bugzero.rarego.app.RefreshTokenStore;
 import com.bugzero.rarego.out.AccountRepository;
-import com.bugzero.rarego.out.RefreshTokenRepository;
 import com.bugzero.rarego.app.AuthAccessTokenBlacklistUseCase;
 import com.bugzero.rarego.app.AuthSupport;
 import com.bugzero.rarego.app.AuthWithdrawAccountUseCase;
@@ -38,7 +38,7 @@ class AuthWithdrawAccountUseCaseTest {
     private AuthSupport authSupport;
 
     @Mock
-    private RefreshTokenRepository refreshTokenRepository;
+    private RefreshTokenStore refreshTokenStore;
 
     @Mock
     private AuthAccessTokenBlacklistUseCase authAccessTokenBlacklistUseCase;
@@ -64,7 +64,7 @@ class AuthWithdrawAccountUseCaseTest {
                 .isEqualTo(ErrorType.AUTH_UNAUTHORIZED);
 
         verifyNoInteractions(jwtParser, accountRepository, memberApiClient,
-                refreshTokenRepository, authAccessTokenBlacklistUseCase, authSupport);
+                refreshTokenStore, authAccessTokenBlacklistUseCase, authSupport);
     }
 
     @Test
@@ -80,7 +80,7 @@ class AuthWithdrawAccountUseCaseTest {
 
         verify(jwtParser).parsePrincipal(accessToken);
         verifyNoInteractions(accountRepository, memberApiClient,
-                refreshTokenRepository, authAccessTokenBlacklistUseCase, authSupport);
+                refreshTokenStore, authAccessTokenBlacklistUseCase, authSupport);
     }
 
     @Test
@@ -98,7 +98,7 @@ class AuthWithdrawAccountUseCaseTest {
                 .isEqualTo(ErrorType.AUTH_ACCOUNT_NOT_FOUND);
 
         verify(authSupport).findByPublicId(publicId);
-        verifyNoInteractions(memberApiClient, refreshTokenRepository, authAccessTokenBlacklistUseCase);
+        verifyNoInteractions(memberApiClient, refreshTokenStore, authAccessTokenBlacklistUseCase);
     }
 
     @Test
@@ -123,7 +123,7 @@ class AuthWithdrawAccountUseCaseTest {
                 .isEqualTo(ErrorType.AUTH_ACCOUNT_NOT_FOUND);
 
         verify(authSupport).findByPublicId(publicId);
-        verifyNoInteractions(memberApiClient, refreshTokenRepository, authAccessTokenBlacklistUseCase);
+        verifyNoInteractions(memberApiClient, refreshTokenStore, authAccessTokenBlacklistUseCase);
     }
 
     @Test
@@ -149,7 +149,7 @@ class AuthWithdrawAccountUseCaseTest {
 
         assertThat(account.isDeleted()).isTrue();
         verify(memberApiClient).withdraw(publicId);
-        verify(refreshTokenRepository).deleteByMemberPublicId(publicId);
+        verify(refreshTokenStore).revokeAllByPublicId(publicId);
         verify(authAccessTokenBlacklistUseCase).blacklist(accessToken);
     }
 
