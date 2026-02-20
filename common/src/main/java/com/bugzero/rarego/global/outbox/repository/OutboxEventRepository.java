@@ -21,6 +21,6 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
 	);
 
 	@Modifying
-	@Query("DELETE FROM OutboxEvent o WHERE o.status = 'SENT' AND o.sentDate < :before")
-	int deleteSentEventsBefore(@Param("before") LocalDateTime before);
+	@Query(value = "DELETE FROM outbox_event WHERE status = 'SENT' AND sent_date < :threshold LIMIT :batchSize", nativeQuery = true)
+	int deleteSentEventsBatch(@Param("threshold") LocalDateTime threshold, @Param("batchSize") int batchSize);
 }
