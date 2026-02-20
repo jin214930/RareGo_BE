@@ -27,7 +27,7 @@ public class AuctionOutbidMapper implements NotificationMapper<AuctionOutbidEven
 		NotificationMember outbidMember = notificationSupport.findMemberById(event.memberId());
 		NotificationMember bidder = notificationSupport.findMemberById(event.bidderId());
 
-		String message = "%s님이 '%s'의 입찰가를 갱신했습니다. (현재가: %d원)"
+		String message = "%s님이 '%s' 상품의 입찰가를 갱신했습니다. (현재가: %d원)"
 			.formatted(bidder.getNickname(), event.productName(), event.currentPrice());
 
 		Notification notification = Notification.builder()
