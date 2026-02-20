@@ -70,10 +70,6 @@ public class AuctionConsumer {
 	public void onMemberEvent(@Payload MemberJoinedEvent event, @Header("messageId") String messageId) {
 		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup)) return;
 
-		log.info("[Auction] 회원 가입 수신: MemberId={}, messageId={}", event.memberDto().id(), messageId);
-		auctionFacade.syncMember(event.memberDto());
-	@KafkaListener(topics = "member-joined", groupId = GROUP_ID)
-	public void handleMemberJoined(MemberJoinedEvent event) {
 		try {
 			auctionFacade.syncMember(event.memberDto());
 			log.info("[auction] 회원 레플리카 등록 완료 - memberPublicId: {}", event.memberDto().publicId());
@@ -88,15 +84,6 @@ public class AuctionConsumer {
 	public void onMemberEvent(@Payload MemberUpdatedEvent event, @Header("messageId") String messageId) {
 		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup)) return;
 
-		log.info("[Auction] 회원 정보 수정 수신: MemberId={}, messageId={}", event.memberDto().id(), messageId);
-		auctionFacade.syncMember(event.memberDto());
-	}
-
-	@KafkaHandler(isDefault = true)
-	public void defaultHandler(Object object) {
-		log.warn("[Auction] 수신된 이벤트 중 처리할 수 없는 타입입니다: {}", object.getClass().getName());
-	@KafkaListener(topics = "member-updated", groupId = GROUP_ID)
-	public void handleMemberUpdated(MemberUpdatedEvent event) {
 		try {
 			auctionFacade.syncMember(event.memberDto());
 			log.info("[auction] 회원 레플리카 수정 완료 - memberPublicId: {}", event.memberDto().publicId());
@@ -104,5 +91,10 @@ public class AuctionConsumer {
 			log.error("[auction] 회원 레플리카 수정 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
 			throw e;
 		}
+	}
+
+	@KafkaHandler(isDefault = true)
+	public void defaultHandler(Object object) {
+		log.warn("[Auction] 수신된 이벤트 중 처리할 수 없는 타입입니다: {}", object.getClass().getName());
 	}
 }
