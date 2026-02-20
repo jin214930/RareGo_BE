@@ -49,7 +49,7 @@ public class ProductConsumer {
 		}
 	}
 
-	@KafkaListener(topics = "auction-started", groupId = GROUP_ID)
+	@KafkaListener(topics = "auction-management", groupId = GROUP_ID)
 	public void handleAuctionStarted(AuctionStartedEvent event) {
 		try {
 			productSearchService.updateAuctionStatus(
@@ -68,7 +68,7 @@ public class ProductConsumer {
 		}
 	}
 
-	@KafkaListener(topics = "auction-ended", groupId = GROUP_ID)
+	@KafkaListener(topics = "auction-management", groupId = GROUP_ID)
 	public void handleAuctionEnded(AuctionEndedEvent event) {
 		try {
 			if (event.finalPrice() != null) {
@@ -96,7 +96,7 @@ public class ProductConsumer {
 		}
 	}
 
-	@KafkaListener(topics = "auction-relisted", groupId = GROUP_ID)
+	@KafkaListener(topics = "auction-management", groupId = GROUP_ID)
 	public void handleAuctionRelisted(AuctionRelistedEvent event) {
 		try {
 			// 기존 상품 데이터 조회 (이미지 포함)

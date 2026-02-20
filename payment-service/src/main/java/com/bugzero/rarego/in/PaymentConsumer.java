@@ -44,7 +44,7 @@ public class PaymentConsumer {
 	}
 
 	// 경매 종료 이벤트 수신 → 보증금 반환 처리
-	@KafkaListener(topics = "auction-ended", groupId = GROUP_ID)
+	@KafkaListener(topics = "auction-management", groupId = GROUP_ID)
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void handleAuctionEnded(AuctionEndedEvent event) {
 		try {
