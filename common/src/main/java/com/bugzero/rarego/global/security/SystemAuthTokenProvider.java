@@ -7,11 +7,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SystemAuthTokenProvider {
-	private final int accessTokenExpirationSeconds;
+	private final Long accessTokenExpirationSeconds;
 	private final JwtProvider jwtProvider;
 
 	public SystemAuthTokenProvider(
-		@Value("${jwt.access-token-expire-seconds:3600}") int accessTokenExpirationSeconds,
+		@Value("${jwt.access-token-expire-seconds:3600}") Long accessTokenExpirationSeconds,
 		JwtProvider jwtProvider) {
 		this.accessTokenExpirationSeconds = accessTokenExpirationSeconds;
 		this.jwtProvider = jwtProvider;

@@ -2,14 +2,14 @@ package com.bugzero.rarego.app;
 
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+import com.bugzero.rarego.config.JwtProperties;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.security.JwtProvider;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -18,32 +18,16 @@ public class AuthIssueTokenUseCase {
 	private static final String TOKEN_TYPE_REFRESH = "REFRESH";
 
 	private final JwtProvider jwtProvider;
+	private final JwtProperties jwtProperties;
 
-	@Value("${jwt.access-token-expire-seconds}")
-	private int accessTokenExpireSeconds;
-
-	@Value("${jwt.refresh-token-expire-seconds}")
-	private int refreshTokenExpireSeconds;
-
-	@PostConstruct
-	void validate() {
-		if (accessTokenExpireSeconds <= 0) {
-			throw new CustomException(ErrorType.JWT_EXPIRE_SECONDS_INVALID);
-		}
-		if (refreshTokenExpireSeconds <= 0) {
-			throw new CustomException(ErrorType.JWT_EXPIRE_SECONDS_INVALID);
-		}
+	private Long getTokenExpireSeconds(boolean isAccessToken) {
+		return isAccessToken ? jwtProperties.getAccessTokenExpireSeconds() : jwtProperties.getRefreshTokenExpireSeconds();
 	}
-
-	private int getTokenExpireSeconds(boolean isAccessToken) {
-		return isAccessToken ? accessTokenExpireSeconds : refreshTokenExpireSeconds;
-	}
-
 
 	public String issueToken(String memberPublicId, String role, boolean isAccessToken) {
 		validateDto(memberPublicId, role, isAccessToken);
 
-		int expireSeconds = getTokenExpireSeconds(isAccessToken);
+		Long expireSeconds = getTokenExpireSeconds(isAccessToken);
 
 		// 내용 분기
 		Map<String, Object> claims = isAccessToken
