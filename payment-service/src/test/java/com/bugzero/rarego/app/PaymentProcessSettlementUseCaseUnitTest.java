@@ -19,6 +19,7 @@ import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.global.event.EventPublisher;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
 
@@ -36,6 +37,9 @@ class PaymentProcessSettlementUseCaseUnitTest {
 
 	@Mock
 	private EventPublisher eventPublisher;
+
+	@Mock
+	private OutboxUseCase outboxUseCase;
 
 	@Test
 	@DisplayName("정상 흐름: 2건 모두 성공 시 - 판매자 처리 2회 후 결과가 담긴 이벤트 발행")
@@ -63,6 +67,7 @@ class PaymentProcessSettlementUseCaseUnitTest {
 		// [검증 수정] ArgumentCaptor를 사용하여 이벤트 내부 데이터 검증
 		ArgumentCaptor<SettlementFinishedEvent> eventCaptor = ArgumentCaptor.forClass(SettlementFinishedEvent.class);
 		verify(eventPublisher).publish(eventCaptor.capture());
+		verify(outboxUseCase).saveOutbox(any(SettlementFinishedEvent.class));
 
 		SettlementFinishedEvent event = eventCaptor.getValue();
 		assertThat(event.settlements()).hasSize(2); // DTO가 2개 담겼는지 확인
@@ -92,6 +97,7 @@ class PaymentProcessSettlementUseCaseUnitTest {
 		verify(eventPublisher).publish(eventCaptor.capture());
 
 		assertThat(eventCaptor.getValue().settlements()).isEmpty();
+		then(outboxUseCase).shouldHaveNoInteractions();
 	}
 
 	@Test
@@ -119,6 +125,7 @@ class PaymentProcessSettlementUseCaseUnitTest {
 		// 이벤트 검증: 성공한 1건만 들어있어야 함
 		ArgumentCaptor<SettlementFinishedEvent> eventCaptor = ArgumentCaptor.forClass(SettlementFinishedEvent.class);
 		verify(eventPublisher).publish(eventCaptor.capture());
+		verify(outboxUseCase).saveOutbox(any(SettlementFinishedEvent.class));
 
 		assertThat(eventCaptor.getValue().settlements()).hasSize(1);
 		assertThat(eventCaptor.getValue().settlements().get(0).id()).isEqualTo(1L);
@@ -141,6 +148,7 @@ class PaymentProcessSettlementUseCaseUnitTest {
 		verify(eventPublisher).publish(eventCaptor.capture());
 
 		assertThat(eventCaptor.getValue().settlements()).isEmpty();
+		then(outboxUseCase).shouldHaveNoInteractions();
 	}
 
 	// [헬퍼 메서드 수정] DTO 변환 과정에서 호출되는 메서드들을 Stubbing 해야 함
