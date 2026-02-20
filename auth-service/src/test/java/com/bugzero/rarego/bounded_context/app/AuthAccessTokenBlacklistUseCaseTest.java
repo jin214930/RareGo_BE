@@ -13,15 +13,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.bugzero.rarego.domain.AccessTokenBlacklist;
-import com.bugzero.rarego.out.AccessTokenBlacklistRepository;
+import com.bugzero.rarego.app.AccessTokenBlacklistStore;
 import com.bugzero.rarego.app.AuthAccessTokenBlacklistUseCase;
 import com.bugzero.rarego.global.security.JwtParser;
 
 @ExtendWith(MockitoExtension.class)
 class AuthAccessTokenBlacklistUseCaseTest {
 	@Mock
-	private AccessTokenBlacklistRepository accessTokenBlacklistRepository;
+	private AccessTokenBlacklistStore accessTokenBlacklistStore;
 
 	@Mock
 	private JwtParser jwtParser;
@@ -39,7 +38,7 @@ class AuthAccessTokenBlacklistUseCaseTest {
 		authAccessTokenBlacklistUseCase.blacklist(accessToken);
 
 		// then
-		verifyNoInteractions(jwtParser, accessTokenBlacklistRepository);
+		verifyNoInteractions(jwtParser, accessTokenBlacklistStore);
 	}
 
 	@Test
@@ -53,7 +52,7 @@ class AuthAccessTokenBlacklistUseCaseTest {
 		authAccessTokenBlacklistUseCase.blacklist(accessToken);
 
 		// then
-		verifyNoInteractions(accessTokenBlacklistRepository);
+		verifyNoInteractions(accessTokenBlacklistStore);
 	}
 
 	@Test
@@ -63,15 +62,14 @@ class AuthAccessTokenBlacklistUseCaseTest {
 		String accessToken = "access-token";
 		LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
 		when(jwtParser.expiresAt(accessToken)).thenReturn(expiresAt);
-		when(accessTokenBlacklistRepository.existsByAccessTokenAndExpiresAtAfter(eq(accessToken), any(LocalDateTime.class)))
-			.thenReturn(true);
+		when(accessTokenBlacklistStore.exists(accessToken)).thenReturn(true);
 
 		// when
 		authAccessTokenBlacklistUseCase.blacklist(accessToken);
 
 		// then
-		verify(accessTokenBlacklistRepository).existsByAccessTokenAndExpiresAtAfter(eq(accessToken), any(LocalDateTime.class));
-		verify(accessTokenBlacklistRepository, never()).save(any(AccessTokenBlacklist.class));
+		verify(accessTokenBlacklistStore).exists(accessToken);
+		verify(accessTokenBlacklistStore, never()).save(anyString(), anyLong());
 	}
 
 	@Test
@@ -81,47 +79,29 @@ class AuthAccessTokenBlacklistUseCaseTest {
 		String accessToken = "access-token";
 		LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
 		when(jwtParser.expiresAt(accessToken)).thenReturn(expiresAt);
-		when(accessTokenBlacklistRepository.existsByAccessTokenAndExpiresAtAfter(eq(accessToken), any(LocalDateTime.class)))
-			.thenReturn(false);
+		when(accessTokenBlacklistStore.exists(accessToken)).thenReturn(false);
 
 		// when
 		authAccessTokenBlacklistUseCase.blacklist(accessToken);
 
 		// then
-		ArgumentCaptor<AccessTokenBlacklist> captor = ArgumentCaptor.forClass(AccessTokenBlacklist.class);
-		verify(accessTokenBlacklistRepository).save(captor.capture());
-		AccessTokenBlacklist saved = captor.getValue();
-		assertThat(saved.getAccessToken()).isEqualTo(accessToken);
-		assertThat(saved.getExpiresAt()).isEqualTo(expiresAt);
+		ArgumentCaptor<Long> ttlCaptor = ArgumentCaptor.forClass(Long.class);
+		verify(accessTokenBlacklistStore).save(eq(accessToken), ttlCaptor.capture());
+		assertThat(ttlCaptor.getValue()).isPositive();
 	}
 
 	@Test
 	@DisplayName("블랙리스트 조회는 저장소 결과를 반환한다.")
-	void isBlacklistedReturnsRepositoryResult() {
+	void isBlacklistedReturnsStoreResult() {
 		// given
 		String accessToken = "access-token";
-		when(accessTokenBlacklistRepository.existsByAccessTokenAndExpiresAtAfter(eq(accessToken), any(LocalDateTime.class)))
-			.thenReturn(true);
+		when(accessTokenBlacklistStore.exists(accessToken)).thenReturn(true);
 
 		// when
 		boolean result = authAccessTokenBlacklistUseCase.isBlacklisted(accessToken);
 
 		// then
 		assertThat(result).isTrue();
-		verify(accessTokenBlacklistRepository).existsByAccessTokenAndExpiresAtAfter(eq(accessToken), any(LocalDateTime.class));
-	}
-
-	@Test
-	@DisplayName("만료된 블랙리스트 삭제는 삭제 개수를 반환한다.")
-	void deleteExpiredReturnsDeleteCount() {
-		// given
-		when(accessTokenBlacklistRepository.deleteByExpiresAtBefore(any(LocalDateTime.class))).thenReturn(3L);
-
-		// when
-		long result = authAccessTokenBlacklistUseCase.deleteExpired();
-
-		// then
-		assertThat(result).isEqualTo(3L);
-		verify(accessTokenBlacklistRepository).deleteByExpiresAtBefore(any(LocalDateTime.class));
+		verify(accessTokenBlacklistStore).exists(accessToken);
 	}
 }

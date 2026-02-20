@@ -1,12 +1,10 @@
 package com.bugzero.rarego.app;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.bugzero.rarego.domain.AccessTokenBlacklist;
-import com.bugzero.rarego.out.AccessTokenBlacklistRepository;
 import com.bugzero.rarego.global.security.JwtParser;
 
 import lombok.RequiredArgsConstructor;
@@ -14,20 +12,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AuthAccessTokenBlacklistUseCase {
-	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
+	private final AccessTokenBlacklistStore accessTokenBlacklistStore;
 	private final JwtParser jwtParser;
 
-	// 토큰 원문 노출 방지용 처음 10글자 + 마지막 6글자 마스킹
-	private static String mask(String jwt) {
-		if (jwt == null)
-			return "null";
-		int len = jwt.length();
-		if (len <= 20)
-			return "***";
-		return jwt.substring(0, 10) + "..." + jwt.substring(len - 6);
-	}
-
-	@Transactional
 	public void blacklist(String accessToken) {
 		if (accessToken == null || accessToken.isBlank()) {
 			return;
@@ -36,16 +23,21 @@ public class AuthAccessTokenBlacklistUseCase {
 		// 이미 만료됐다면 블랙리스트 스킵
 		LocalDateTime expiresAt = jwtParser.expiresAt(accessToken);
 		LocalDateTime now = LocalDateTime.now();
-		if (expiresAt == null || expiresAt.isBefore(now)) {
+		if (expiresAt == null || !expiresAt.isAfter(now)) {
 			return;
 		}
 
 		// 이미 블랙리스트에 존재하면 스킵
-		if (accessTokenBlacklistRepository.existsByAccessTokenAndExpiresAtAfter(accessToken, now)) {
+		if (accessTokenBlacklistStore.exists(accessToken)) {
 			return;
 		}
 
-		accessTokenBlacklistRepository.save(new AccessTokenBlacklist(accessToken, expiresAt));
+		Long ttlSeconds = Duration.between(now, expiresAt).getSeconds();
+		if (ttlSeconds <= 0) {
+			return;
+		}
+
+		accessTokenBlacklistStore.save(accessToken, ttlSeconds);
 	}
 
 	// 블랙리스트 처리 됐는지 확인
@@ -53,14 +45,6 @@ public class AuthAccessTokenBlacklistUseCase {
 		if (accessToken == null || accessToken.isBlank()) {
 			return false;
 		}
-		LocalDateTime now = LocalDateTime.now();
-		return accessTokenBlacklistRepository.existsByAccessTokenAndExpiresAtAfter(accessToken, now);
-	}
-
-	// 지금보다 이전에 만료된 블랙리스트 일괄 삭제
-	// 0개면 0을 필수적으로 리턴하므로 long 사용
-	@Transactional
-	public long deleteExpired() {
-		return accessTokenBlacklistRepository.deleteByExpiresAtBefore(LocalDateTime.now());
+		return accessTokenBlacklistStore.exists(accessToken);
 	}
 }

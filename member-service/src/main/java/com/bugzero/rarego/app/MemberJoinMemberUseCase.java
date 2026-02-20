@@ -3,13 +3,12 @@ package com.bugzero.rarego.app;
 import java.security.SecureRandom;
 import java.util.UUID;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.bugzero.rarego.domain.Member;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.out.MemberRepository;
-import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
@@ -31,7 +30,7 @@ public class MemberJoinMemberUseCase {
 		"사자", "다람쥐", "부엉이", "거북이", "햄스터", "수달", "늑대", "치타"
 	};
 	private final MemberRepository memberRepository;
-	private final ApplicationEventPublisher eventPublisher;
+	private final OutboxUseCase outboxUseCase;
 
 	// 랜덤으로 닉네임 제공
 	public static String randomUserNickname() {
@@ -78,7 +77,8 @@ public class MemberJoinMemberUseCase {
 			Member saved = memberRepository.save(member);
 			MemberJoinResponseDto responseDto = new MemberJoinResponseDto(saved.getNickname(), saved.getPublicId());
 			MemberJoinedEvent event = new MemberJoinedEvent(MemberDto.from(saved));
-			eventPublisher.publishEvent(event);
+
+			outboxUseCase.saveOutbox(event);
 			return responseDto;
 		} catch (DataIntegrityViolationException e) {
 			Member existing = memberRepository.findByEmail(email).orElseThrow(() -> e);

@@ -3,6 +3,7 @@ package com.bugzero.rarego.bounded_context.member.app;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.*;
 
 import java.util.Set;
 
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 import com.bugzero.rarego.app.MemberSupport;
 import com.bugzero.rarego.app.MemberUpdateMemberUseCase;
@@ -20,6 +20,7 @@ import com.bugzero.rarego.domain.Member;
 import com.bugzero.rarego.domain.MemberClearField;
 import com.bugzero.rarego.domain.MemberUpdateRequestDto;
 import com.bugzero.rarego.domain.MemberUpdateResponseDto;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.out.MemberRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
@@ -34,7 +35,7 @@ class MemberUpdateMemberUseCaseTest {
 	private MemberRepository memberRepository;
 
 	@Mock
-	private ApplicationEventPublisher eventPublisher;
+	private OutboxUseCase outboxUseCase;
 
 	@InjectMocks
 	private MemberUpdateMemberUseCase memberUpdateMemberUseCase;
@@ -65,6 +66,7 @@ class MemberUpdateMemberUseCaseTest {
 		assertThat(response.address()).isEqualTo("new address");
 		assertThat(response.addressDetail()).isEqualTo("detail");
 		verify(memberRepository).saveAndFlush(member);
+		verify(outboxUseCase).saveOutbox(any());
 	}
 
 	@Test
@@ -94,6 +96,7 @@ class MemberUpdateMemberUseCaseTest {
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_NICKNAME_ALREADY_EXISTS);
 		verify(memberRepository, never()).saveAndFlush(any(Member.class));
+		verifyNoInteractions(outboxUseCase);
 	}
 
 	@Test
@@ -118,6 +121,7 @@ class MemberUpdateMemberUseCaseTest {
 		// then
 		assertThat(response.intro()).isNull();
 		verify(memberRepository).saveAndFlush(member);
+		verify(outboxUseCase).saveOutbox(any());
 	}
 
 	@Test
@@ -149,6 +153,7 @@ class MemberUpdateMemberUseCaseTest {
 			.extracting("errorType")
 			.isEqualTo(ErrorType.MEMBER_UPDATED_FAILED);
 		verify(memberRepository, never()).saveAndFlush(any(Member.class));
+		verifyNoInteractions(outboxUseCase);
 	}
 
 	private Member baseMember() {
