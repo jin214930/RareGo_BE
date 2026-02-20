@@ -40,7 +40,6 @@ class NotificationCreateNotificationUseCaseTest {
 	@BeforeEach
 	void setUp() {
 		List<NotificationMapper<?>> mappers = List.of(notificationMapper);
-		// ✅ eventPublisher 주입
 		useCase = new NotificationCreateNotificationUseCase(notificationRepository, mappers, eventPublisher);
 	}
 
@@ -52,16 +51,13 @@ class NotificationCreateNotificationUseCaseTest {
 		Notification notification = mock(Notification.class);
 		NotificationMember member = mock(NotificationMember.class);
 
-		// 1. Mapper 동작 설정
 		given(notificationMapper.supports(event)).willReturn(true);
 		given(notificationMapper.map(event)).willReturn(List.of(notification));
 
-		// 2. DTO 변환 및 이벤트 발행을 위한 Notification 내부 데이터 Stubbing
-		// (NotificationResponseDto.from() 호출 시 NPE 방지)
 		given(notification.getId()).willReturn(100L);
 		given(notification.getMember()).willReturn(member);
 		given(member.getPublicId()).willReturn("member-uuid");
-		given(notification.getType()).willReturn(NotificationType.AUCTION_WON); // Enum 타입 필요
+		given(notification.getType()).willReturn(NotificationType.AUCTION_WON);
 		given(notification.getMessage()).willReturn("메시지");
 		given(notification.getReferenceId()).willReturn(50L);
 		given(notification.getCreatedAt()).willReturn(LocalDateTime.now());
@@ -71,10 +67,7 @@ class NotificationCreateNotificationUseCaseTest {
 		useCase.createNotification(event);
 
 		// then
-		// 1. 저장 검증 (saveAndFlush)
-		then(notificationRepository).should(times(1)).saveAndFlush(notification);
-
-		// 2. 이벤트 발행 검증 (핵심)
+		then(notificationRepository).should(times(1)).save(notification);  // saveAndFlush → save
 		then(eventPublisher).should(times(1)).publishEvent(any(NotificationCreatedEvent.class));
 	}
 
@@ -88,25 +81,19 @@ class NotificationCreateNotificationUseCaseTest {
 
 		given(notificationMapper.supports(event)).willReturn(true);
 		given(notificationMapper.map(event)).willReturn(List.of(notification));
-
-		// 로그 출력을 위한 Member Stubbing
 		given(notification.getMember()).willReturn(member);
 
-		// 중복 예외 발생 설정
 		DataIntegrityViolationException duplicateException =
 			new DataIntegrityViolationException("Duplicate entry '1-OUTBID' for key 'uk_notification_dedup'");
 
 		willThrow(duplicateException)
-			.given(notificationRepository).saveAndFlush(notification);
+			.given(notificationRepository).save(notification);  // saveAndFlush → save
 
 		// when
 		useCase.createNotification(event);
 
 		// then
-		// 1. 저장은 시도했으나 예외를 삼킴 (성공)
-		then(notificationRepository).should(times(1)).saveAndFlush(notification);
-
-		// 2. [중요] 중복이므로 이벤트는 절대 발행되면 안 됨
+		then(notificationRepository).should(times(1)).save(notification);  // saveAndFlush → save
 		then(eventPublisher).shouldHaveNoInteractions();
 	}
 
@@ -120,18 +107,16 @@ class NotificationCreateNotificationUseCaseTest {
 		given(notificationMapper.supports(event)).willReturn(true);
 		given(notificationMapper.map(event)).willReturn(List.of(notification));
 
-		// 중복이 아닌 다른 예외
 		DataIntegrityViolationException otherException =
 			new DataIntegrityViolationException("Column 'message' cannot be null");
 
 		willThrow(otherException)
-			.given(notificationRepository).saveAndFlush(notification);
+			.given(notificationRepository).save(notification);  // saveAndFlush → save
 
 		// when & then
 		assertThatThrownBy(() -> useCase.createNotification(event))
 			.isInstanceOf(DataIntegrityViolationException.class);
 
-		// 이벤트 발행 없음 검증
 		then(eventPublisher).shouldHaveNoInteractions();
 	}
 
