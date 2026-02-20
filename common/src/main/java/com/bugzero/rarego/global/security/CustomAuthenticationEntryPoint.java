@@ -44,8 +44,14 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
 			authException.getMessage(),
 			cause == null ? "null" : cause.getClass().getName());
 
+		ErrorType errorType = ErrorType.AUTH_UNAUTHORIZED;
+		if (authException instanceof JwtAuthenticationException jwtException
+			&& jwtException.getErrorType() != null) {
+			errorType = jwtException.getErrorType();
+		}
+
 		// 인증 오류
-		ExceptionResponseDto body = ExceptionResponseDto.from(ErrorType.AUTH_UNAUTHORIZED);
+		ExceptionResponseDto body = ExceptionResponseDto.from(errorType);
 		response.setStatus(body.status());
 		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 		objectMapper.writeValue(response.getOutputStream(), body);
