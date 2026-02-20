@@ -11,7 +11,10 @@ public enum KafkaTopics {
 	MEMBER_JOINED("member-joined"),
 
 	// Auction events
-	AUCTION_MANAGEMENT("auction-management"),
+	AUCTION_ENDED("auction-ended"),
+	AUCTION_STARTED("auction-started"),
+	AUCTION_OUTBID("auction-outbid"),
+	AUCTION_RELISTED("auction-relisted"),
 
 	// Payment events
 	PAYMENT_SETTLEMENT_FINISHED("payment-settlement-finished"),

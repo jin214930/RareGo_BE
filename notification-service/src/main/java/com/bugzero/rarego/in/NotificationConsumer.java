@@ -53,7 +53,7 @@ public class NotificationConsumer {
 	/**
 	 * 낙찰 성공
 	 */
-	@KafkaListener(topics = "auction-management", groupId = GROUP_ID)
+	@KafkaListener(topics = "auction-ended", groupId = GROUP_ID)
 	public void consumeAuctionEnded(AuctionEndedEvent event) {
 		log.info(">> [Kafka] 경매 낙찰 이벤트 수신: auctionId={}", event.auctionId());
 		notificationFacade.createNotification(event);
@@ -62,7 +62,7 @@ public class NotificationConsumer {
 	/**
 	 * 입찰가 추월
 	 */
-	@KafkaListener(topics = "auction-management", groupId = GROUP_ID)
+	@KafkaListener(topics = "auction-outbid", groupId = GROUP_ID)
 	public void consumeOutbid(AuctionOutbidEvent event) {
 		log.info(">> [Kafka] 입찰가 추월 이벤트 수신: auctionId={}", event.auctionId());
 		notificationFacade.createNotification(event);
@@ -71,7 +71,7 @@ public class NotificationConsumer {
 	/**
 	 * 관심 경매 시작
 	 */
-	@KafkaListener(topics = "auction-management", groupId = GROUP_ID)
+	@KafkaListener(topics = "auction-started", groupId = GROUP_ID)
 	public void consumeAuctionStarted(AuctionStartedEvent event) {
 		log.info(">> [Kafka] 관심 경매 시작 이벤트 수신: auctionId={}", event.auctionId());
 		notificationFacade.createNotification(event);

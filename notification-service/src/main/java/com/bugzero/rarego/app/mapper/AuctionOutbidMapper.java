@@ -24,14 +24,15 @@ public class AuctionOutbidMapper implements NotificationMapper<AuctionOutbidEven
 
 	@Override
 	public List<Notification> map(AuctionOutbidEvent event) {
-		String message = "누군가 '%s'의 입찰가를 갱신했습니다. (현재가: %d원)"
-			.formatted(event.productName(), event.currentPrice());
+		NotificationMember outbidMember = notificationSupport.findMemberById(event.memberId());
+		NotificationMember bidder = notificationSupport.findMemberById(event.bidderId());
 
-		NotificationMember member = notificationSupport.findMemberById(event.memberId());
+		String message = "%s님이 '%s'의 입찰가를 갱신했습니다. (현재가: %d원)"
+			.formatted(bidder.getNickname(), event.productName(), event.currentPrice());
 
 		Notification notification = Notification.builder()
 			.message(message)
-			.member(member)
+			.member(outbidMember)
 			.type(NotificationType.AUCTION_OUTBID)
 			.referenceId(event.auctionId())
 			.build();
