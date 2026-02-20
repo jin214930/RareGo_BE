@@ -14,6 +14,7 @@ import com.bugzero.rarego.domain.event.AuctionBidCreatedEvent;
 import com.bugzero.rarego.domain.event.AuctionUpdatedEvent;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.lock.DistributedLock;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.BidResponseDto;
 import com.bugzero.rarego.out.BidRepository;
@@ -33,6 +34,7 @@ public class AuctionCreateBidUseCase {
 	private final AuctionSupport support;
 	private final BidRepository bidRepository;
 	private final ProductSearchClient productSearchClient;
+	private final OutboxUseCase outboxUseCase;
 	private final ApplicationEventPublisher eventPublisher;
 	private final AuctionMetrics auctionMetrics;
 
@@ -41,13 +43,13 @@ public class AuctionCreateBidUseCase {
 		// 입찰 시도 메트릭 기록
 		auctionMetrics.incrementBidTotal();
 
-		// 1. 회원 조회
+		// 회원 조회
 		AuctionMember bidder = support.getPublicMember(memberPublicId);
 
-		// 2. 경매 조회 (비관적 락)
+		// 경매 조회 (비관적 락)
 		Auction auction = support.findAuctionById(auctionId);
 
-		// 3. 유효성 검증
+		// 유효성 검증
 		Optional<Bid> lastBid = validateBid(auction, bidder, bidAmount);
 
 		// 마감 임박 연장 로직
@@ -56,7 +58,7 @@ public class AuctionCreateBidUseCase {
 
 		boolean isExtended = auction.extendEndTimeIfClose(now);
 
-		// 5. 입찰 정보 저장 (bidder.getId() 사용)
+		// 입찰 정보 저장 (bidder.getId() 사용)
 		Bid bid = Bid.builder()
 			.auctionId(auctionId)
 			.bidderId(bidder.getId())
@@ -64,25 +66,26 @@ public class AuctionCreateBidUseCase {
 			.bidTime(now)
 			.build();
 
-		// 4. 현재가 갱신
-		auction.updateCurrentPrice(bidAmount);
-
+		// 현재가 갱신
 		bidRepository.save(bid);
+		auction.updateCurrentPrice(bidAmount);
 
 		// 입찰 생성 이벤트 발행
 		eventPublisher.publishEvent(
 			AuctionBidCreatedEvent.of(auctionId, bidder.getId(), bidAmount)
 		);
 
-		// 추월당한 기존 최고 입찰자에게 이벤트 발행
+		// 추월당한 기존 최고 입찰자에게 아웃박스 이벤트 저장
 		lastBid.ifPresent(prevBid -> {
-			eventPublisher.publishEvent(new AuctionOutbidEvent(
+			AuctionOutbidEvent outbidEvent = new AuctionOutbidEvent(
 				auctionId,
-				getProductName(auction.getProductId()),  // productName 추가
-				bidder.getId(),                           // bidderId 추가
+				getProductName(auction.getProductId()),
+				bidder.getId(),
 				bidAmount,
 				prevBid.getBidderId()
-			));
+			);
+
+			outboxUseCase.saveOutbox(outbidEvent);
 		});
 
 		if (isExtended) {
