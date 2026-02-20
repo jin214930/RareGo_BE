@@ -7,8 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Deposit;
 import com.bugzero.rarego.domain.DepositStatus;
-import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.out.DepositRepository;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PaymentAuctionExpiringSoonUseCase {
 	private final DepositRepository depositRepository;
-	private final EventPublisher eventPublisher;
+	private final OutboxUseCase outboxUseCase;
 
 	@Transactional
 	public void publishExpiringSoonEvent(AuctionOrderDto order, LocalDateTime expiredAt) {
@@ -41,6 +41,6 @@ public class PaymentAuctionExpiringSoonUseCase {
 			expiredAt
 		);
 
-		eventPublisher.publish(event);
+		outboxUseCase.saveOutbox(event);
 	}
 }
