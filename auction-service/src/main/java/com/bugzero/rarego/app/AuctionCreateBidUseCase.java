@@ -18,7 +18,6 @@ import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.BidResponseDto;
 import com.bugzero.rarego.out.BidRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
-import com.bugzero.rarego.shared.payment.out.PaymentApiClient;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,7 +27,6 @@ public class AuctionCreateBidUseCase {
 
 	private final AuctionSupport support;
 	private final BidRepository bidRepository;
-	private final PaymentApiClient paymentApiClient;
 	private final ApplicationEventPublisher eventPublisher;
 	private final AuctionMetrics auctionMetrics;
 
