@@ -14,8 +14,8 @@ import com.bugzero.rarego.domain.ReferenceType;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.domain.WalletTransactionType;
-import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.AuctionFinalPaymentRequestDto;
 import com.bugzero.rarego.in.dto.AuctionFinalPaymentResponseDto;
@@ -39,7 +39,7 @@ public class PaymentAuctionFinalUseCase {
 	private final PaymentTransactionRepository transactionRepository;
 	private final SettlementRepository settlementRepository;
 	private final PaymentSupport paymentSupport;
-	private final EventPublisher eventPublisher;
+	private final OutboxUseCase outboxUseCase;
 
 	@Value("${auction.payment-timeout-days:3}")
 	private int paymentTimeoutDays;
@@ -88,13 +88,14 @@ public class PaymentAuctionFinalUseCase {
 			auctionId, memberId, finalPrice, paymentAmount, settlement.getId());
 
 		// 9. 낙찰 결제 완료 이벤트 발행
-		eventPublisher.publish(new AuctionPaymentCompletedEvent(
+		AuctionPaymentCompletedEvent event = new AuctionPaymentCompletedEvent(
 			order.orderId(),
 			auctionId,
 			order.sellerId(),
 			memberId,
 			order.productName(),
-			finalPrice));
+			finalPrice);
+		outboxUseCase.saveOutbox(event);
 
 		return AuctionFinalPaymentResponseDto.of(
 			order.orderId(),
