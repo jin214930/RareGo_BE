@@ -1,7 +1,10 @@
 package com.bugzero.rarego.global.inbox.app;
 
+import java.time.LocalDateTime;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.global.inbox.domain.InboxEvent;
@@ -42,4 +45,10 @@ public class InboxUseCase {
 			return true;
 		}
 	}
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW) // 각 배치를 독립적인 트랜잭션으로 처리
+	public int deleteBatch(LocalDateTime threshold, int batchSize) {
+		return inboxEventRepository.deleteTopByCreatedAtBefore(threshold, batchSize);
+	}
+
 }

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.bugzero.rarego.global.inbox.domain.InboxEvent;
 
@@ -21,6 +22,6 @@ public interface InboxEventRepository extends JpaRepository<InboxEvent, Long> {
 	 * 특정 시간 이전에 생성된 인박스 이벤트를 삭제합니다.
 	 */
 	@Modifying
-	@Query("DELETE FROM InboxEvent i WHERE i.createdAt < :dateTime")
-	void deleteByCreatedAtBefore(LocalDateTime dateTime);
+	@Query(value = "DELETE FROM inbox_event WHERE created_at < :threshold LIMIT :batchSize", nativeQuery = true)
+	int deleteTopByCreatedAtBefore(@Param("threshold") LocalDateTime threshold, @Param("batchSize") int batchSize);
 }

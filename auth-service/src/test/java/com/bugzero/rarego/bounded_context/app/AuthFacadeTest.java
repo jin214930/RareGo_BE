@@ -18,8 +18,10 @@ import com.bugzero.rarego.app.AuthFacade;
 import com.bugzero.rarego.app.AuthIssueTokenUseCase;
 import com.bugzero.rarego.app.AuthLoginAccountFacade;
 import com.bugzero.rarego.app.AuthLogoutAccountUseCase;
+import com.bugzero.rarego.app.AuthPromoteSellerUseCase;
 import com.bugzero.rarego.app.AuthRefreshTokenFacade;
 import com.bugzero.rarego.app.AuthStoreRefreshTokenUseCase;
+import com.bugzero.rarego.app.AuthWithdrawAccountUseCase;
 
 @ExtendWith(MockitoExtension.class)
 class AuthFacadeTest {
@@ -37,6 +39,12 @@ class AuthFacadeTest {
 
 	@Mock
 	private AuthLogoutAccountUseCase authLogoutAccountUseCase;
+
+	@Mock
+	private AuthWithdrawAccountUseCase authWithdrawAccountUseCase;
+
+	@Mock
+	private AuthPromoteSellerUseCase authPromoteSellerUseCase;
 
 	@InjectMocks
 	private AuthFacade authFacade;
@@ -122,5 +130,31 @@ class AuthFacadeTest {
 
 		// then
 		verify(authLogoutAccountUseCase).logout(refreshToken, accessToken);
+	}
+
+	@Test
+	@DisplayName("withdraw는 withdraw use case에 위임한다")
+	void withdrawDelegates() {
+		// given
+		String accessToken = "access-token";
+
+		// when
+		authFacade.withdraw(accessToken);
+
+		// then
+		verify(authWithdrawAccountUseCase).withdraw(accessToken);
+	}
+
+	@Test
+	@DisplayName("promoteSeller는 promoteSeller use case에 위임한다")
+	void promoteSellerDelegates() {
+		// given
+		String accessToken = "access-token";
+
+		// when
+		authFacade.promoteSeller(accessToken);
+
+		// then
+		verify(authPromoteSellerUseCase).promoteSeller(accessToken);
 	}
 }

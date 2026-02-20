@@ -34,13 +34,13 @@ spring:
             client-id: test
             client-secret: test
 
-    data:
-        redis:
-            host: localhost
-            port: 6379
-            password: ${SPRING_DATA_REDIS_PASSWORD:rarego}
-        elasticsearch:
-            uris: http://localhost:9200
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+    elasticsearch:
+      uris: http://localhost:9200
 
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}

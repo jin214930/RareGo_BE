@@ -40,7 +40,7 @@ public class AuthController {
 	private static final String REFRESH_TOKEN_ATTRIBUTE = "refreshToken";
 	private final AuthFacade authFacade;
 	@Value("${jwt.refresh-token-expire-seconds}")
-	private int refreshTokenExpireSeconds;
+	private Long refreshTokenExpireSeconds;
 
 	@Value("${jwt.refresh-token-cookie-secure:false}")
 	private boolean refreshTokenCookieSecure;

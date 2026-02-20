@@ -21,7 +21,7 @@ public class JwtProvider {
 		this.jwtSecretKey = Keys.hmacShaKeyFor(jwtSecretKey.getBytes());
 	}
 
-	public String issueToken(int expireSeconds, Map<String, Object> body) {
+	public String issueToken(Long expireSeconds, Map<String, Object> body) {
 		ClaimsBuilder claimsBuilder = Jwts.claims();
 
 		for (Map.Entry<String, Object> entry : body.entrySet()) {
