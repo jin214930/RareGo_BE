@@ -56,6 +56,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		boolean isPublic = isPublicRequest(request);
 		if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 			try {
+				// 토큰이 유효한지 검사, 유효하지 않으면 예외
+				MemberPrincipal principal = jwtParser.parsePrincipalOrThrow(token);
 				if (accessTokenBlacklistChecker.isBlacklisted(token)) {
 					if (!isPublic) {
 						authenticationEntryPoint.commence(request, response,
@@ -65,9 +67,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 					filterChain.doFilter(request, response);
 					return;
 				}
-
-				// 토큰이 유효한지 검사, 유효하지 않으면 예외
-				MemberPrincipal principal = jwtParser.parsePrincipalOrThrow(token);
 				// Security에서 권한은 GrantedAuthority 리스트 형태
 				List<GrantedAuthority> authorities = toAuthorities(principal.role());
 				// “로그인 성공한 사용자”를 표현하는 Security 표준 객체 생성
