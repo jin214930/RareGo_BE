@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.app.mapper.NotificationMapper;
 import com.bugzero.rarego.domain.Notification;
@@ -26,7 +25,6 @@ public class NotificationCreateNotificationUseCase {
 	private final ApplicationEventPublisher eventPublisher;
 
 	@SuppressWarnings("unchecked")
-	@Transactional
 	public void createNotification(Object event) {
 		Optional<NotificationMapper<Object>> mapperOptional = (Optional)mappers.stream()
 			.filter(m -> m.supports(event))
@@ -59,7 +57,7 @@ public class NotificationCreateNotificationUseCase {
 
 	private boolean saveWithIdempotency(Notification notification) {
 		try {
-			notificationRepository.saveAndFlush(notification);
+			notificationRepository.save(notification);
 			return true;
 		} catch (DataIntegrityViolationException e) {
 			// 이미 DB에 존재하는 경우 (Unique Constraint 위배)
