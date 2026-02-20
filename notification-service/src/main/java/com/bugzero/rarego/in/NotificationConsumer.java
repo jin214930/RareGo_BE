@@ -179,6 +179,6 @@ public class NotificationConsumer {
 
 	@KafkaHandler(isDefault = true)
 	public void defaultHandler(Object object) {
-		log.warn("[Auction] 수신된 이벤트 중 처리할 수 없는 타입입니다: {}", object.getClass().getName());
+		log.warn("[Notification] 수신된 이벤트 중 처리할 수 없는 타입입니다: {}", object.getClass().getName());
 	}
 }
