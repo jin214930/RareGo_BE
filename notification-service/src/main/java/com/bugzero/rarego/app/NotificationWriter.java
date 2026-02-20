@@ -16,6 +16,6 @@ public class NotificationWriter {
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void saveWithIdempotency(Notification notification) {
-		notificationRepository.saveAndFlush(notification);
+		notificationRepository.save(notification);
 	}
 }
