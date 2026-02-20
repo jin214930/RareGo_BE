@@ -23,6 +23,8 @@ import org.springframework.kafka.support.converter.RecordMessageConverter;
 import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
 import org.springframework.kafka.support.mapping.Jackson2JavaTypeMapper;
 
+import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
+import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
 import com.bugzero.rarego.shared.product.event.ProductCreateAuctionEvent;
 import com.bugzero.rarego.shared.product.event.ProductDeleteAuctionEvent;
 import com.bugzero.rarego.shared.product.event.ProductUpdateAuctionEvent;
@@ -88,6 +90,8 @@ public class KafkaConfig {
 		mappings.put("ProductCreateAuctionEvent", ProductCreateAuctionEvent.class);
 		mappings.put("ProductUpdateAuctionEvent", ProductUpdateAuctionEvent.class);
 		mappings.put("ProductDeleteAuctionEvent", ProductDeleteAuctionEvent.class);
+		mappings.put("MemberJoinedEvent", MemberJoinedEvent.class);
+		mappings.put("MemberUpdatedEvent", MemberUpdatedEvent.class);
 
 		typeMapper.setIdClassMapping(mappings);
 		converter.setTypeMapper(typeMapper);

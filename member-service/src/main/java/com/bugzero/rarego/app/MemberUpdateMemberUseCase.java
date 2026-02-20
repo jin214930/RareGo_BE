@@ -2,7 +2,6 @@ package com.bugzero.rarego.app;
 
 import java.util.Set;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +9,7 @@ import com.bugzero.rarego.domain.Member;
 import com.bugzero.rarego.domain.MemberClearField;
 import com.bugzero.rarego.domain.MemberUpdateRequestDto;
 import com.bugzero.rarego.domain.MemberUpdateResponseDto;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.out.MemberRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
@@ -25,7 +25,7 @@ public class MemberUpdateMemberUseCase {
 
 	private final MemberSupport memberSupport;
 	private final MemberRepository memberRepository;
-	private final ApplicationEventPublisher eventPublisher;
+	private final OutboxUseCase outboxUseCase;
 
 	public MemberUpdateResponseDto updateMe(String publicId, MemberUpdateRequestDto requestDto) {
 		Member member = memberSupport.findByPublicId(publicId);
@@ -41,7 +41,7 @@ public class MemberUpdateMemberUseCase {
 
 		// 3) 저장 후 이벤트 발생
 		Member saved = memberRepository.saveAndFlush(member);
-		eventPublisher.publishEvent(new MemberUpdatedEvent(MemberDto.from(saved)));
+		outboxUseCase.saveOutbox(new MemberUpdatedEvent(MemberDto.from(saved)));
 		return MemberUpdateResponseDto.from(saved);
 	}
 
