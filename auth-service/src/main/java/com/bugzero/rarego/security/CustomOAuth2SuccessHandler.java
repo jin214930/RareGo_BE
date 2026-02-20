@@ -27,7 +27,7 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 	private final ObjectMapper objectMapper;
 
 	@Value("${jwt.refresh-token-expire-seconds}")
-	private int refreshTokenExpireSeconds;
+	private Long refreshTokenExpireSeconds;
 
 	@Value("${jwt.refresh-token-cookie-secure:false}")
 	private boolean refreshTokenCookieSecure;
