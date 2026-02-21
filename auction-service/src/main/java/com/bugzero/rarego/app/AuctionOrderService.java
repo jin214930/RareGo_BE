@@ -27,23 +27,27 @@ public class AuctionOrderService {
 	private final AuctionRepository auctionRepository;
 	private final ProductSearchClient productSearchClient;
 
+	@Transactional(readOnly = true)
 	public Optional<AuctionOrderDto> findByAuctionId(Long auctionId) {
 		return auctionOrderRepository.findByAuctionId(auctionId)
 			.map(this::from);
 	}
 
+	@Transactional
 	public void completeOrder(Long auctionId) {
 		AuctionOrder order = auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
 			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
 		order.complete();
 	}
 
+	@Transactional
 	public void failOrder(Long auctionId) {
 		AuctionOrder order = auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
 			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
 		order.fail();
 	}
 
+	@Transactional
 	public AuctionOrderDto refundOrderWithLock(Long auctionId) {
 		AuctionOrder order = auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
 			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
@@ -52,11 +56,13 @@ public class AuctionOrderService {
 		return from(order);
 	}
 
+	@Transactional(readOnly = true)
 	public Slice<AuctionOrderDto> findTimeoutOrders(LocalDateTime deadline, Pageable pageable) {
 		return auctionOrderRepository.findByStatusAndCreatedAtBefore(AuctionOrderStatus.PROCESSING, deadline, pageable)
 			.map(this::from);
 	}
 
+	@Transactional(readOnly = true)
 	public Slice<AuctionOrderDto> findExpiringSoonOrders(LocalDateTime targetEndedAt, Pageable pageable) {
 		return auctionOrderRepository.findByStatusAndNoticedAtIsNullAndCreatedAtBefore(
 				AuctionOrderStatus.PROCESSING,
