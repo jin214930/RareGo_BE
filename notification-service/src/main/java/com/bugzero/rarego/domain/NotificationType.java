@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum NotificationType {
-	AUCTION_OUTBID("입찰가 추월", "/auction/%d"),
-	BOOKMARK_AUCTION_STARTED("관심 경매 시작", "/auction/%d"),
+	AUCTION_OUTBID("입찰가 추월", "/auctions/%d"),
+	BOOKMARK_AUCTION_STARTED("관심 경매 시작", "/auctions/%d"),
 	AUCTION_WON("경매 낙찰", "/mypage/orders"),
 	AUCTION_PAYMENT_COMPLETED("경매 결제 완료", "/mypage/sales"),
 	AUCTION_PAYMENT_EXPIRING_SOON("낙찰 결제 임박", "/mypage/orders"),
