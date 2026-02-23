@@ -128,6 +128,7 @@ public class PaymentController {
 		return SuccessResponseDto.from(SuccessType.OK, response);
 	}
 
+	@Operation(summary = "예치금 출금", description = "예치금을 출금합니다.")
 	@PostMapping("/withdraw")
 	public SuccessResponseDto<Void> withdraw(
 		@AuthenticationPrincipal MemberPrincipal principal,
