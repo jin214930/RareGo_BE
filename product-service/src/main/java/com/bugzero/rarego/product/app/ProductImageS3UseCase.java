@@ -37,7 +37,7 @@ public class ProductImageS3UseCase {
 	@Value("${aws.s3.expiration-minutes}")
 	private long expirationMinutes;
 
-	public PresignedUrlResponseDto createPresignerUrl(PresignedUrlRequestDto presignedUrlRequestDto) {
+	public PresignedUrlResponseDto createPresignedUrl(PresignedUrlRequestDto presignedUrlRequestDto) {
 		String uniqueFileName = createUniqueFileName(presignedUrlRequestDto.fileName());
 		String contentType = presignedUrlRequestDto.contentType();
 		String s3Path = "temp/" + uniqueFileName;
@@ -65,29 +65,6 @@ public class ProductImageS3UseCase {
 			.url(url)
 			.s3Path(s3Path)
 			.build();
-	}
-
-	public String getPresignedGetUrl(String s3Path) {
-		if (s3Path == null || s3Path.isBlank())
-			return null;
-
-		// HTTP URL이 이미 포함되어 있다면 그대로 반환 (하위 호환성 유지용)
-		if (s3Path.startsWith("http"))
-			return s3Path;
-
-		software.amazon.awssdk.services.s3.model.GetObjectRequest getObjectRequest = software.amazon.awssdk.services.s3.model.GetObjectRequest
-				.builder()
-				.bucket(bucketName)
-				.key(s3Path)
-				.build();
-
-		software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest presignRequest = software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
-				.builder()
-				.signatureDuration(Duration.ofMinutes(expirationMinutes))
-				.getObjectRequest(getObjectRequest)
-				.build();
-
-		return s3Presigner.presignGetObject(presignRequest).url().toString();
 	}
 
 	public void confirmImages(List<String> tempPaths) {
@@ -143,10 +120,13 @@ public class ProductImageS3UseCase {
 
 	// 파일명 앞에 UUID를 추가하여 고유한 파일명 생성 (DB 컬럼 길이를 고려하여 원본 파일명은 최대 100자로 제한)
 	private String createUniqueFileName(String fileName) {
-		String cleanName = fileName != null ? fileName : "image";
-		if (cleanName.length() > 100) {
-			cleanName = cleanName.substring(0, 100);
+		// 1. 확장자 추출 (예: .png, .jpg)
+		String extension = "";
+		if (fileName != null && fileName.contains(".")) {
+			extension = fileName.substring(fileName.lastIndexOf("."));
 		}
-		return UUID.randomUUID().toString() + "_" + cleanName;
+
+		// 2. UUID로만 구성된 파일명 생성 (예: 550e8400-e29b-41d4-a716-446655440000.png)
+		return UUID.randomUUID().toString() + extension;
 	}
 }
