@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.global.response.PagedResponseDto;
+import com.bugzero.rarego.global.util.S3Utils;
 import com.bugzero.rarego.product.domain.dto.ProductResponseForInspectionDto;
 import com.bugzero.rarego.product.domain.dto.ProductSearchForInspectionCondition;
 import com.bugzero.rarego.product.out.ProductRepository;
@@ -16,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProductReadProductsForInspectionUseCase {
 	private final ProductRepository productRepository;
-	private final ProductImageS3UseCase s3PresignerUrlUseCase;
+	private final S3Utils s3Utils;
 
 	@Transactional(readOnly = true)
 	public PagedResponseDto<ProductResponseForInspectionDto> readProducts(
@@ -35,7 +36,7 @@ public class ProductReadProductsForInspectionUseCase {
 			dto.sellerEmail(),
 			dto.category(),
 			dto.inspectionStatus(),
-			s3PresignerUrlUseCase.getPresignedGetUrl(dto.thumbnail())
+			s3Utils.getPublicUrl(dto.thumbnail())
 		);
 	}
 }
