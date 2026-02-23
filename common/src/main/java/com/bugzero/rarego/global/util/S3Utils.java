@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class S3Utils {
-	@Value("${aws.s3.bucket}")
+	@Value("${aws.s3.bucket:rarego-auction-product-images}")
 	private String bucketName;
 
 	@Value("${aws.region:ap-northeast-2}")
