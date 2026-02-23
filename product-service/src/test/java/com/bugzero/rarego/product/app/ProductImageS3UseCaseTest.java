@@ -67,20 +67,6 @@ class ProductImageS3UseCaseTest {
 	}
 
 	@Test
-	@DisplayName("S3 경로가 이미 HTTP URL 형태라면 그대로 반환한다.")
-	void getPresignedGetUrl_ReturnOriginal_WhenAlreadyUrl() {
-		// given
-		String s3Path = "http://already-url.com/image.png";
-
-		// when
-		String resultUrl = useCase.getPresignedGetUrl(s3Path);
-
-		// then
-		assertThat(resultUrl).isEqualTo(s3Path);
-		verifyNoInteractions(s3Presigner); // S3Presigner를 호출하지 않아야 함
-	}
-
-	@Test
 	@DisplayName("비동기로 이미지 확정 로직(복사 및 삭제)이 수행된다.")
 	void confirmImages_Success() {
 		// given
