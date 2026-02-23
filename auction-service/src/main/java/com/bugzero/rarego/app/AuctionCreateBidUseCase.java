@@ -78,6 +78,7 @@ public class AuctionCreateBidUseCase {
 		// 추월당한 기존 최고 입찰자에게 아웃박스 이벤트 저장
 		lastBid.ifPresent(prevBid -> {
 			AuctionOutbidEvent outbidEvent = new AuctionOutbidEvent(
+				prevBid.getId(),
 				auctionId,
 				getProductName(auction.getProductId()),
 				bidder.getId(),

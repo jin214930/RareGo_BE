@@ -34,7 +34,7 @@ public class AuctionOutbidMapper implements NotificationMapper<AuctionOutbidEven
 			.message(message)
 			.member(outbidMember)
 			.type(NotificationType.AUCTION_OUTBID)
-			.referenceId(event.auctionId())
+			.referenceId(event.bidId())
 			.build();
 
 		return List.of(notification);
