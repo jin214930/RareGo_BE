@@ -8,33 +8,33 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import com.bugzero.rarego.global.slack.SlackNotifier;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class DLTConsumer {
 
 	@Value("${spring.application.name}")
 	private String applicationName;
 
-	/**
-	 * 특정 도메인에 종속되지 않고, .DLT로 끝나는 모든 토픽을 구독합니다.
-	 */
+	private final SlackNotifier slackNotifier;
+
 	@KafkaListener(
 		topicPattern = ".*[.-](?i)dlt",
 		groupId = "${spring.application.name}-global-dlt-group",
-		// [핵심] 에러 핸들러가 없는 전용 팩토리를 사용하도록 명시합니다.
 		containerFactory = "dltContainerFactory"
 	)
 	public void processDlt(ConsumerRecord<String, String> record) {
 		try {
-			log.error("============= [Global DLT Monitor] =============");
-
-			// 로그에서 확인된 실제 키값을 직접 매핑합니다.
 			String originalTopic = getHeaderValue(record, "kafka_dlt-original-topic");
 			String errorMessage = getHeaderValue(record, "kafka_dlt-exception-message");
 			String messageId = getHeaderValue(record, "messageId");
 
+			log.error("============= [Global DLT Monitor] =============");
 			log.error("발생 서비스: {}", applicationName);
 			log.error("원본 토픽: {}", originalTopic);
 			log.error("메시지 ID: {}", messageId);
@@ -42,7 +42,23 @@ public class DLTConsumer {
 			log.error("데이터: {}", record.value());
 			log.error("===============================================");
 
-			// TODO: Slack 알림 시 errorMessage의 앞부분만 잘라서 보내면 깔끔합니다.
+			String slackMessage = """
+				🚨 *[DLT 알림]* 메시지 처리 실패
+				• 서비스: %s
+				• 원본 토픽: %s
+				• 메시지 ID: %s
+				• 에러: %s
+				• 데이터: %.200s
+				""".formatted(
+				applicationName,
+				originalTopic,
+				messageId,
+				truncate(errorMessage, 300),
+				record.value()
+			);
+
+			slackNotifier.send(slackMessage);
+
 		} catch (Exception e) {
 			log.error("DLT 로깅 중 에러 발생: {}", e.getMessage());
 		}
@@ -54,5 +70,12 @@ public class DLTConsumer {
 			return new String(header.value(), StandardCharsets.UTF_8);
 		}
 		return "UNKNOWN";
+	}
+
+	private String truncate(String text, int maxLength) {
+		if (text == null || text.length() <= maxLength) {
+			return text;
+		}
+		return text.substring(0, maxLength) + "...";
 	}
 }
