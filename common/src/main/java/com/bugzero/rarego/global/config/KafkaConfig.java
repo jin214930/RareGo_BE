@@ -132,6 +132,7 @@ public class KafkaConfig {
 		mappings.put("ProductCreateAuctionEvent", ProductCreateAuctionEvent.class);
 		mappings.put("ProductUpdateAuctionEvent", ProductUpdateAuctionEvent.class);
 		mappings.put("ProductDeleteAuctionEvent", ProductDeleteAuctionEvent.class);
+
 		mappings.put("MemberJoinedEvent", MemberJoinedEvent.class);
 		mappings.put("MemberUpdatedEvent", MemberUpdatedEvent.class);
 		mappings.put("AuctionEndedEvent", AuctionEndedEvent.class);
@@ -139,6 +140,9 @@ public class KafkaConfig {
 		mappings.put("AuctionRelistedEvent", AuctionRelistedEvent.class);
 		mappings.put("AuctionOutbidEvent", AuctionOutbidEvent.class);
 
+		mappings.put("AuctionEndedEvent", AuctionEndedEvent.class);
+		mappings.put("AuctionStartedEvent", AuctionStartedEvent.class);
+		mappings.put("AuctionRelistedEvent", AuctionRelistedEvent.class);
 		// payment
 		mappings.put("AuctionPaymentCompletedEvent", AuctionPaymentCompletedEvent.class);
 		mappings.put("AuctionPaymentExpiringSoonEvent", AuctionPaymentExpiringSoonEvent.class);
