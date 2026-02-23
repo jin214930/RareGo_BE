@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.bugzero.rarego.domain.Auction;
 import com.bugzero.rarego.domain.AuctionOrder;
@@ -26,6 +27,7 @@ public class AuctionOrderService {
 	private final AuctionOrderRepository auctionOrderRepository;
 	private final AuctionRepository auctionRepository;
 	private final ProductSearchClient productSearchClient;
+	private final TransactionTemplate transactionTemplate;
 
 	@Transactional(readOnly = true)
 	public Optional<AuctionOrderDto> findByAuctionId(Long auctionId) {
@@ -47,12 +49,16 @@ public class AuctionOrderService {
 		order.fail();
 	}
 
-	@Transactional
 	public AuctionOrderDto refundOrderWithLock(Long auctionId) {
-		AuctionOrder order = auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
-			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
+		// 트랜잭션 내에서 데이터 수정 (LOCK 수행)
+		AuctionOrder order = transactionTemplate.execute(status -> {
+			AuctionOrder auctionOrder = auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
+				.orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
 
-		order.refund(); // 내부에서 SUCCESS 검증 및 FAILED 변경 수행
+			auctionOrder.refund(); // 상태 변경 및 더티 체킹 발생
+			return auctionOrder;
+			// 메서드 종료 시 커밋되며 락 해제
+		});
 		return from(order);
 	}
 
