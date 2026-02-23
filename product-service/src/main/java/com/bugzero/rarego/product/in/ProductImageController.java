@@ -32,7 +32,7 @@ public class ProductImageController {
 		@Valid @RequestBody PresignedUrlRequestDto presignedUrlRequestDto
 	) {
 		return SuccessResponseDto.from(SuccessType.CREATED,
-			s3PresignerUrlUseCase.createPresignerUrl(presignedUrlRequestDto));
+			s3PresignerUrlUseCase.createPresignedUrl(presignedUrlRequestDto));
 	}
 
 }
