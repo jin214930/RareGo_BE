@@ -24,6 +24,7 @@ import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
 import org.springframework.kafka.support.mapping.Jackson2JavaTypeMapper;
 
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
+import com.bugzero.rarego.shared.auction.event.AuctionOutbidEvent;
 import com.bugzero.rarego.shared.auction.event.AuctionRelistedEvent;
 import com.bugzero.rarego.shared.auction.event.AuctionStartedEvent;
 import com.bugzero.rarego.shared.payment.event.AuctionPaymentCompletedEvent;
@@ -100,6 +101,10 @@ public class KafkaConfig {
 
 		mappings.put("MemberJoinedEvent", MemberJoinedEvent.class);
 		mappings.put("MemberUpdatedEvent", MemberUpdatedEvent.class);
+		mappings.put("AuctionEndedEvent", AuctionEndedEvent.class);
+		mappings.put("AuctionStartedEvent", AuctionStartedEvent.class);
+		mappings.put("AuctionRelistedEvent", AuctionRelistedEvent.class);
+		mappings.put("AuctionOutbidEvent", AuctionOutbidEvent.class);
 
 		mappings.put("AuctionEndedEvent", AuctionEndedEvent.class);
 		mappings.put("AuctionStartedEvent", AuctionStartedEvent.class);
