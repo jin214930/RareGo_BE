@@ -43,6 +43,7 @@ import com.bugzero.rarego.in.dto.PaymentRequestDto;
 import com.bugzero.rarego.in.dto.PaymentRequestResponseDto;
 import com.bugzero.rarego.in.dto.WalletResponseDto;
 import com.bugzero.rarego.in.dto.WalletTransactionResponseDto;
+import com.bugzero.rarego.in.dto.WithdrawRequestDto;
 import com.bugzero.rarego.shared.payment.dto.SettlementResponseDto;
 
 import tools.jackson.databind.ObjectMapper;
@@ -594,5 +595,69 @@ class PaymentControllerTest {
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.status").value(ErrorType.WALLET_NOT_FOUND.getHttpStatus()))
 			.andExpect(jsonPath("$.message").value(ErrorType.WALLET_NOT_FOUND.getMessage()));
+	}
+
+	// ==================== 예치금 출금 API 테스트 ====================
+
+	@Test
+	@DisplayName("성공: 출금 요청이 정상 처리되면 HTTP 200을 반환한다")
+	void withdraw_success() throws Exception {
+		// given
+		String publicId = "member-uuid-123";
+		WithdrawRequestDto requestDto = new WithdrawRequestDto(10000);
+
+		// void 반환 타입이므로 별도의 willReturn() 설정 불필요
+		willDoNothing().given(paymentFacade).withdraw(eq(publicId), any(WithdrawRequestDto.class));
+
+		// when & then
+		mockMvc.perform(post("/api/v1/payments/withdraw")
+				.with(authentication(createAuth(publicId, "USER")))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestDto)))
+			.andDo(print())
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value(SuccessType.OK.getHttpStatus()));
+	}
+
+	@Test
+	@DisplayName("실패: 출금 요청 금액이 0원 이하인 경우(Validation) HTTP 400을 반환한다")
+	void withdraw_fail_validation_amount() throws Exception {
+		// given
+		String publicId = "member-uuid-123";
+		WithdrawRequestDto invalidRequest = new WithdrawRequestDto(0); // 0원 출금 요청 (또는 음수)
+
+		// when & then (Facade 호출 전 Controller 레벨의 @Valid 검증 실패)
+		mockMvc.perform(post("/api/v1/payments/withdraw")
+				.with(authentication(createAuth(publicId, "USER")))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(invalidRequest)))
+			.andDo(print())
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.status").value(400));
+	}
+
+	@Test
+	@DisplayName("실패: 출금 가능 잔액이 부족한 경우(INSUFFICIENT_BALANCE) HTTP 400을 반환한다")
+	void withdraw_fail_insufficient_balance() throws Exception {
+		// given
+		String publicId = "member-uuid-123";
+		WithdrawRequestDto requestDto = new WithdrawRequestDto(5000000); // 엄청 큰 금액
+
+		// Facade 내부 로직(또는 엔티티)에서 잔액 부족 예외 발생 모킹
+		willThrow(new CustomException(ErrorType.INSUFFICIENT_BALANCE))
+			.given(paymentFacade).withdraw(eq(publicId), any(WithdrawRequestDto.class));
+
+		// when & then
+		mockMvc.perform(post("/api/v1/payments/withdraw")
+				.with(authentication(createAuth(publicId, "USER")))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(requestDto)))
+			.andDo(print())
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.status").value(ErrorType.INSUFFICIENT_BALANCE.getHttpStatus()))
+			.andExpect(jsonPath("$.message").value(ErrorType.INSUFFICIENT_BALANCE.getMessage()));
 	}
 }
