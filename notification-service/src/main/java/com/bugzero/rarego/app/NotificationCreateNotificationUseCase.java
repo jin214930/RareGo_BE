@@ -6,13 +6,11 @@ import java.util.Optional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.app.mapper.NotificationMapper;
 import com.bugzero.rarego.domain.Notification;
 import com.bugzero.rarego.event.NotificationCreatedEvent;
 import com.bugzero.rarego.in.dto.NotificationResponseDto;
-import com.bugzero.rarego.out.NotificationRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,12 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class NotificationCreateNotificationUseCase {
-	private final NotificationRepository notificationRepository;
+	private final NotificationWriter notificationWriter;
 	private final List<NotificationMapper<?>> mappers;
 	private final ApplicationEventPublisher eventPublisher;
 
 	@SuppressWarnings("unchecked")
-	@Transactional
 	public void createNotification(Object event) {
 		Optional<NotificationMapper<Object>> mapperOptional = (Optional)mappers.stream()
 			.filter(m -> m.supports(event))
@@ -46,44 +43,31 @@ public class NotificationCreateNotificationUseCase {
 		}
 
 		for (Notification notification : notifications) {
-			boolean saved = saveWithIdempotency(notification);
+			try {
+				notificationWriter.saveWithIdempotency(notification);
 
-			if (saved) {
 				NotificationResponseDto dto = NotificationResponseDto.from(notification);
 				eventPublisher.publishEvent(new NotificationCreatedEvent(notification.getMember().getPublicId(), dto));
+			} catch (DataIntegrityViolationException e) {
+				if (isDuplicateEntryException(e)) {
+					log.warn("[알림 중복 무시] 이미 존재하는 알림입니다. MemberId: {}, Type: {}, RefId: {}",
+						notification.getMember().getId(), notification.getType(), notification.getReferenceId());
+				} else {
+					log.error("중복이 아닌 심각한 오류 발생, 알림 저장 실패.", e);
+					throw e;
+				}
 			}
+
 		}
 
 		log.info("[알림] 저장 완료. 타입: {}, 개수: {}건", event.getClass().getSimpleName(), notifications.size());
 	}
 
-	private boolean saveWithIdempotency(Notification notification) {
-		try {
-			notificationRepository.saveAndFlush(notification);
-			return true;
-		} catch (DataIntegrityViolationException e) {
-			// 이미 DB에 존재하는 경우 (Unique Constraint 위배)
-			if (isDuplicateEntryException(e)) {
-				log.warn("[알림 중복 무시] 이미 존재하는 알림입니다. MemberId: {}, Type: {}, RefId: {}",
-					notification.getMember().getId(),
-					notification.getType(),
-					notification.getReferenceId());
-				return false;
-			}
-
-			log.error("중복이 아닌 심각한 오류 발생, 알림 저장 실패.", e);
-			throw e;
-		}
-	}
-
 	private boolean isDuplicateEntryException(DataIntegrityViolationException e) {
 		Throwable cause = e.getMostSpecificCause();
 
-		// 우리가 Entity에 설정한 제약조건 이름: "uk_notification_dedup"
+		// Entity에 설정한 제약조건 이름: "uk_notification_dedup"
 		String message = cause.getMessage();
-		return message != null && (
-			message.contains("uk_notification_dedup") || // 우리가 지정한 제약조건명
-				message.contains("Duplicate entry")          // MySQL 메시지 패턴
-		);
+		return message != null && (message.contains("uk_notification_dedup") || message.contains("Duplicate entry"));
 	}
 }

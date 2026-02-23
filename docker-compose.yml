@@ -296,7 +296,7 @@ services:
     image: rarego-product-elasticsearch:latest
     container_name: rarego-elasticsearch
     ports:
-      - "${ELASTICSEARCH_PORT:-9200}:9200"
+      - "127.0.0.1:${ELASTICSEARCH_PORT:-9200}:9200"
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
