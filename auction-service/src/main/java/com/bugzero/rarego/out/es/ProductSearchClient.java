@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.bugzero.rarego.global.util.S3Utils;
 import com.bugzero.rarego.in.dto.es.ProductSearchDocumentDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.type.Category;
@@ -35,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ProductSearchClient {
 
     private final ElasticsearchClient elasticsearchClient;
+    private final S3Utils s3Utils;
     private static final String INDEX_NAME = "product_search";
 
     // Temporary mitigation for expensive approved-id full scan
@@ -224,7 +226,10 @@ public class ProductSearchClient {
     }
 
     private ProductAuctionResponseDto convertToDto(ProductSearchDocumentDto doc) {
-        String imageUrl = doc.imageUrl() != null ? doc.imageUrl() : "";
+        List<String> imageUrls = (doc.imageUrls() != null && !doc.imageUrls().isEmpty())
+            ? doc.imageUrls().stream().map(s3Utils::getPublicUrl).toList()
+            : List.of();
+        String thumbnailUrl = imageUrls.isEmpty() ? "" : imageUrls.get(0);
 
         return ProductAuctionResponseDto.builder()
             .id(doc.productId())
@@ -232,8 +237,8 @@ public class ProductSearchClient {
             .name(doc.productName())
             .description(doc.description())
             .category(doc.category())
-            .thumbnailUrl(imageUrl)
-            .imageUrls(List.of(imageUrl))
+            .thumbnailUrl(thumbnailUrl)
+            .imageUrls(imageUrls)
             .build();
     }
 }
