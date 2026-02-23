@@ -18,7 +18,7 @@ public record NotificationResponseDto(
 			notification.getId(),
 			notification.getType().getDescription(),
 			notification.getMessage(),
-			notification.getType().makeUrl(notification.getReferenceId()),
+			notification.getType().makeUrl(notification.getRelatedId()),
 			notification.isRead(),
 			notification.getType().name(),
 			notification.getCreatedAt()

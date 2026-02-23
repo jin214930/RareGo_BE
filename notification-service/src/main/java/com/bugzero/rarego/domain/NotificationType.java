@@ -16,10 +16,10 @@ public enum NotificationType {
 	private final String description;
 	private final String url;
 
-	public String makeUrl(Long referenceId) {
+	public String makeUrl(Long relatedId) {
 		if (!url.contains("%")) {
 			return url;
 		}
-		return url.formatted(referenceId);
+		return url.formatted(relatedId);
 	}
 }
