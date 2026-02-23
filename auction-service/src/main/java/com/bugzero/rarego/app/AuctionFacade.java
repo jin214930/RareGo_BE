@@ -54,6 +54,7 @@ public class AuctionFacade {
 	private final AuctionDeleteAuctionUseCase auctionDeleteAuctionUseCase;
 	private final AuctionDetermineStartAuctionUseCase auctionDetermineStartAuctionUseCase;
 	private final AuctionSubscribeStreamUseCase auctionSubscribeStreamUseCase;
+	private final AuctionOrderService auctionOrderService;
 	private final PaymentApiClient paymentApiClient;
 	private final AuctionSupport support;
 
@@ -188,6 +189,11 @@ public class AuctionFacade {
 
 	public Long determineStartAuction(Long productId) {
 		return auctionDetermineStartAuctionUseCase.determineStartAuction(productId);
+	}
+
+	// 주문 실패 처리 (결제 타임아웃)
+	public void failOrder(Long auctionId) {
+		auctionOrderService.failOrder(auctionId);
 	}
 
 	public SseEmitter subscribeAuctionStream(Long auctionId) {
