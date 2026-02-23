@@ -28,7 +28,7 @@ public class CustomOAuth2FailureHandler implements AuthenticationFailureHandler 
 		ErrorType errorType = resolveErrorType(exception);
 		String errorMessage = resolveErrorMessage(exception, errorType);
 
-		String targetUrl = UriComponentsBuilder.fromUriString(frontUrl + "/auth/login")
+		String targetUrl = UriComponentsBuilder.fromUriString(frontUrl + "/login")
 			.queryParam("errorCode", errorType.getCode())
 			.queryParam("errorMessage", errorMessage)
 			.build()
