@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.bugzero.rarego.app.NotificationFacade;
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
+import com.bugzero.rarego.shared.auction.event.AuctionOutbidEvent;
 import com.bugzero.rarego.shared.auction.event.AuctionStartedEvent;
 import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
 import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
@@ -61,11 +62,11 @@ public class NotificationConsumer {
 	/**
 	 * 입찰가 추월
 	 */
-	// @KafkaListener(topics = "auction-outbid", groupId = GROUP_ID)
-	// public void consumeOutbid(OutbidEvent event) {
-	// 	log.info(">> [Kafka] 입찰가 추월 이벤트 수신: auctionId={}", event.auctionId());
-	// 	notificationService.createNotification(event);
-	// }
+	@KafkaListener(topics = "auction-outbid", groupId = GROUP_ID)
+	public void consumeOutbid(AuctionOutbidEvent event) {
+		log.info(">> [Kafka] 입찰가 추월 이벤트 수신: auctionId={}", event.auctionId());
+		notificationFacade.createNotification(event);
+	}
 
 	/**
 	 * 관심 경매 시작

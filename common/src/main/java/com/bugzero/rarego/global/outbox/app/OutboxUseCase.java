@@ -22,6 +22,7 @@ import com.bugzero.rarego.global.outbox.domain.OutboxStatus;
 import com.bugzero.rarego.global.outbox.repository.OutboxEventRepository;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.shared.auction.event.AuctionEndedEvent;
+import com.bugzero.rarego.shared.auction.event.AuctionOutbidEvent;
 import com.bugzero.rarego.shared.auction.event.AuctionRelistedEvent;
 import com.bugzero.rarego.shared.auction.event.AuctionStartedEvent;
 import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
@@ -91,11 +92,13 @@ public class OutboxUseCase {
 			case MemberUpdatedEvent e -> new OutboxEventMetadata(
 				"Member", String.valueOf(e.memberDto().id()), KafkaTopics.MEMBER_UPDATE.getTopicName());
 			case AuctionEndedEvent e -> new OutboxEventMetadata(
-				"Auction", generateId(e.productId(), e.auctionId()), KafkaTopics.AUCTION_MANAGEMENT.getTopicName());
+				"Auction", generateId(e.productId(), e.auctionId()), KafkaTopics.AUCTION_ENDED.getTopicName());
 			case AuctionStartedEvent e -> new OutboxEventMetadata(
-				"Auction", generateId(e.productId(), e.auctionId()), KafkaTopics.AUCTION_MANAGEMENT.getTopicName());
+				"Auction", generateId(e.productId(), e.auctionId()), KafkaTopics.AUCTION_STARTED.getTopicName());
 			case AuctionRelistedEvent e -> new OutboxEventMetadata(
-				"Auction", generateId(e.productId(), e.newAuctionId()), KafkaTopics.AUCTION_MANAGEMENT.getTopicName());
+				"Auction", generateId(e.productId(), e.newAuctionId()), KafkaTopics.AUCTION_RELISTED.getTopicName());
+			case AuctionOutbidEvent e -> new OutboxEventMetadata(
+				"Auction", String.valueOf(e.auctionId()), KafkaTopics.AUCTION_OUTBID.getTopicName());
 			case SettlementFinishedEvent e -> new OutboxEventMetadata(
 				"Payment", "settlement_payment", KafkaTopics.PAYMENT_SETTLEMENT_FINISHED.getTopicName());
 			case AuctionPaymentCompletedEvent e -> new OutboxEventMetadata(
