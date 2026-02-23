@@ -37,7 +37,7 @@ public class ProductImageS3UseCase {
 	@Value("${aws.s3.expiration-minutes}")
 	private long expirationMinutes;
 
-	public PresignedUrlResponseDto createPresignerUrl(PresignedUrlRequestDto presignedUrlRequestDto) {
+	public PresignedUrlResponseDto createPresignedUrl(PresignedUrlRequestDto presignedUrlRequestDto) {
 		String uniqueFileName = createUniqueFileName(presignedUrlRequestDto.fileName());
 		String contentType = presignedUrlRequestDto.contentType();
 		String s3Path = "temp/" + uniqueFileName;
