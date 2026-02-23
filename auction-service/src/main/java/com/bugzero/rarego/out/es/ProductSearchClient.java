@@ -227,7 +227,7 @@ public class ProductSearchClient {
 
     private ProductAuctionResponseDto convertToDto(ProductSearchDocumentDto doc) {
         List<String> imageUrls = (doc.imageUrls() != null && !doc.imageUrls().isEmpty())
-            ? doc.imageUrls().stream().map(s3Utils::getPublicUrl).toList()
+            ? doc.imageUrls().stream().map(s3Utils::getPublicUrl).filter(Objects::nonNull).toList()
             : List.of();
         String thumbnailUrl = imageUrls.isEmpty() ? "" : imageUrls.get(0);
 
