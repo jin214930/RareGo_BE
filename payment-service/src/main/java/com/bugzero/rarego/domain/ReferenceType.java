@@ -5,5 +5,6 @@ public enum ReferenceType {
 	DEPOSIT,
 	AUCTION_ORDER,
 	SETTLEMENT,
-	REFUND
+	REFUND,
+	WITHDRAW
 }

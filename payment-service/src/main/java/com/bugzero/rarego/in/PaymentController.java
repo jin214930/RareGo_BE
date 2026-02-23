@@ -34,6 +34,7 @@ import com.bugzero.rarego.in.dto.PaymentRequestDto;
 import com.bugzero.rarego.in.dto.PaymentRequestResponseDto;
 import com.bugzero.rarego.in.dto.WalletResponseDto;
 import com.bugzero.rarego.in.dto.WalletTransactionResponseDto;
+import com.bugzero.rarego.in.dto.WithdrawRequestDto;
 import com.bugzero.rarego.shared.payment.dto.SettlementResponseDto;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -125,6 +126,16 @@ public class PaymentController {
 	public SuccessResponseDto<WalletResponseDto> getMyWallet(@AuthenticationPrincipal MemberPrincipal principal) {
 		WalletResponseDto response = paymentFacade.getMyWallet(principal.publicId());
 		return SuccessResponseDto.from(SuccessType.OK, response);
+	}
+
+	@Operation(summary = "예치금 출금", description = "예치금을 출금합니다.")
+	@PostMapping("/withdraw")
+	public SuccessResponseDto<Void> withdraw(
+		@AuthenticationPrincipal MemberPrincipal principal,
+		@Valid @RequestBody WithdrawRequestDto request
+	) {
+		paymentFacade.withdraw(principal.publicId(), request);
+		return SuccessResponseDto.from(SuccessType.OK);
 	}
 
 	// 정산 배치 실행 api

@@ -9,15 +9,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum ErrorType {
-    // Global (9000 ~ 9999)
-    INTERNAL_SERVER_ERROR(500, 9000, "서버 오류가 발생했습니다."),
-    INVALID_INPUT(400, 9001, "잘못된 입력값입니다."),
-    LOCK_ACQUISITION_FAILED(503, 9002, "현재 요청이 많아 처리가 지연되고 있습니다. 잠시 후 다시 시도해주세요."),
-    CONCURRENCY_ISSUE(409, 9003, "동시성 이슈가 발생했습니다. 잠시 후 다시 시도해주세요."),
+	// Global (9000 ~ 9999)
+	INTERNAL_SERVER_ERROR(500, 9000, "서버 오류가 발생했습니다."),
+	INVALID_INPUT(400, 9001, "잘못된 입력값입니다."),
+	LOCK_ACQUISITION_FAILED(503, 9002, "현재 요청이 많아 처리가 지연되고 있습니다. 잠시 후 다시 시도해주세요."),
+	CONCURRENCY_ISSUE(409, 9003, "동시성 이슈가 발생했습니다. 잠시 후 다시 시도해주세요."),
 	JSON_SERIALIZATION_FAILED(400, 9004, "JSON 직렬화에 실패했습니다. 데이터를 확인헤주세요."),
-	UNSUPPORTED_OUTBOX_EVENT(404,9005,"아웃박스 패턴이 지원하지 않는 이벤트 유형입니다"),
-	OUTBOX_NOT_FOUND(404,9006, "아웃박스 데이터를 찾을 수 없습니다."),
-
+	UNSUPPORTED_OUTBOX_EVENT(404, 9005, "아웃박스 패턴이 지원하지 않는 이벤트 유형입니다"),
+	OUTBOX_NOT_FOUND(404, 9006, "아웃박스 데이터를 찾을 수 없습니다."),
 
 	// Member (1000 ~ 1499)
 	MEMBER_NOT_FOUND(404, 1001, "존재하지 않는 회원입니다."),
@@ -126,6 +125,7 @@ public enum ErrorType {
 	PAYMENT_CANCEL_FAILED(400, 4109, "토스 결제 취소에 실패했습니다."),
 	PAYMENT_LOOKUP_FAILED(400, 4110, "토스 결제 조회에 실패했습니다."),
 	PAYMENT_NOT_FOUND_IN_TOSS(404, 4111, "토스 결제 정보를 찾을 수 없습니다."),
+	INVALID_WITHDRAW_AMOUNT(400, 4112, "출금 금액이 올바르지 않습니다."),
 
 	AUCTION_ORDER_NOT_FOUND(404, 4201, "주문 정보를 찾을 수 없습니다."),
 	NOT_AUCTION_WINNER(403, 4202, "낙찰자만 결제할 수 있습니다."),
