@@ -1,6 +1,7 @@
 package com.bugzero.rarego.security;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
@@ -9,7 +10,6 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-import java.nio.charset.StandardCharsets;
 
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
@@ -61,7 +61,7 @@ public class CustomOAuth2FailureHandler implements AuthenticationFailureHandler 
 			int numericCode = Integer.parseInt(code);
 			return ErrorType.findByCode(numericCode).orElse(null);
 		} catch (NumberFormatException ignored) {
-			// code가 숫자 포맷이 아니면 enum 이름으로 파싱 시도
+			// fall through
 		}
 		try {
 			return ErrorType.valueOf(code);
