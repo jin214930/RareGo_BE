@@ -5,47 +5,44 @@ import java.nio.charset.StandardCharsets;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
-public class DLTConsumer {
+public abstract class AbstractDLTConsumer {
 
 	@Value("${spring.application.name}")
 	private String applicationName;
 
 	/**
-	 * 특정 도메인에 종속되지 않고, .DLT로 끝나는 모든 토픽을 구독합니다.
+	 * 공통 실행 메서드: 각 서비스 리스너가 호출할 대상입니다.
 	 */
-	@KafkaListener(
-		topicPattern = ".*[.-](?i)dlt",
-		groupId = "${spring.application.name}-global-dlt-group",
-		// [핵심] 에러 핸들러가 없는 전용 팩토리를 사용하도록 명시합니다.
-		containerFactory = "dltContainerFactory"
-	)
-	public void processDlt(ConsumerRecord<String, String> record) {
+	protected void process(ConsumerRecord<String, String> record) {
 		try {
-			log.error("============= [Global DLT Monitor] =============");
+			log.error("============= [Global DLT Monitor - {}] =============", applicationName.toUpperCase());
 
-			// 로그에서 확인된 실제 키값을 직접 매핑합니다.
+			// 우리가 확인한 실제 헤더 키값 적용
 			String originalTopic = getHeaderValue(record, "kafka_dlt-original-topic");
 			String errorMessage = getHeaderValue(record, "kafka_dlt-exception-message");
 			String messageId = getHeaderValue(record, "messageId");
 
-			log.error("발생 서비스: {}", applicationName);
 			log.error("원본 토픽: {}", originalTopic);
 			log.error("메시지 ID: {}", messageId);
 			log.error("에러 내용: {}", errorMessage);
 			log.error("데이터: {}", record.value());
-			log.error("===============================================");
+			log.error("====================================================");
 
-			// TODO: Slack 알림 시 errorMessage의 앞부분만 잘라서 보내면 깔끔합니다.
+			// 추가 로직(슬랙 알림 등)이 필요한 경우 하위 클래스에서 처리하도록 훅을 제공합니다.
+			handleCustomLogic(originalTopic, errorMessage, record.value());
+
 		} catch (Exception e) {
-			log.error("DLT 로깅 중 에러 발생: {}", e.getMessage());
+			log.error("DLT 로깅 처리 중 예외 발생: {}", e.getMessage());
 		}
+	}
+
+	// 하위 클래스에서 선택적으로 오버라이딩 (예: 슬랙 알림 전송)
+	protected void handleCustomLogic(String topic, String error, String payload) {
+		// 기본값은 빈 로직
 	}
 
 	private String getHeaderValue(ConsumerRecord<?, ?> record, String headerKey) {
