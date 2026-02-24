@@ -75,4 +75,8 @@ public class Account extends BaseIdAndTime {
 	public void markPending() {
 		this.status = AccountStatus.PENDING;
 	}
+
+	public void changeMemberPublicId(String memberPublicId) {
+		this.memberPublicId = memberPublicId;
+	}
 }

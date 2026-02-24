@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -104,5 +105,37 @@ class AuthJoinAccountUseCaseTest {
 		List<Account> savedAccounts = captor.getAllValues();
 		Account lastSaved = savedAccounts.get(savedAccounts.size() - 1);
 		assertThat(lastSaved.getStatus()).isEqualTo(AccountStatus.PENDING);
+	}
+
+	@Test
+	@DisplayName("멤버가 기존에 존재해 다른 publicId를 반환하면 계정의 publicId를 교체한다.")
+	void joinReplacesMemberPublicIdWhenMemberReturnsDifferentId() {
+		when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(accountRepository.findByMemberPublicId(anyString())).thenReturn(Optional.empty());
+
+		AtomicReference<String> responsePublicId = new AtomicReference<>();
+		when(memberJoinResilienceClient.join(eq("test@example.com"), anyString()))
+			.thenAnswer(invocation -> {
+				String requested = invocation.getArgument(1);
+				String generated;
+				do {
+					generated = UUID.randomUUID().toString();
+				} while (generated.equals(requested));
+				responsePublicId.set(generated);
+				return new MemberJoinResponseDto("tester", generated);
+			});
+
+		Account result = authJoinAccountUseCase.join(Provider.GOOGLE, "google-123", "test@example.com");
+
+		ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
+		verify(accountRepository, atLeast(2)).save(captor.capture());
+		List<Account> savedAccounts = captor.getAllValues();
+		Account lastSaved = savedAccounts.get(savedAccounts.size() - 1);
+
+		assertThat(responsePublicId.get()).isNotNull();
+		assertThat(lastSaved.getMemberPublicId()).isEqualTo(responsePublicId.get());
+		assertThat(lastSaved.getStatus()).isEqualTo(AccountStatus.ACTIVE);
+		assertThat(result.getMemberPublicId()).isEqualTo(responsePublicId.get());
+		verify(accountRepository).findByMemberPublicId(responsePublicId.get());
 	}
 }

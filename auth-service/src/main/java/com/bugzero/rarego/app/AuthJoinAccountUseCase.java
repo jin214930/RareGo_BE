@@ -63,7 +63,8 @@ public class AuthJoinAccountUseCase {
 		accountRepository.save(account);
 		try {
 			MemberJoinResponseDto memberResponse = joinMember(email, account.getMemberPublicId());
-			validateMemberJoinResponse(memberResponse, account.getMemberPublicId());
+			validateMemberJoinResponse(memberResponse);
+			reconcileMemberPublicId(account, memberResponse.memberPublicId());
 			account.markActive();
 			return accountRepository.save(account);
 		} catch (RuntimeException e) {
@@ -81,13 +82,23 @@ public class AuthJoinAccountUseCase {
 		}
 	}
 
-	private void validateMemberJoinResponse(MemberJoinResponseDto response, String expectedMemberPublicId) {
+	private void validateMemberJoinResponse(MemberJoinResponseDto response) {
 		if (response == null || response.memberPublicId() == null || response.memberPublicId().isBlank()) {
 			throw new CustomException(ErrorType.AUTH_JOIN_FAILED);
 		}
-		if (!expectedMemberPublicId.equals(response.memberPublicId())) {
-			throw new CustomException(ErrorType.AUTH_JOIN_FAILED);
+	}
+
+	private void reconcileMemberPublicId(Account account, String responseMemberPublicId) {
+		if (responseMemberPublicId.equals(account.getMemberPublicId())) {
+			return;
 		}
+		accountRepository.findByMemberPublicId(responseMemberPublicId)
+			.ifPresent(existing -> {
+				if (!existing.getId().equals(account.getId())) {
+					throw new CustomException(ErrorType.CONCURRENCY_ISSUE);
+				}
+			});
+		account.changeMemberPublicId(responseMemberPublicId);
 	}
 
 	private RuntimeException mapJoinException(Throwable throwable) {
