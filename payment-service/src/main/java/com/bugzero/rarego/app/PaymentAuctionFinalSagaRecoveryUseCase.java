@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentAuctionFinalSagaRecoveryUseCase {
 	private static final int DEFAULT_BATCH_LIMIT = 20;
 	private static final String ORDER_STATUS_PROCESSING = "PROCESSING";
-	private static final String ORDER_STATUS_COMPLETE = "SUCCESS";
+	private static final String ORDER_STATUS_SUCCESS = "SUCCESS";
 
 	private final PaymentSagaExecutionRepository sagaRepository;
 	private final AuctionOrderApiClient auctionOrderApiClient;
@@ -127,7 +127,7 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 			AuctionOrderDto order = auctionOrderApiClient.getOrder(auctionId);
 			boolean settlementExists = settlementRepository.findByAuctionIdForUpdate(auctionId).isPresent();
 
-			if (settlementExists && ORDER_STATUS_COMPLETE.equals(order.status())) {
+			if (settlementExists && ORDER_STATUS_SUCCESS.equals(order.status())) {
 				log.info("낙찰 최종결제 Saga 재개 스킵(이미 로컬 정산 완료): auctionId={}", auctionId);
 				sagaTracker.markCompleted(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey,
 					AuctionFinalPaymentSagaStep.COMPLETED);
@@ -139,7 +139,7 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 				return;
 			}
 
-			if (ORDER_STATUS_COMPLETE.equals(order.status())) {
+			if (ORDER_STATUS_SUCCESS.equals(order.status())) {
 				replayFinalPayment(order, sagaBusinessKey, checkpoint, false, sagaCommandId);
 				return;
 			}
