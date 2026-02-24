@@ -4,21 +4,21 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.bugzero.rarego.global.slack.SlackNotifier;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RequiredArgsConstructor
 public abstract class AbstractDLTConsumer {
 
 	@Value("${spring.application.name}")
 	private String applicationName;
 
-	private final SlackNotifier slackNotifier;
+	@Autowired
+	private SlackNotifier slackNotifier;
 
 	/**
 	 * 공통 실행 메서드: 각 서비스 리스너가 호출할 대상입니다.
