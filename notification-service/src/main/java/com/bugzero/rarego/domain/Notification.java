@@ -56,7 +56,10 @@ public class Notification extends BaseIdAndTime {
 	private NotificationType type;
 
 	@Column(nullable = false)
-	private Long referenceId;
+	private Long referenceId; // 중복 방지용
+
+	@Column(nullable = false)
+	private Long relatedId; // 링크 생성용
 
 	public void read() {
 		this.isRead = true;

@@ -73,4 +73,18 @@ public class Wallet extends BaseIdAndTime {
 		this.holdingAmount -= amount;
 		this.balance -= amount;
 	}
+
+	public void withdraw(int amount) {
+		if (amount <= 0) {
+			throw new CustomException(ErrorType.INVALID_WITHDRAW_AMOUNT);
+		}
+
+		int availableBalance = this.balance - this.holdingAmount;
+
+		if (availableBalance < amount) {
+			throw new CustomException(ErrorType.INSUFFICIENT_BALANCE);
+		}
+
+		this.balance -= amount;
+	}
 }

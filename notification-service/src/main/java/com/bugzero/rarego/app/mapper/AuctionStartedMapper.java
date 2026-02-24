@@ -42,6 +42,7 @@ public class AuctionStartedMapper implements NotificationMapper<AuctionStartedEv
 			.member(member)
 			.type(NotificationType.BOOKMARK_AUCTION_STARTED)
 			.referenceId(event.auctionId())
+			.relatedId(event.auctionId())
 			.build();
 	}
 }
