@@ -31,7 +31,6 @@ public class AiGetInternalPriceUseCase {
 	//가져올 유사상품 최대갯수
 	private static final int LIST_LIMIT = 3;
 
-
 	public List<AiInternalPriceResponseDto> findTopSimilarProducts(
 		AiInternalPriceRequestDto dto) {
 		String searchQuery = String.format(ProductSearchDocument.EMBEDDING_TEMPLATE,
@@ -66,7 +65,7 @@ public class AiGetInternalPriceUseCase {
 					doc.getFinalPrice(),
 					doc.getStartedAt(),
 					doc.getClosedAt(),
-					doc.getImageUrl(),
+					doc.getImageUrls(),
 					hit.getScore() // ES에서 계산된 유사도 점수
 				);
 			})

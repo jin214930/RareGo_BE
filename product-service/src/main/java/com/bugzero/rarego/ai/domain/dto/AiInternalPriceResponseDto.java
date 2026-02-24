@@ -1,6 +1,7 @@
 package com.bugzero.rarego.ai.domain.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
@@ -16,7 +17,7 @@ public record AiInternalPriceResponseDto(
 	int finalPrice,
 	LocalDateTime startedAt,
 	LocalDateTime closedAt,
-	String thumbnail,
-	double score
+	List<String> imageUrls,
+	float score
 ) {
 }

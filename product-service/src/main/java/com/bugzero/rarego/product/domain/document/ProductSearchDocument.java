@@ -71,8 +71,8 @@ public class ProductSearchDocument {
 	@Field(type = FieldType.Long)
 	private Long sellerId;
 
-	@Field(type = FieldType.Text)
-	private String imageUrl;
+	@Field(type = FieldType.Keyword)
+	private List<String> imageUrls;
 
 	// 상품명+설명 벡터
 	@Field(type = FieldType.Dense_Vector,
