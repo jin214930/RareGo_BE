@@ -14,7 +14,8 @@ public enum WalletTransactionType {
 	AUCTION_PAYMENT("낙찰금 결제"),
 	REFUND_DONE("환불"),
 	SETTLEMENT_PAID("정산 지급"),
-	SETTLEMENT_FEE("정산 수수료");
+	SETTLEMENT_FEE("정산 수수료"),
+	WITHDRAW_DONE("예치금 출금");
 
 	private final String description;
 }
