@@ -58,7 +58,6 @@ class NotificationCreateNotificationUseCaseTest {
 		given(member.getPublicId()).willReturn("member-uuid");
 		given(notification.getType()).willReturn(NotificationType.AUCTION_WON);
 		given(notification.getMessage()).willReturn("메시지");
-		given(notification.getReferenceId()).willReturn(50L);
 		given(notification.getCreatedAt()).willReturn(LocalDateTime.now());
 		given(notification.isRead()).willReturn(false);
 

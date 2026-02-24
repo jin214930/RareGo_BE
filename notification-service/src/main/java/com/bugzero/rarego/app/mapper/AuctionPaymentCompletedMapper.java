@@ -35,6 +35,7 @@ public class AuctionPaymentCompletedMapper implements NotificationMapper<Auction
 			.member(seller)
 			.type(NotificationType.AUCTION_PAYMENT_COMPLETED)
 			.referenceId(event.auctionId())
+			.relatedId(event.auctionId())
 			.build();
 
 		return List.of(notification);
