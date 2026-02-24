@@ -18,6 +18,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import com.bugzero.rarego.ai.config.AiMetrics;
 import com.bugzero.rarego.ai.domain.dto.AiExternalPriceRequestDto;
 import com.bugzero.rarego.ai.domain.type.TemporaryCondition;
 import com.bugzero.rarego.shared.product.type.Category;
@@ -33,6 +34,9 @@ class AiGetExternalPriceUseCaseTest {
 	@Mock
 	private ChatModel chatModel; // ChatClient가 사용하는 핵심 엔진만 모킹
 
+	@Mock
+	private AiMetrics aiMetrics;
+
 	Duration apiTimeout;
 
 	@Test
@@ -42,7 +46,7 @@ class AiGetExternalPriceUseCaseTest {
 		// 이 방식은 내부 인터페이스를 모킹할 필요가 없어 오류가 나지 않습니다.
 		apiTimeout = Duration.ofSeconds(30);
 		ChatClient chatClient = ChatClient.builder(chatModel).build();
-		useCase = new AiGetExternalPriceUseCase(chatClient, apiTimeout);
+		useCase = new AiGetExternalPriceUseCase(chatClient, aiMetrics, apiTimeout);
 
 		// 2. 가짜 응답 설정
 		String mockResponse = "4,500,000원";
