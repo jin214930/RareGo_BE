@@ -131,7 +131,6 @@ class NotificationGetNotificationsUseCaseTest {
 		given(notification.getId()).willReturn(100L);
 		given(notification.getType()).willReturn(NotificationType.AUCTION_WON); // Enum 필수
 		given(notification.getMessage()).willReturn("낙찰 축하합니다.");
-		given(notification.getReferenceId()).willReturn(50L);
 		given(notification.isRead()).willReturn(false);
 		given(notification.getCreatedAt()).willReturn(LocalDateTime.now());
 		return notification;
