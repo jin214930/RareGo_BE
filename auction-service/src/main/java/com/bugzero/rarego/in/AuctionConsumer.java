@@ -12,6 +12,7 @@ import com.bugzero.rarego.app.AuctionFacade;
 import com.bugzero.rarego.global.inbox.app.InboxUseCase;
 import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
 import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
+import com.bugzero.rarego.shared.payment.event.PaymentTimeoutEvent;
 import com.bugzero.rarego.shared.product.event.ProductCreateAuctionEvent;
 import com.bugzero.rarego.shared.product.event.ProductDeleteAuctionEvent;
 import com.bugzero.rarego.shared.product.event.ProductUpdateAuctionEvent;
@@ -23,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 @KafkaListener(
-	topics = {"auction-info-management", "member-joined", "member-updated"},
+	topics = {"auction-info-management", "member-joined", "member-updated", "payment-timeout"},
 	groupId = "${spring.kafka.consumer.group-id}",
 	containerFactory = "kafkaListenerContainerFactory"
 )
@@ -39,7 +40,8 @@ public class AuctionConsumer {
 	@Transactional
 	@KafkaHandler
 	public void onAuctionEvent(@Payload ProductCreateAuctionEvent event, @Header("messageId") String messageId) {
-		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup)) return;
+		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup))
+			return;
 
 		log.info("[Auction] 상품 경매 생성 수신: ProductId={}, messageId={}", event.productId(), messageId);
 		auctionFacade.createAuction(event.productId(), event.publicId(), event.dto());
@@ -48,7 +50,8 @@ public class AuctionConsumer {
 	@Transactional
 	@KafkaHandler
 	public void onAuctionEvent(@Payload ProductUpdateAuctionEvent event, @Header("messageId") String messageId) {
-		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup)) return;
+		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup))
+			return;
 
 		log.info("[Auction] 상품 경매 수정 수신: ProductId={}, messageId={}", event.productId(), messageId);
 		auctionFacade.updateAuction(event.publicId(), event.dto());
@@ -57,7 +60,8 @@ public class AuctionConsumer {
 	@Transactional
 	@KafkaHandler
 	public void onAuctionEvent(@Payload ProductDeleteAuctionEvent event, @Header("messageId") String messageId) {
-		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup)) return;
+		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup))
+			return;
 
 		log.info("[Auction] 상품 경매 삭제 수신: ProductId={}, messageId={}", event.productId(), messageId);
 		auctionFacade.deleteAuction(event.publicId(), event.productId());
@@ -68,7 +72,8 @@ public class AuctionConsumer {
 	@Transactional
 	@KafkaHandler
 	public void onMemberEvent(@Payload MemberJoinedEvent event, @Header("messageId") String messageId) {
-		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup)) return;
+		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup))
+			return;
 
 		try {
 			auctionFacade.syncMember(event.memberDto());
@@ -82,13 +87,31 @@ public class AuctionConsumer {
 	@Transactional
 	@KafkaHandler
 	public void onMemberEvent(@Payload MemberUpdatedEvent event, @Header("messageId") String messageId) {
-		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup)) return;
+		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup))
+			return;
 
 		try {
 			auctionFacade.syncMember(event.memberDto());
 			log.info("[auction] 회원 레플리카 수정 완료 - memberPublicId: {}", event.memberDto().publicId());
 		} catch (Exception e) {
 			log.error("[auction] 회원 레플리카 수정 실패 - memberPublicId: {}", event.memberDto().publicId(), e);
+			throw e;
+		}
+	}
+
+	/* --- 결제 관련 이벤트 핸들러 --- */
+
+	@Transactional
+	@KafkaHandler
+	public void onPaymentEvent(@Payload PaymentTimeoutEvent event, @Header("messageId") String messageId) {
+		if (inboxUseCase.isAlreadyProcessed(messageId, consumerGroup))
+			return;
+
+		try {
+			auctionFacade.failOrder(event.auctionId());
+			log.info("[Auction] 결제 타임아웃으로 주문 실패 처리 완료 - auctionId: {}", event.auctionId());
+		} catch (Exception e) {
+			log.error("[Auction] 결제 타임아웃 주문 실패 처리 실패 - auctionId: {}", event.auctionId(), e);
 			throw e;
 		}
 	}
