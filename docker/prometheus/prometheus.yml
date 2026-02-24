@@ -8,6 +8,11 @@ scrape_configs:
     static_configs:
       - targets: ["prometheus:9090"]
 
+  - job_name: auth-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [ "auth-service:8080" ]
+
   - job_name: member-service
     metrics_path: /actuator/prometheus
     static_configs:
@@ -18,22 +23,18 @@ scrape_configs:
     static_configs:
       - targets: ["payment-service:8082"]
 
-  - job_name: product-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: [ "product-service:8084" ]
-
   - job_name: auction-service
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: [ "auction-service:8083" ]
 
+  - job_name: product-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [ "product-service:8084" ]
+
+
   - job_name: notification-service
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: [ "notification-service:8085" ]
-
-  - job_name: auth-service
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: [ "auth-service:8089" ]
