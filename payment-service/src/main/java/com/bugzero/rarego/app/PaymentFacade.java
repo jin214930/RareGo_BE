@@ -18,6 +18,7 @@ import com.bugzero.rarego.in.dto.PaymentRequestResponseDto;
 import com.bugzero.rarego.in.dto.RefundResponseDto;
 import com.bugzero.rarego.in.dto.WalletResponseDto;
 import com.bugzero.rarego.in.dto.WalletTransactionResponseDto;
+import com.bugzero.rarego.in.dto.WithdrawRequestDto;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.member.domain.MemberDto;
 import com.bugzero.rarego.shared.payment.dto.DepositHoldRequestDto;
@@ -150,5 +151,12 @@ public class PaymentFacade {
 	 */
 	public void reconcilePayments() {
 		paymentReconcilePaymentUseCase.reconcilePayments();
+	}
+
+	/**
+	 * 예치금 출금
+	 */
+	public void withdraw(String memberPublicId, WithdrawRequestDto request) {
+		paymentWithdrawUseCase.withdraw(memberPublicId, request);
 	}
 }
