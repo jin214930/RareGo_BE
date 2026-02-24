@@ -5,23 +5,25 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.bugzero.rarego.domain.Account;
+import com.bugzero.rarego.domain.AccountStatus;
 import com.bugzero.rarego.domain.Provider;
 import com.bugzero.rarego.out.AccountRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthLoginAccountFacade {
 	private final AccountRepository accountRepository;
 	private final AuthJoinAccountUseCase authJoinAccountUseCase;
 
-	//
 	public Account loginOrSignup(String providerId, String email, Provider provider) {
 		return findByProviderAndProviderId(provider, providerId)
-			.map(this::ensureNotDeleted)
+			.map(account -> ensureActive(ensureNotDeleted(account), email))
 			.orElseGet(() -> authJoinAccountUseCase.join(provider, providerId, email));
 	}
 
@@ -37,5 +39,18 @@ public class AuthLoginAccountFacade {
 			throw new CustomException(ErrorType.AUTH_ACCOUNT_DELETED);
 		}
 		return account;
+	}
+
+	private Account ensureActive(Account account, String email) {
+		if (account.getStatus() == AccountStatus.ACTIVE) {
+			return account;
+		}
+		try {
+			return authJoinAccountUseCase.completePending(account, email);
+		} catch (RuntimeException e) {
+			log.warn("[auth] pending account 활성화 실패, 수정 필요: provider={}, memberPublicId={}",
+				account.getProvider(), account.getMemberPublicId(), e);
+			throw e;
+		}
 	}
 }

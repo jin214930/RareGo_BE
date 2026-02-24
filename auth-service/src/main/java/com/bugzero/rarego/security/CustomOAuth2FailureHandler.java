@@ -9,7 +9,6 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-import java.nio.charset.StandardCharsets;
 
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
@@ -28,12 +27,10 @@ public class CustomOAuth2FailureHandler implements AuthenticationFailureHandler 
 		ErrorType errorType = resolveErrorType(exception);
 		String errorMessage = resolveErrorMessage(exception, errorType);
 
-		String targetUrl = UriComponentsBuilder.fromUriString(frontUrl + "/login")
+		String targetUrl = UriComponentsBuilder.fromUriString(frontUrl + "/auth/callback")
 			.queryParam("errorCode", errorType.getCode())
 			.queryParam("errorMessage", errorMessage)
-			.build()
-			.encode(StandardCharsets.UTF_8)
-			.toUriString();
+			.build().toUriString();
 
 		response.sendRedirect(targetUrl);
 	}
@@ -61,7 +58,7 @@ public class CustomOAuth2FailureHandler implements AuthenticationFailureHandler 
 			int numericCode = Integer.parseInt(code);
 			return ErrorType.findByCode(numericCode).orElse(null);
 		} catch (NumberFormatException ignored) {
-			// code가 숫자 포맷이 아니면 enum 이름으로 파싱 시도
+			// fall through
 		}
 		try {
 			return ErrorType.valueOf(code);

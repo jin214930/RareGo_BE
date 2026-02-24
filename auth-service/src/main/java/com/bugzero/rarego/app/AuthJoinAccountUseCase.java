@@ -4,16 +4,16 @@ import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Account;
+import com.bugzero.rarego.domain.AccountStatus;
 import com.bugzero.rarego.domain.AuthRole;
 import com.bugzero.rarego.domain.Provider;
-import com.bugzero.rarego.out.AccountRepository;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.out.AccountRepository;
+import com.bugzero.rarego.out.MemberJoinResilienceClient;
 import com.bugzero.rarego.shared.member.domain.MemberJoinResponseDto;
-import com.bugzero.rarego.shared.member.out.MemberApiClient;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,28 +21,29 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthJoinAccountUseCase {
 	private final AccountRepository accountRepository;
-	private final MemberApiClient memberApiClient;
-	// Member 서비스 호출 (동기)
+	private final MemberJoinResilienceClient memberJoinResilienceClient;
 
-	@Transactional
 	public Account join(Provider provider, String providerId, String email) {
-		String requestedMemberPublicId = UUID.randomUUID().toString();
-		MemberJoinResponseDto memberResponse = memberApiClient.join(email, requestedMemberPublicId);
-		String memberPublicId = memberResponse.memberPublicId();
-
-		if (memberPublicId == null || memberPublicId.isBlank()) {
-			throw new CustomException(ErrorType.AUTH_JOIN_FAILED);
-		}
-		// 멱등성 처리: 이미 같은 memberPublicId가 반환되면 Account 생성하지 않고 기존 Account ~ 본인인증 같은 경우
-		return accountRepository.findByMemberPublicId(memberPublicId)
-			.orElseGet(() -> createAccount(provider, providerId, memberPublicId));
+		Account account = createPendingAccount(provider, providerId);
+		return handleJoin(account, email);
 	}
 
-	private Account createAccount(Provider provider, String providerId, String memberPublicId) {
-		// 2. Account 생성 (provider+providerId 유니크)
+	public Account completePending(Account account, String email) {
+		return handleJoin(account, email);
+	}
+
+	private Account handleJoin(Account account, String email) {
+		if (account.getStatus() == AccountStatus.ACTIVE) {
+			return account;
+		}
+		return activateAccount(account, email);
+	}
+
+	private Account createPendingAccount(Provider provider, String providerId) {
 		try {
 			Account account = Account.builder()
-				.memberPublicId(memberPublicId)
+				.memberPublicId(UUID.randomUUID().toString())
+				.status(AccountStatus.PENDING)
 				.role(AuthRole.USER)
 				.provider(provider)
 				.providerId(providerId)
@@ -52,8 +53,50 @@ public class AuthJoinAccountUseCase {
 			// 동시성 문제로 이미 만들어졌다면 다시 조회해서 반환
 			return accountRepository.findByProviderAndProviderId(provider, providerId)
 				.orElseThrow(() -> e);
-		} catch (Exception e) {
+		}
+	}
+
+	private Account activateAccount(Account account, String email) {
+		if (email == null || email.isBlank()) {
 			throw new CustomException(ErrorType.AUTH_JOIN_FAILED);
 		}
+		accountRepository.save(account);
+		try {
+			MemberJoinResponseDto memberResponse = joinMember(email, account.getMemberPublicId());
+			validateMemberJoinResponse(memberResponse, account.getMemberPublicId());
+			account.markActive();
+			return accountRepository.save(account);
+		} catch (RuntimeException e) {
+			account.markPending();
+			accountRepository.save(account);
+			throw e;
+		}
+	}
+
+	private MemberJoinResponseDto joinMember(String email, String memberPublicId) {
+		try {
+			return memberJoinResilienceClient.join(email, memberPublicId);
+		} catch (RuntimeException e) {
+			throw mapJoinException(e);
+		}
+	}
+
+	private void validateMemberJoinResponse(MemberJoinResponseDto response, String expectedMemberPublicId) {
+		if (response == null || response.memberPublicId() == null || response.memberPublicId().isBlank()) {
+			throw new CustomException(ErrorType.AUTH_JOIN_FAILED);
+		}
+		if (!expectedMemberPublicId.equals(response.memberPublicId())) {
+			throw new CustomException(ErrorType.AUTH_JOIN_FAILED);
+		}
+	}
+
+	private RuntimeException mapJoinException(Throwable throwable) {
+		if (throwable instanceof CustomException customException) {
+			return customException;
+		}
+		if (throwable.getCause() instanceof CustomException customException) {
+			return customException;
+		}
+		return new CustomException(ErrorType.MEMBER_JOIN_FAILED);
 	}
 }

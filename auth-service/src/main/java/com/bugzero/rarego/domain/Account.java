@@ -31,6 +31,10 @@ public class Account extends BaseIdAndTime {
 	private String memberPublicId;
 
 	@Enumerated(EnumType.STRING)
+	@Column(name = "status", length = 16)
+	private AccountStatus status;
+
+	@Enumerated(EnumType.STRING)
 	@Column(name = "role", nullable = false)
 	private AuthRole role;
 
@@ -44,11 +48,13 @@ public class Account extends BaseIdAndTime {
 	@Builder
 	public Account(
 		String memberPublicId,
+		AccountStatus status,
 		AuthRole role,
 		Provider provider,
 		String providerId
 	) {
 		this.memberPublicId = memberPublicId;
+		this.status = status;
 		this.role = role;
 		this.provider = provider;
 		this.providerId = providerId;
@@ -56,5 +62,17 @@ public class Account extends BaseIdAndTime {
 
 	public void changeRole(AuthRole role) {
 		this.role = role;
+	}
+
+	public AccountStatus getStatus() {
+		return status == null ? AccountStatus.ACTIVE : status;
+	}
+
+	public void markActive() {
+		this.status = AccountStatus.ACTIVE;
+	}
+
+	public void markPending() {
+		this.status = AccountStatus.PENDING;
 	}
 }
