@@ -1,9 +1,12 @@
 package com.bugzero.rarego.config;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.springframework.stereotype.Component;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.Getter;
 
@@ -18,8 +21,11 @@ public class PaymentMetrics {
 	private final Counter paymentFailSystemCounter;
 	private final Counter paymentRefundCounter;
 	private final DistributionSummary paymentAmountSummary;
+	private final MeterRegistry registry;
+	private final AtomicInteger reconcileBacklogGauge;
 
 	public PaymentMetrics(MeterRegistry registry) {
+		this.registry = registry;
 		// 결제 시도 총 횟수
 		this.paymentTotalCounter = Counter.builder("payment.total")
 			.description("Total payment attempts")
@@ -59,6 +65,12 @@ public class PaymentMetrics {
 			.baseUnit("won")
 			.publishPercentiles(0.5, 0.75, 0.95, 0.99)
 			.register(registry);
+
+		this.reconcileBacklogGauge = new AtomicInteger();
+		Gauge.builder("payment.reconcile.backlog", reconcileBacklogGauge,
+				AtomicInteger::get)
+			.description("Current pending payments targeted for reconcile job")
+			.register(registry);
 	}
 
 	public void incrementPaymentTotal() {
@@ -87,5 +99,39 @@ public class PaymentMetrics {
 
 	public void recordPaymentAmount(long amount) {
 		paymentAmountSummary.record(amount);
+	}
+
+	public void setReconcileBacklog(int backlog) {
+		reconcileBacklogGauge.set(Math.max(backlog, 0));
+	}
+
+	public void recordReconcileTargets(int count) {
+		if (count > 0) {
+			registry.counter("payment.reconcile.target.total").increment(count);
+		}
+	}
+
+	public void incrementReconcileProcessed() {
+		registry.counter("payment.reconcile.process.total", "result", "processed").increment();
+	}
+
+	public void incrementReconcileFailure() {
+		registry.counter("payment.reconcile.process.total", "result", "failed").increment();
+	}
+
+	public void incrementReconcileNotFound() {
+		registry.counter("payment.reconcile.process.total", "result", "not_found_in_pg").increment();
+	}
+
+	public void incrementReconcileCancelRequested() {
+		registry.counter("payment.reconcile.process.total", "result", "cancel_requested").increment();
+	}
+
+	public void incrementCompensationCancelSuccess() {
+		registry.counter("payment.compensation.cancel.total", "result", "success").increment();
+	}
+
+	public void incrementCompensationCancelFailure() {
+		registry.counter("payment.compensation.cancel.total", "result", "failed").increment();
 	}
 }

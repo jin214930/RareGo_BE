@@ -10,6 +10,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.stereotype.Service;
 
+import com.bugzero.rarego.ai.config.AiMetrics;
 import com.bugzero.rarego.ai.domain.dto.AiInternalPriceRequestDto;
 import com.bugzero.rarego.ai.domain.dto.AiInternalPriceResponseDto;
 import com.bugzero.rarego.ai.domain.type.TemporaryCondition;
@@ -28,6 +29,7 @@ public class AiGetInternalPriceUseCase {
 
 	private final ElasticsearchOperations elasticsearchOperations;
 	private final EmbeddingModel embeddingModel;
+	private final AiMetrics aiMetrics;
 	//가져올 유사상품 최대갯수
 	private static final int LIST_LIMIT = 3;
 
@@ -39,9 +41,13 @@ public class AiGetInternalPriceUseCase {
 
 		// 임베딩 생성 실패 시 빈 리스트 반환 (AI 시세 추정은 벡터 필수)
 		List<Float> vectorList;
+		long embeddingStartedAt = System.nanoTime();
 		try {
 			vectorList = generateEmbeddingToFloat(searchQuery);
+			aiMetrics.recordEmbeddingDuration("success", System.nanoTime() - embeddingStartedAt);
 		} catch (Exception e) {
+			aiMetrics.incrementEmbeddingFailure();
+			aiMetrics.recordEmbeddingDuration("fail", System.nanoTime() - embeddingStartedAt);
 			log.warn("임베딩 생성 실패로 AI 시세 추정 불가: {}", e.getMessage());
 			return List.of();
 		}
@@ -49,8 +55,16 @@ public class AiGetInternalPriceUseCase {
 		NativeQuery nativeQuery = buildNativeQuery(vectorList, dto.category(), dto.condition());
 
 		// 검색 실행 및 결과 매핑
-		SearchHits<ProductSearchDocument> hits = elasticsearchOperations.search(nativeQuery,
-			ProductSearchDocument.class);
+		SearchHits<ProductSearchDocument> hits;
+		long searchStartedAt = System.nanoTime();
+		try {
+			hits = elasticsearchOperations.search(nativeQuery, ProductSearchDocument.class);
+			aiMetrics.recordVectorSearchDuration("success", System.nanoTime() - searchStartedAt);
+		} catch (RuntimeException e) {
+			aiMetrics.incrementVectorSearchFailure();
+			aiMetrics.recordVectorSearchDuration("fail", System.nanoTime() - searchStartedAt);
+			throw e;
+		}
 
 		return hits.getSearchHits().stream()
 			.map(hit -> {
