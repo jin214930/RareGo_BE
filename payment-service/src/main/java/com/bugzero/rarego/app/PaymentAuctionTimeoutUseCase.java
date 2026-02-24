@@ -1,6 +1,5 @@
 package com.bugzero.rarego.app;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +34,6 @@ public class PaymentAuctionTimeoutUseCase {
 	private final PaymentTransactionRepository transactionRepository;
 	private final SettlementRepository settlementRepository;
 	private final PaymentSupport paymentSupport;
-	private final ApplicationEventPublisher eventPublisher;
 	private final OutboxUseCase outboxUseCase;
 
 	@Transactional
