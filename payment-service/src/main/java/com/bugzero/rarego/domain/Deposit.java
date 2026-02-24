@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "PAYMENT_DEPOSIT", indexes = {
-	@Index(name = "idx_deposit_auction_id", columnList = "auction_id")
+	@Index(name = "idx_deposit_auction_status_member", columnList = "auction_id, status, member_id")
 }, uniqueConstraints = {
 	@UniqueConstraint(name = "uk_deposit_member_auction", columnNames = {"member_id", "auction_id"}) // 한 회원은 한
 	// 경매에 중복 예치
