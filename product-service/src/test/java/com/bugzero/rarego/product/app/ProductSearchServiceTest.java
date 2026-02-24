@@ -83,7 +83,7 @@ class ProductSearchServiceTest {
 		assertThat(savedDoc.getProductId()).isEqualTo(productId);
 		assertThat(savedDoc.getAuctionId()).isEqualTo(auctionId);
 		assertThat(savedDoc.getAuctionStatus()).isEqualTo(AuctionStatus.SCHEDULED);
-		assertThat(savedDoc.getImageUrl()).isEqualTo("http://image.url");
+		assertThat(savedDoc.getImageUrls()).containsExactly("http://image.url");
 	}
 
 	@Test
@@ -102,7 +102,8 @@ class ProductSearchServiceTest {
 		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
 		verify(searchRepository).save(captor.capture());
 
-		assertThat(captor.getValue().getImageUrl()).isEqualTo("http://first.jpg");
+		assertThat(captor.getValue().getImageUrls())
+			.containsExactly("http://first.jpg", "http://second.jpg", "http://third.jpg");
 	}
 
 	@Test

@@ -105,12 +105,11 @@ public class ProductSearchService {
 		// 임베딩 벡터 생성
 		List<Float> vector = generateEmbeddingSafe(textToEmbed);
 
-		// 이미지 정렬 및 선택
-		String imageUrl = (images != null && !images.isEmpty()) ? images.stream()
+		// 이미지 정렬 후 전체 URL 수집
+		List<String> imageUrls = (images != null && !images.isEmpty()) ? images.stream()
 			.sorted(Comparator.comparingInt(ProductImage::getSortOrder))
 			.map(ProductImage::getImageUrl)
-			.findFirst()
-			.orElse(null) : null;
+			.toList() : List.of();
 
 		return ProductSearchDocument.builder()
 			.id(docId)
@@ -120,7 +119,7 @@ public class ProductSearchService {
 			.productCondition(product.getProductCondition())
 			.category(product.getCategory())
 			.sellerId(product.getSeller().getId())
-			.imageUrl(imageUrl)
+			.imageUrls(imageUrls)
 			.embedding(vector)
 			.auctionId(auctionId)
 			.startPrice(startPrice)
@@ -158,7 +157,7 @@ public class ProductSearchService {
 			.startedAt(doc.getStartedAt())
 			.closedAt(LocalDateTime.now())
 			.sellerId(doc.getSellerId())
-			.imageUrl(doc.getImageUrl())
+			.imageUrls(doc.getImageUrls())
 			.embedding(doc.getEmbedding())
 			.build();
 
@@ -179,7 +178,7 @@ public class ProductSearchService {
 				.productCondition(doc.getProductCondition())
 				.category(doc.getCategory())
 				.sellerId(doc.getSellerId())
-				.imageUrl(doc.getImageUrl())
+				.imageUrls(doc.getImageUrls())
 				.embedding(doc.getEmbedding())
 				.startPrice(doc.getStartPrice())
 				.finalPrice(doc.getFinalPrice())
