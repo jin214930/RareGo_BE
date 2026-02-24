@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,9 +57,14 @@ public class KafkaConfig {
 	// [중요] DLT 발행을 위한 Recoverer 설정
 	@Bean
 	public DeadLetterPublishingRecoverer deadLetterPublishingRecoverer(KafkaTemplate<String, Object> kafkaTemplate) {
-		// 실패 시 "원본토픽명.DLT"로 메시지를 전송합니다.
-		// 이때 전송 실패 원인(Exception) 정보가 헤더에 자동으로 포함됩니다.
-		return new DeadLetterPublishingRecoverer(kafkaTemplate);
+		// 원본 레코드와 예외 정보를 바탕으로 목적지 토픽을 결정합니다.
+		return new DeadLetterPublishingRecoverer(kafkaTemplate, (record, exception) -> {
+			// 결과 예시: auction-info-management.auction-service.DLT
+			String dltTopicName = record.topic() + "." + applicationName + ".DLT";
+			log.info("[DLT 발행] 원본 토픽: {}, 목적지 DLT: {}", record.topic(), dltTopicName);
+
+			return new TopicPartition(dltTopicName, -1); // -1은 특정 파티션을 지정하지 않음을 의미
+		});
 	}
 
 	// [중요] 중앙 집중식 에러 핸들러 (Retry + DLT)
