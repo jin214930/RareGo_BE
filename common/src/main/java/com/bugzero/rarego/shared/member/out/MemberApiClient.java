@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -25,17 +26,23 @@ public class MemberApiClient {
 
 	public MemberApiClient(
 		@Value("${custom.global.internalBackUrl}") String internalBackUrl,
+		@Value("${custom.global.internal-api.connect-timeout-ms:1000}") int connectTimeoutMs,
+		@Value("${custom.global.internal-api.read-timeout-ms:2000}") int readTimeoutMs,
 		InternalApiErrorHandler errorHandler,
 		SystemAuthTokenProvider systemAuthTokenProvider) {
 		this.errorHandler = errorHandler;
+		SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+		requestFactory.setConnectTimeout(connectTimeoutMs);
+		requestFactory.setReadTimeout(readTimeoutMs);
 		this.internalRestClient = RestClient.builder()
 			.baseUrl(internalBackUrl + "/api/v1/internal/members")
+			.requestFactory(requestFactory)
 			.build();
 		this.systemAuthTokenProvider = systemAuthTokenProvider;
 	}
 
-	public MemberJoinResponseDto join(String email) {
-		MemberJoinRequestDto request = new MemberJoinRequestDto(email);
+	public MemberJoinResponseDto join(String email, String memberPublicId) {
+		MemberJoinRequestDto request = new MemberJoinRequestDto(email, memberPublicId);
 		SuccessResponseDto<MemberJoinResponseDto> response = internalRestClient.post()
 			.uri("/me")
 			.header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())

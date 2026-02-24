@@ -14,11 +14,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.bugzero.rarego.domain.Account;
+import com.bugzero.rarego.domain.AccountStatus;
 import com.bugzero.rarego.domain.AuthRole;
 import com.bugzero.rarego.domain.Provider;
-import com.bugzero.rarego.out.AccountRepository;
 import com.bugzero.rarego.app.AuthJoinAccountUseCase;
 import com.bugzero.rarego.app.AuthLoginAccountFacade;
+import com.bugzero.rarego.global.exception.CustomException;
+import com.bugzero.rarego.global.response.ErrorType;
+import com.bugzero.rarego.out.AccountRepository;
 
 @ExtendWith(MockitoExtension.class)
 class AuthLoginAccountFacadeTest {
@@ -76,5 +79,66 @@ class AuthLoginAccountFacadeTest {
 
 		assertThat(account).isEqualTo(created);
 		verify(authJoinAccountUseCase).join(Provider.KAKAO, "kakao-456", "kakao@example.com");
+	}
+
+	@Test
+	@DisplayName("PENDING 계정이면 가입 완료를 시도하고 완료된 계정을 반환한다.")
+	void loginCompletesPendingAccount() {
+		Account pending = Account.builder()
+			.provider(Provider.GOOGLE)
+			.providerId("google-999")
+			.memberPublicId("pending-public-id")
+			.status(AccountStatus.PENDING)
+			.role(AuthRole.USER)
+			.build();
+		Account completed = Account.builder()
+			.provider(Provider.GOOGLE)
+			.providerId("google-999")
+			.memberPublicId("pending-public-id")
+			.status(AccountStatus.ACTIVE)
+			.role(AuthRole.USER)
+			.build();
+
+		when(accountRepository.findByProviderAndProviderId(Provider.GOOGLE, "google-999"))
+			.thenReturn(Optional.of(pending));
+		when(authJoinAccountUseCase.completePending(pending, "pending@example.com"))
+			.thenReturn(completed);
+
+		Account account = authLoginAccountFacade.loginOrSignup(
+			"google-999",
+			"pending@example.com",
+			Provider.GOOGLE
+		);
+
+		assertThat(account).isEqualTo(completed);
+		verify(authJoinAccountUseCase).completePending(pending, "pending@example.com");
+	}
+
+	@Test
+	@DisplayName("PENDING 계정의 가입 완료가 실패하면 로그인을 막는다.")
+	void loginBlocksWhenPendingCompletionFails() {
+		Account pending = Account.builder()
+			.provider(Provider.NAVER)
+			.providerId("naver-999")
+			.memberPublicId("pending-public-id")
+			.status(AccountStatus.PENDING)
+			.role(AuthRole.USER)
+			.build();
+
+		when(accountRepository.findByProviderAndProviderId(Provider.NAVER, "naver-999"))
+			.thenReturn(Optional.of(pending));
+		when(authJoinAccountUseCase.completePending(pending, "pending@example.com"))
+			.thenThrow(new CustomException(ErrorType.AUTH_JOIN_FAILED));
+
+		assertThatThrownBy(() -> authLoginAccountFacade.loginOrSignup(
+			"naver-999",
+			"pending@example.com",
+			Provider.NAVER
+		))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorType")
+			.isEqualTo(ErrorType.AUTH_JOIN_FAILED);
+
+		verify(authJoinAccountUseCase).completePending(pending, "pending@example.com");
 	}
 }
