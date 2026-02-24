@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Account;
 import com.bugzero.rarego.domain.AccountStatus;
@@ -56,7 +57,8 @@ public class AuthJoinAccountUseCase {
 		}
 	}
 
-	private Account activateAccount(Account account, String email) {
+	@Transactional
+	public Account activateAccount(Account account, String email) {
 		if (email == null || email.isBlank()) {
 			throw new CustomException(ErrorType.AUTH_JOIN_FAILED);
 		}
