@@ -385,7 +385,7 @@ public class AuctionReadUseCase {
     }
 
     private Pageable applySorting(Pageable pageable, AuctionSortType sortType) {
-        Sort sort = (sortType != null) ? sortType.getSort() : Sort.unsorted();
+        Sort sort = (sortType != null) ? sortType.getSort() : AuctionSortType.NEWEST.getSort();
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 }
