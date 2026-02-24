@@ -120,8 +120,7 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		AuctionFinalPaymentSagaStep checkpoint = resolveStepOrDefault(saga.getCheckpointStep(),
 			AuctionFinalPaymentSagaStep.INITIATED);
 
-		String sagaCommandId = sagaTracker.startOrResume(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey,
-			checkpoint);
+		String sagaCommandId = sagaTracker.startOrResume(saga, checkpoint);
 
 		try {
 			AuctionOrderDto order = auctionOrderApiClient.getOrder(auctionId);
@@ -135,12 +134,12 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 			}
 
 			if (ORDER_STATUS_PROCESSING.equals(order.status())) {
-				replayFinalPayment(order, sagaBusinessKey, checkpoint, true, sagaCommandId);
+				replayFinalPayment(saga, order, sagaBusinessKey, checkpoint, true, sagaCommandId);
 				return;
 			}
 
 			if (ORDER_STATUS_SUCCESS.equals(order.status())) {
-				replayFinalPayment(order, sagaBusinessKey, checkpoint, false, sagaCommandId);
+				replayFinalPayment(saga, order, sagaBusinessKey, checkpoint, false, sagaCommandId);
 				return;
 			}
 
@@ -148,12 +147,12 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 				"복구 불가능한 경매 주문 상태: auctionId=" + auctionId + ", status=" + order.status()
 					+ ", failedStep=" + failedStep);
 		} catch (Exception ex) {
-			sagaTracker.markFailed(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey, failedStep, ex);
+			sagaTracker.markFailed(saga, failedStep, ex);
 			throw ex;
 		}
 	}
 
-	private void replayFinalPayment(AuctionOrderDto order, String sagaBusinessKey,
+	private void replayFinalPayment(PaymentSagaExecution saga, AuctionOrderDto order, String sagaBusinessKey,
 		AuctionFinalPaymentSagaStep checkpoint,
 		boolean completeRemoteOrder,
 		String sagaCommandId) {
@@ -182,20 +181,20 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 			wallet.pay(paymentAmount);
 			recordTransaction(buyer, wallet, WalletTransactionType.AUCTION_PAYMENT,
 				-paymentAmount, 0, ReferenceType.AUCTION_ORDER, order.orderId());
-			safeMarkStep(sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
-			registerAfterCommitCheckpoint(sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
+			safeMarkStep(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
+			safeMarkCheckpoint(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
 		}
 
 		if (completeRemoteOrder && !hasReached(checkpoint, AuctionFinalPaymentSagaStep.AUCTION_COMPLETE_SENT)) {
 			auctionOrderApiClient.completeOrder(auctionId, sagaCommandId);
-			safeMarkStep(sagaBusinessKey, AuctionFinalPaymentSagaStep.AUCTION_COMPLETE_SENT);
+			safeMarkStep(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.AUCTION_COMPLETE_SENT);
 		}
 
 		if (!hasReached(checkpoint, AuctionFinalPaymentSagaStep.SETTLEMENT_READY)) {
 			Settlement settlement = Settlement.create(auctionId, order.productName(), seller, finalPrice);
 			settlementRepository.save(settlement);
-			safeMarkStep(sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
-			registerAfterCommitCheckpoint(sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
+			safeMarkStep(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
+			safeMarkCheckpoint(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
 		}
 
 		AuctionPaymentCompletedEvent event = new AuctionPaymentCompletedEvent(
@@ -208,8 +207,7 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		);
 		if (!hasReached(checkpoint, AuctionFinalPaymentSagaStep.COMPLETED)) {
 			outboxUseCase.saveOutbox(event);
-			safeMarkStep(sagaBusinessKey, AuctionFinalPaymentSagaStep.COMPLETED);
-			registerAfterCommitCompleted(sagaBusinessKey, AuctionFinalPaymentSagaStep.COMPLETED);
+			safeMarkCompleted(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.COMPLETED);
 		}
 
 		log.info("낙찰 최종결제 Saga 재개 성공: auctionId={}, remoteCompleteCalled={}, finalPrice={}",
@@ -287,42 +285,30 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		transactionRepository.save(transaction);
 	}
 
-	private void safeMarkStep(String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
+	private void safeMarkStep(PaymentSagaExecution saga, String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
 		try {
-			sagaTracker.markStep(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey, step);
+			sagaTracker.markStep(saga, step);
 		} catch (Exception e) {
 			log.error("낙찰 최종결제 Saga 재개 단계 기록 실패: auctionId={}, step={}, error={}",
 				sagaBusinessKey, step, e.getMessage());
 		}
 	}
 
-	private void registerAfterCommitCheckpoint(String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
-		org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-			new org.springframework.transaction.support.TransactionSynchronization() {
-				@Override
-				public void afterCommit() {
-					try {
-						sagaTracker.markCheckpoint(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey, step);
-					} catch (Exception e) {
-						log.error("낙찰 최종결제 Saga 재개 체크포인트 기록 실패: auctionId={}, step={}, error={}",
-							sagaBusinessKey, step, e.getMessage());
-					}
-				}
-			});
+	private void safeMarkCheckpoint(PaymentSagaExecution saga, String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
+		try {
+			sagaTracker.markCheckpoint(saga, step);
+		} catch (Exception e) {
+			log.error("낙찰 최종결제 Saga 재개 체크포인트 기록 실패: auctionId={}, step={}, error={}",
+				sagaBusinessKey, step, e.getMessage());
+		}
 	}
 
-	private void registerAfterCommitCompleted(String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
-		org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-			new org.springframework.transaction.support.TransactionSynchronization() {
-				@Override
-				public void afterCommit() {
-					try {
-						sagaTracker.markCompleted(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey, step);
-					} catch (Exception e) {
-						log.error("낙찰 최종결제 Saga 재개 완료 기록 실패: auctionId={}, step={}, error={}",
-							sagaBusinessKey, step, e.getMessage());
-					}
-				}
-			});
+	private void safeMarkCompleted(PaymentSagaExecution saga, String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
+		try {
+			sagaTracker.markCompleted(saga, step);
+		} catch (Exception e) {
+			log.error("낙찰 최종결제 Saga 재개 완료 기록 실패: auctionId={}, step={}, error={}",
+				sagaBusinessKey, step, e.getMessage());
+		}
 	}
 }

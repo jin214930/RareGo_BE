@@ -42,6 +42,15 @@ public class PaymentSagaTracker {
 		return saga.getCommandId();
 	}
 
+	// Recovery 경로에서는 이미 FOR UPDATE로 읽은 엔티티를 같은 트랜잭션에서 갱신한다.
+	public String startOrResume(PaymentSagaExecution saga, Enum<?> initialStep) {
+		String stepName = initialStep.name();
+		saga.restart(stepName);
+		log.info("Saga 시작/재개(동일 TX): type={}, businessKey={}, step={}, commandId={}",
+			saga.getSagaType(), saga.getBusinessKey(), stepName, saga.getCommandId());
+		return saga.getCommandId();
+	}
+
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void markStep(PaymentSagaType sagaType, String businessKey, Enum<?> step) {
 		sagaRepository.findBySagaTypeAndBusinessKey(sagaType, businessKey).ifPresent(saga -> {
@@ -49,6 +58,12 @@ public class PaymentSagaTracker {
 			log.info("Saga 단계 전이: type={}, businessKey={}, step={}, commandId={}",
 				sagaType, businessKey, step.name(), saga.getCommandId());
 		});
+	}
+
+	public void markStep(PaymentSagaExecution saga, Enum<?> step) {
+		saga.markStep(step.name());
+		log.info("Saga 단계 전이(동일 TX): type={}, businessKey={}, step={}, commandId={}",
+			saga.getSagaType(), saga.getBusinessKey(), step.name(), saga.getCommandId());
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -60,6 +75,12 @@ public class PaymentSagaTracker {
 		});
 	}
 
+	public void markCheckpoint(PaymentSagaExecution saga, Enum<?> checkpointStep) {
+		saga.markCheckpoint(checkpointStep.name());
+		log.info("Saga 체크포인트 갱신(동일 TX): type={}, businessKey={}, checkpointStep={}, commandId={}",
+			saga.getSagaType(), saga.getBusinessKey(), checkpointStep.name(), saga.getCommandId());
+	}
+
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void markCompleted(PaymentSagaType sagaType, String businessKey, Enum<?> finalStep) {
 		sagaRepository.findBySagaTypeAndBusinessKey(sagaType, businessKey).ifPresent(saga -> {
@@ -67,6 +88,12 @@ public class PaymentSagaTracker {
 			log.info("Saga 완료: type={}, businessKey={}, finalStep={}, commandId={}",
 				sagaType, businessKey, finalStep.name(), saga.getCommandId());
 		});
+	}
+
+	public void markCompleted(PaymentSagaExecution saga, Enum<?> finalStep) {
+		saga.markCompleted(finalStep.name());
+		log.info("Saga 완료(동일 TX): type={}, businessKey={}, finalStep={}, commandId={}",
+			saga.getSagaType(), saga.getBusinessKey(), finalStep.name(), saga.getCommandId());
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -81,5 +108,15 @@ public class PaymentSagaTracker {
 				nextRetryAt,
 				ex.getMessage());
 		});
+	}
+
+	public void markFailed(PaymentSagaExecution saga, Enum<?> failedStep, Exception ex) {
+		boolean retryable = saga.getAttemptCount() < maxRetryAttempts;
+		LocalDateTime nextRetryAt = retryable ? LocalDateTime.now().plusSeconds(retryDelaySeconds) : null;
+		saga.markFailed(failedStep.name(), ex, nextRetryAt, retryable);
+		log.error(
+			"Saga 실패(동일 TX): type={}, businessKey={}, failedStep={}, commandId={}, attempt={}, retryable={}, nextRetryAt={}, error={}",
+			saga.getSagaType(), saga.getBusinessKey(), failedStep.name(), saga.getCommandId(), saga.getAttemptCount(),
+			retryable, nextRetryAt, ex.getMessage());
 	}
 }
