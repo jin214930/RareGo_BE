@@ -76,19 +76,19 @@ SELECT *
 FROM member_member;
 
 -- 3. 소셜 로그인 계정 생성
-INSERT INTO auth_account (deleted, member_public_id, provider, provider_id, role, created_at, updated_at)
-VALUES (0, '00000000-0000-0000-0000-000000000001', 'GOOGLE', 'sys_1', 'SYSTEM', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000002', 'GOOGLE', 'adm_2', 'ADMIN', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000003', 'KAKAO', 'sel_3', 'SELLER', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000004', 'KAKAO', 'sel_4', 'SELLER', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000005', 'NAVER', 'sel_5', 'SELLER', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000006', 'NAVER', 'sel_6', 'SELLER', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000007', 'GOOGLE', 'sel_7', 'SELLER', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000008', 'KAKAO', 'usr_8', 'USER', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000009', 'KAKAO', 'usr_9', 'USER', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000010', 'NAVER', 'usr_10', 'USER', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000011', 'NAVER', 'usr_11', 'USER', NOW(), NOW()),
-       (0, '00000000-0000-0000-0000-000000000012', 'GOOGLE', 'usr_12', 'USER', NOW(), NOW());
+INSERT INTO auth_account (deleted, member_public_id, provider, provider_id, role, status, created_at, updated_at)
+VALUES (0, '00000000-0000-0000-0000-000000000001', 'GOOGLE', 'sys_1', 'SYSTEM', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000002', 'GOOGLE', 'adm_2', 'ADMIN', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000003', 'KAKAO', 'sel_3', 'SELLER', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000004', 'KAKAO', 'sel_4', 'SELLER', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000005', 'NAVER', 'sel_5', 'SELLER', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000006', 'NAVER', 'sel_6', 'SELLER', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000007', 'GOOGLE', 'sel_7', 'SELLER', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000008', 'KAKAO', 'usr_8', 'USER', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000009', 'KAKAO', 'usr_9', 'USER', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000010', 'NAVER', 'usr_10', 'USER', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000011', 'NAVER', 'usr_11', 'USER', 'ACTIVE', NOW(), NOW()),
+       (0, '00000000-0000-0000-0000-000000000012', 'GOOGLE', 'usr_12', 'USER', 'ACTIVE', NOW(), NOW());
 
 -- 4. 지갑 생성 (잔액 0원 초기화)
 INSERT INTO payment_wallet (deleted, member_id, balance, holding_amount, created_at, updated_at)
