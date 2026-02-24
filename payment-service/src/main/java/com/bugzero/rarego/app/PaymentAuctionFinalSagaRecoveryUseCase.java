@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentAuctionFinalSagaRecoveryUseCase {
 	private static final int DEFAULT_BATCH_LIMIT = 20;
 	private static final String ORDER_STATUS_PROCESSING = "PROCESSING";
-	private static final String ORDER_STATUS_COMPLETE = "COMPLETE";
+	private static final String ORDER_STATUS_COMPLETE = "SUCCESS";
 
 	private final PaymentSagaExecutionRepository sagaRepository;
 	private final AuctionOrderApiClient auctionOrderApiClient;
