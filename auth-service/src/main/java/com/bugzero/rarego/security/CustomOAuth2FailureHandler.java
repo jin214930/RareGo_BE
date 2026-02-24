@@ -1,6 +1,7 @@
 package com.bugzero.rarego.security;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
@@ -27,10 +28,12 @@ public class CustomOAuth2FailureHandler implements AuthenticationFailureHandler 
 		ErrorType errorType = resolveErrorType(exception);
 		String errorMessage = resolveErrorMessage(exception, errorType);
 
-		String targetUrl = UriComponentsBuilder.fromUriString(frontUrl + "/auth/callback")
+		String targetUrl = UriComponentsBuilder.fromUriString(frontUrl + "/login")
 			.queryParam("errorCode", errorType.getCode())
 			.queryParam("errorMessage", errorMessage)
-			.build().toUriString();
+			.build()
+			.encode(StandardCharsets.UTF_8)
+			.toUriString();
 
 		response.sendRedirect(targetUrl);
 	}
