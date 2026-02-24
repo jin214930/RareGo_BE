@@ -111,8 +111,8 @@ public class PaymentMetrics {
 		}
 	}
 
-	public void incrementReconcileProcessed() {
-		registry.counter("payment.reconcile.process.total", "result", "processed").increment();
+	public void incrementReconcileNoAction() {
+		registry.counter("payment.reconcile.process.total", "result", "no_action").increment();
 	}
 
 	public void incrementReconcileFailure() {

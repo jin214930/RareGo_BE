@@ -83,7 +83,7 @@ public class PaymentReconcilePaymentUseCase {
 			return;
 		}
 
-		paymentMetrics.incrementReconcileProcessed();
+		paymentMetrics.incrementReconcileNoAction();
 		markAsFailed(payment);
 	}
 
