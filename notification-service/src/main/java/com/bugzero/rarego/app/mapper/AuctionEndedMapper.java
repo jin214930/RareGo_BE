@@ -34,6 +34,7 @@ public class AuctionEndedMapper implements NotificationMapper<AuctionEndedEvent>
 			.member(member)
 			.type(NotificationType.AUCTION_WON)
 			.referenceId(event.auctionId())
+			.relatedId(event.auctionId())
 			.build();
 
 		return List.of(notification);

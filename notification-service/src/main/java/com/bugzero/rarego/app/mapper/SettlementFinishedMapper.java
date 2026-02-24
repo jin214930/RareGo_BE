@@ -41,6 +41,7 @@ public class SettlementFinishedMapper implements NotificationMapper<SettlementFi
 			.member(seller)
 			.type(NotificationType.SETTLEMENT_COMPLETED)
 			.referenceId(dto.id())
+			.relatedId(dto.id())
 			.build();
 	}
 }

@@ -1,6 +1,7 @@
 package com.bugzero.rarego.shared.auction.event;
 
 public record AuctionOutbidEvent(
+	Long bidId,
 	Long auctionId,
 	String productName,
 	Long bidderId,        // 입찰자 id (추월한 사람)

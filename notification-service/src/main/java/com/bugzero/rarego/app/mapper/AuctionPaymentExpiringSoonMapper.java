@@ -38,6 +38,7 @@ public class AuctionPaymentExpiringSoonMapper implements NotificationMapper<Auct
 			.member(buyer)
 			.type(NotificationType.AUCTION_PAYMENT_EXPIRING_SOON)
 			.referenceId(event.orderId())
+			.relatedId(event.orderId())
 			.build();
 
 		return List.of(notification);
