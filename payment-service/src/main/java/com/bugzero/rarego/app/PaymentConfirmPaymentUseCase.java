@@ -70,9 +70,11 @@ public class PaymentConfirmPaymentUseCase {
 			if (tossResponse != null && tossResponse.paymentKey() != null) {
 				try {
 					tossPaymentsApiClient.cancel(tossResponse.paymentKey(), "서버 시스템 에러로 인한 취소 요청");
+					paymentMetrics.incrementCompensationCancelSuccess();
 					log.info("결제 취소 요청 성공 - orderId: {}, paymentKey: {}", requestDto.orderId(),
 						tossResponse.paymentKey());
 				} catch (Exception e2) {
+					paymentMetrics.incrementCompensationCancelFailure();
 					log.error("결제 취소 요청 실패 (스케줄러로 후처리) - orderId: {}, paymentKey: {}, 원인: {}",
 						requestDto.orderId(), tossResponse.paymentKey(), e2.getMessage(), e2);
 				}

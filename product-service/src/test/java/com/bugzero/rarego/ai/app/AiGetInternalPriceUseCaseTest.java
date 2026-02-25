@@ -19,6 +19,7 @@ import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.SearchHitsImpl;
 import org.springframework.data.elasticsearch.core.TotalHitsRelation;
 
+import com.bugzero.rarego.ai.config.AiMetrics;
 import com.bugzero.rarego.ai.domain.dto.AiInternalPriceRequestDto;
 import com.bugzero.rarego.ai.domain.dto.AiInternalPriceResponseDto;
 import com.bugzero.rarego.ai.domain.type.TemporaryCondition;
@@ -32,6 +33,9 @@ class AiGetInternalPriceUseCaseTest {
 
 	@Mock
 	private EmbeddingModel embeddingModel;
+
+	@Mock
+	private AiMetrics aiMetrics;
 
 	@InjectMocks
 	private AiGetInternalPriceUseCase useCase;
