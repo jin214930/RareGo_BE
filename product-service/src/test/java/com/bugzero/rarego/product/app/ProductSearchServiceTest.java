@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -247,6 +248,69 @@ class ProductSearchServiceTest {
 		assertThat(savedDoc.getProductId()).isEqualTo(10L);
 		assertThat(savedDoc.getEmbedding()).isNull();
 		assertThat(savedDoc.getAuctionStatus()).isEqualTo(AuctionStatus.SCHEDULED);
+	}
+
+	@Test
+	@DisplayName("경매 상태가 null이면 단건 저장을 스킵한다")
+	void save_shouldSkipWhenAuctionStatusIsNull() {
+		// given
+		Product mockProduct = createMockProduct(11L, "테스트", "설명", Category.STARWARS);
+		ProductImage mockImage = createMockImage("http://image.url", 0);
+		AuctionInfoResponseDto auctionInfo = new AuctionInfoResponseDto(
+			11L,
+			111L,
+			100000,
+			0,
+			null,
+			LocalDateTime.now(),
+			null
+		);
+
+		// when
+		productSearchService.save(mockProduct, List.of(mockImage), auctionInfo);
+
+		// then
+		verify(searchRepository, never()).save(any(ProductSearchDocument.class));
+	}
+
+	@Test
+	@DisplayName("경매 상태가 null인 항목은 bulk 저장에서 제외된다")
+	void saveAll_shouldSkipNullAuctionStatus() {
+		// given
+		Product product1 = createMockProduct(21L, "상품1", "설명1", Category.STARWARS);
+		Product product2 = createMockProduct(22L, "상품2", "설명2", Category.STARWARS);
+
+		AuctionInfoResponseDto invalidInfo = new AuctionInfoResponseDto(
+			21L,
+			201L,
+			10000,
+			0,
+			null,
+			LocalDateTime.now(),
+			null
+		);
+		AuctionInfoResponseDto validInfo = new AuctionInfoResponseDto(
+			22L,
+			202L,
+			20000,
+			0,
+			AuctionStatus.SCHEDULED,
+			LocalDateTime.now(),
+			null
+		);
+
+		// when
+		productSearchService.saveAll(
+			List.of(product1, product2),
+			Map.of(21L, invalidInfo, 22L, validInfo)
+		);
+
+		// then
+		ArgumentCaptor<Iterable<ProductSearchDocument>> captor = ArgumentCaptor.forClass(Iterable.class);
+		verify(searchRepository).saveAll(captor.capture());
+		List<ProductSearchDocument> docs = (List<ProductSearchDocument>)captor.getValue();
+		assertThat(docs).hasSize(1);
+		assertThat(docs.get(0).getProductId()).isEqualTo(22L);
 	}
 
 	// === Helper Methods ===

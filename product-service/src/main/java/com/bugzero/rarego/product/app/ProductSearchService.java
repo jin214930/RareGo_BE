@@ -52,6 +52,10 @@ public class ProductSearchService {
 				log.warn("경매 정보 누락으로 스킵: productId={}", product.getId());
 				continue;
 			}
+			if (auctionInfo.auctionStatus() == null) {
+				log.warn("경매 상태 null로 스킵: productId={}, auctionId={}", product.getId(), auctionInfo.auctionId());
+				continue;
+			}
 
 			// 공통 메서드로 문서 생성 (임베딩 포함)
 			ProductSearchDocument doc = buildDocument(
@@ -80,6 +84,11 @@ public class ProductSearchService {
 		List<ProductImage> images,
 		AuctionInfoResponseDto auctionInfo
 	) {
+		if (auctionInfo.auctionStatus() == null) {
+			log.warn("경매 상태 null로 스킵: productId={}, auctionId={}", product.getId(), auctionInfo.auctionId());
+			return;
+		}
+
 		ProductSearchDocument doc = buildDocument(
 			product,
 			images,
@@ -137,7 +146,7 @@ public class ProductSearchService {
 			.auctionId(auctionId)
 			.startPrice(startPrice)
 			.startedAt(startedAt)
-			.auctionStatus(auctionStatus != null ? auctionStatus : AuctionStatus.SCHEDULED)
+			.auctionStatus(auctionStatus)
 			.finalPrice(finalPrice)
 			.closedAt(closedAt)
 			.build();
