@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -73,8 +74,11 @@ public class InternalAuctionController {
 
 	@Operation(summary = "경매 주문 완료 처리", description = "auctionId 기준 주문을 완료 처리합니다.")
 	@PostMapping("/orders/{auctionId}/complete")
-	public SuccessResponseDto<Void> completeOrder(@PathVariable Long auctionId) {
-		auctionOrderService.completeOrder(auctionId);
+	public SuccessResponseDto<Void> completeOrder(
+		@PathVariable Long auctionId,
+		@RequestHeader(value = "X-Command-Id", required = false) String commandId
+	) {
+		auctionOrderService.completeOrder(auctionId, commandId);
 		return SuccessResponseDto.from(SuccessType.OK);
 	}
 
@@ -180,4 +184,3 @@ public class InternalAuctionController {
 		);
 	}
 }
-

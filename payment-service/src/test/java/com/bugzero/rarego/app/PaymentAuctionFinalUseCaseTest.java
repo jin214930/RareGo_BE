@@ -19,6 +19,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.bugzero.rarego.domain.Deposit;
 import com.bugzero.rarego.domain.DepositStatus;
 import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.domain.PaymentSagaType;
 import com.bugzero.rarego.domain.PaymentTransaction;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.Wallet;
@@ -57,6 +58,9 @@ class PaymentAuctionFinalUseCaseTest {
 
 	@Mock
 	private OutboxUseCase outboxUseCase;
+
+	@Mock
+	private PaymentSagaTracker sagaTracker;
 
 	@BeforeEach
 	void setUp() {
@@ -127,6 +131,7 @@ class PaymentAuctionFinalUseCaseTest {
 		// UseCase 로직상 buyer와 seller를 각각 조회함
 		given(paymentSupport.findMemberById(memberId)).willReturn(buyer);   // Step 4에서 호출
 		given(paymentSupport.findMemberById(sellerId)).willReturn(seller);  // Step 8에서 호출
+		given(sagaTracker.startOrResume(any(), anyString(), any())).willReturn("cmd-final-1");
 
 		// when
 		AuctionFinalPaymentResponseDto response = paymentAuctionFinalUseCase.finalPayment(memberPublicId, auctionId,
@@ -149,9 +154,13 @@ class PaymentAuctionFinalUseCaseTest {
 
 		// 4. 외부 호출 검증 (Verify)
 		verify(transactionRepository, times(2)).save(any(PaymentTransaction.class)); // 거래내역 2건
-		verify(auctionOrderApiClient).completeOrder(auctionId); // 주문 완료 요청
+			verify(auctionOrderApiClient).completeOrder(auctionId, "cmd-final-1"); // 주문 완료 요청
 		verify(settlementRepository).save(any(Settlement.class)); // 정산 정보 저장 (NEW)
 		verify(outboxUseCase).saveOutbox(any(AuctionPaymentCompletedEvent.class));
+		verify(sagaTracker).startOrResume(
+			eq(PaymentSagaType.AUCTION_FINAL_PAYMENT),
+			eq(String.valueOf(auctionId)),
+			eq(com.bugzero.rarego.domain.AuctionFinalPaymentSagaStep.INITIATED));
 	}
 
 	@Test
