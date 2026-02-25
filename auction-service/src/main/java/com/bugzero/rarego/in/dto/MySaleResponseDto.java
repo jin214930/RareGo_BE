@@ -23,7 +23,9 @@ public record MySaleResponseDto(
 	AuctionOrderStatus tradeStatus,
 	LocalDateTime endTime,
 	// 재등록 버튼 활성화 여부
-	boolean actionRequired
+	boolean actionRequired,
+	// 상품 검수 상태
+	String inspectionStatus
 ) {
 	public static MySaleResponseDto from(
 		Auction auction,
@@ -41,6 +43,7 @@ public record MySaleResponseDto(
 			.tradeStatus(order != null ? order.getStatus() : null)
 			.endTime(auction.getEndTime())
 			.actionRequired(resolveActionRequired(auction, order, bidCount))
+			.inspectionStatus(product != null ? product.inspectionStatus() : null)
 			.build();
 	}
 

@@ -241,6 +241,7 @@ public class ProductSearchClient {
             .category(doc.category())
             .thumbnailUrl(thumbnailUrl)
             .imageUrls(imageUrls)
+            .inspectionStatus(doc.inspectionStatus())
             .build();
     }
 }
