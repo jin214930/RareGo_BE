@@ -83,7 +83,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, JpaSpec
 		    FROM Auction a
 		    JOIN AuctionMember m ON a.sellerId = m.id
 		    WHERE m.publicId = :publicId
-		    AND a.status <> 'ENDED'
+		    AND a.status IN ('SCHEDULED', 'IN_PROGRESS')
 		""")
 	boolean existsActiveSaleByPublicId(@Param("publicId") String publicId);
 
