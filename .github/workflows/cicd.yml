@@ -26,6 +26,7 @@ jobs:
       auction: ${{ steps.filter.outputs.auction }}
       product: ${{ steps.filter.outputs.product }}
       product_elasticsearch: ${{ steps.filter.outputs.product_elasticsearch }}
+      kafka_manifest: ${{ steps.filter.outputs.kafka_manifest }}
       monitoring: ${{ steps.filter.outputs.monitoring }}
       auth: ${{ steps.filter.outputs.auth }}
       common: ${{ steps.filter.outputs.common }}
@@ -48,11 +49,12 @@ jobs:
               - 'product-service/**'
             product_elasticsearch:
               - 'docker/elasticsearch/**'
+            kafka_manifest:
+              - 'k8s/infra/kafka.yaml'
             monitoring:
               - 'k8s/infra/monitoring/**'
               - 'k8s/infra/prometheus.yaml'
               - 'k8s/infra/grafana.yaml'
-              - 'k8s/kustomization.yaml'
             auth:
               - 'auth-service/**'
             common:
@@ -318,18 +320,16 @@ jobs:
             --parameters commands="[
               \"mkdir -p /tmp/k8s\",
               \"echo '$K8S_FILES_BASE64' | base64 -d | tar -xzf - -C /tmp/k8s\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf apply -k /tmp/k8s/ > /tmp/k8s-apply.log 2>&1; rc=\\$?; cat /tmp/k8s-apply.log; if [ \\$rc -ne 0 ]; then if grep -q 'The StatefulSet \\\"kafka\\\" is invalid: spec: Forbidden' /tmp/k8s-apply.log; then echo '[WARN] Ignoring known kafka StatefulSet immutable field error'; else exit \\$rc; fi; fi\",
+              \"kubectl --kubeconfig /etc/kubernetes/admin.conf apply -k /tmp/k8s/ > /tmp/k8s-apply.log 2>&1; rc=\\$?; cat /tmp/k8s-apply.log; if [ \\$rc -ne 0 ]; then if grep -q 'The StatefulSet \\\"kafka\\\" is invalid: spec: Forbidden' /tmp/k8s-apply.log; then if [ '${{ needs.detect-changes.outputs.kafka_manifest }}' != 'true' ]; then echo '[ERROR] Kafka immutable field error occurred but k8s/infra/kafka.yaml was not changed; treating as unexpected apply failure'; exit \\$rc; fi; OTHER_APPLY_ERRORS=\\$(grep -E '(^error:|Error from server|The StatefulSet \\\\\\\".*\\\\\\\" is invalid: spec: Forbidden)' /tmp/k8s-apply.log | grep -v 'The StatefulSet \\\"kafka\\\" is invalid: spec: Forbidden' || true); if [ -n \\\"\\$OTHER_APPLY_ERRORS\\\" ]; then echo '[ERROR] apply -k failed with additional non-kafka errors:'; echo \\\"\\$OTHER_APPLY_ERRORS\\\"; exit \\$rc; fi; echo '[WARN] Ignoring known kafka StatefulSet immutable field error after kafka manifest change'; else exit \\$rc; fi; fi\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego create secret docker-registry ghcr-creds --docker-server=ghcr.io --docker-username='${{ secrets.GHCR_USERNAME }}' --docker-password='${{ secrets.GHCR_TOKEN }}' --dry-run=client -o yaml | kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f -\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf patch serviceaccount default -n rarego -p '{\\\"imagePullSecrets\\\":[{\\\"name\\\":\\\"ghcr-creds\\\"}]}'\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout resume deploy/auth-service -n rarego || true\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout resume deploy/member-service -n rarego || true\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout resume deploy/auction-service -n rarego || true\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout resume deploy/payment-service -n rarego || true\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout resume deploy/notification-service -n rarego || true\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout resume deploy/product-service -n rarego || true\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout resume deploy/rarego-nginx -n rarego || true\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout resume deploy/prometheus -n rarego || true\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout resume deploy/grafana -n rarego || true\",
+              \"if [ '${{ needs.detect-changes.outputs.auth }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.common }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/auth-service -n rarego || true; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.member }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.common }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/member-service -n rarego || true; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.auction }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.common }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/auction-service -n rarego || true; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.payment }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.common }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/payment-service -n rarego || true; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.notification }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.common }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/notification-service -n rarego || true; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.product }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.common }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/product-service -n rarego || true; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.k8s }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/rarego-nginx -n rarego || true; fi\",
               \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego get configmap prometheus-config grafana-datasources grafana-dashboard-provider grafana-dashboards; fi\",
               \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/prometheus -n rarego && kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status deploy/prometheus --timeout=600s; fi\",
               \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/grafana -n rarego && kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status deploy/grafana --timeout=600s; fi\",
