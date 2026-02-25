@@ -286,7 +286,8 @@ public class AuctionReadUseCase {
 
 	public AuctionInfoResponseDto getAuctionInfoByProductId(Long productId) {
 		Auction auction = support.findAuctionByProductId(productId);
-		return toInfoResponseDto(auction);
+		AuctionOrder order = auctionOrderRepository.findByAuctionId(auction.getId()).orElse(null);
+		return toInfoResponseDto(auction, order);
 	}
 
 	public List<AuctionInfoResponseDto> getAuctionInfosByProductIds(List<Long> productIds) {
@@ -295,20 +296,28 @@ public class AuctionReadUseCase {
 		}
 
 		List<Auction> auctions = support.findAllByProductIds(productIds);
+		Set<Long> auctionIds = auctions.stream().map(Auction::getId).collect(Collectors.toSet());
+		Map<Long, AuctionOrder> orderMap = auctionOrderRepository.findAllByAuctionIdIn(auctionIds).stream()
+			.collect(Collectors.toMap(AuctionOrder::getAuctionId, Function.identity()));
 
 		return auctions.stream()
-			.map(this::toInfoResponseDto)
+			.map(auction -> toInfoResponseDto(auction, orderMap.get(auction.getId())))
 			.toList();
 	}
 
 	// === Helper Methods ===
 
-	private AuctionInfoResponseDto toInfoResponseDto(Auction auction) {
+	private AuctionInfoResponseDto toInfoResponseDto(Auction auction, AuctionOrder order) {
+		int finalPrice = order != null ? order.getFinalPrice() : 0;
+
 		return new AuctionInfoResponseDto(
 			auction.getProductId(),
 			auction.getId(),
 			auction.getStartPrice(),
-			auction.getStartTime()
+			finalPrice,
+			auction.getStatus(),
+			auction.getStartTime(),
+			auction.getEndTime()
 		);
 	}
 

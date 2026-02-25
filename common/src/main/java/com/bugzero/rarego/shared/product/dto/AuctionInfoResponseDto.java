@@ -2,5 +2,15 @@ package com.bugzero.rarego.shared.product.dto;
 
 import java.time.LocalDateTime;
 
-public record AuctionInfoResponseDto(Long productId, Long auctionId, int startPrice, LocalDateTime startedAt) {
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+
+public record AuctionInfoResponseDto(
+	Long productId,
+	Long auctionId,
+	int startPrice,
+	int finalPrice,
+	AuctionStatus auctionStatus,
+	LocalDateTime startedAt,
+	LocalDateTime closedAt
+) {
 }
