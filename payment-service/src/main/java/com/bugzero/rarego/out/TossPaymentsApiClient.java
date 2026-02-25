@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import com.bugzero.rarego.config.PaymentExternalApiMetrics;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.in.dto.PaymentConfirmRequestDto;
@@ -19,9 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TossPaymentsApiClient {
 	private final RestClient tossPaymentsRestClient;
+	private final PaymentExternalApiMetrics paymentExternalApiMetrics;
 
 	public TossPaymentsResponseDto confirm(PaymentConfirmRequestDto requestDto) {
-		return tossPaymentsRestClient.post()
+		return paymentExternalApiMetrics.record("confirm", () -> tossPaymentsRestClient.post()
 			.uri("/confirm")
 			.body(requestDto)
 			.retrieve()
@@ -32,11 +34,11 @@ public class TossPaymentsApiClient {
 
 				throw new CustomException(ErrorType.PAYMENT_CONFIRM_FAILED);
 			})
-			.body(TossPaymentsResponseDto.class);
+			.body(TossPaymentsResponseDto.class));
 	}
 
 	public TossPaymentsResponseDto getPaymentByOrderId(String orderId) {
-		return tossPaymentsRestClient.get()
+		return paymentExternalApiMetrics.record("lookup", () -> tossPaymentsRestClient.get()
 			.uri("/orders/" + orderId)
 			.retrieve()
 			.onStatus(status -> status.value() == 404, (req, res) -> {
@@ -48,11 +50,11 @@ public class TossPaymentsApiClient {
 				log.error("토스 결제 조회 실패 - orderId: {}, 내용: {}", orderId, errorBody);
 				throw new CustomException(ErrorType.PAYMENT_LOOKUP_FAILED);
 			})
-			.body(TossPaymentsResponseDto.class);
+			.body(TossPaymentsResponseDto.class));
 	}
 
 	public void cancel(String paymentKey, String reason) {
-		tossPaymentsRestClient.post()
+		paymentExternalApiMetrics.recordVoid("cancel", () -> tossPaymentsRestClient.post()
 			.uri("/{paymentKey}/cancel", paymentKey)
 			.body(Map.of("cancelReason", reason))
 			.retrieve()
@@ -61,6 +63,6 @@ public class TossPaymentsApiClient {
 				log.error("토스 결제 취소 실패 - paymentKey: {}, 네용: {}", paymentKey, errorBody);
 				throw new CustomException(ErrorType.PAYMENT_CANCEL_FAILED);
 			})
-			.toBodilessEntity();
+			.toBodilessEntity());
 	}
 }
