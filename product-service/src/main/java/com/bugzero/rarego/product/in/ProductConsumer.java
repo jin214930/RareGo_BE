@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 @KafkaListener(
-	topics = {"auction-management", "member-joined", "member-updated"},
+	topics = {"auction-ended", "auction-started", "auction-relisted", "member-joined", "member-updated"},
 	groupId = "${spring.kafka.consumer.group-id}",
 	containerFactory = "kafkaListenerContainerFactory"
 )
