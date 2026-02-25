@@ -576,7 +576,7 @@ VALUES (44, 0, NOW(), NOW(), 3, 'STARWARS', '레고 스타워즈 타이 파이�
        (52, 0, NOW(), NOW(), 6, 'HARRYPOTTER', '레고 해리포터 헤드위그', '기믹 작동 확인', 'APPROVED', 'USED'),
        (53, 0, NOW(), NOW(), 7, 'STARWARS', '레고 보바 펫의 우주선', '상태 양호', 'APPROVED', 'NISB');
 
--- 2. 상품 이미지 세팅 (44~53번 상품 각각 고유 이미지 할당)
+-- 2. 상품 이미지 세팅 (44~53번 상품 각각 고유 이미지 할당, 49번/53번 이미지 교체)
 INSERT INTO product_image (deleted, created_at, updated_at, product_id, image_url, sort_order)
 VALUES (0, NOW(), NOW(), 44,
         'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=2070&auto=format&fit=crop', 0),
@@ -588,16 +588,18 @@ VALUES (0, NOW(), NOW(), 44,
         'https://images.unsplash.com/photo-1546776310-eef45dd6d63c?q=80&w=2010&auto=format&fit=crop', 0),
        (0, NOW(), NOW(), 48,
         'https://images.unsplash.com/photo-1472457897821-70d3819a0e24?q=80&w=2069&auto=format&fit=crop', 0),
+       -- 49번 이미지 교체 (호그와트 대체)
        (0, NOW(), NOW(), 49,
-        'https://images.unsplash.com/photo-1580459313271-96f30e9d6d1b?q=80&w=1964&auto=format&fit=crop', 0),
+        'https://images.unsplash.com/photo-1618519764620-7403abdbdfe9?q=80&w=2070&auto=format&fit=crop', 0),
        (0, NOW(), NOW(), 50,
         'https://images.unsplash.com/photo-1536560035542-1326fab3a507?q=80&w=2070&auto=format&fit=crop', 0),
        (0, NOW(), NOW(), 51,
         'https://images.unsplash.com/photo-1599508704512-2f19efd1e35f?q=80&w=1935&auto=format&fit=crop', 0),
        (0, NOW(), NOW(), 52,
         'https://images.unsplash.com/photo-1593085260707-5377ba37f868?q=80&w=2070&auto=format&fit=crop', 0),
+       -- 53번 이미지 교체 (스타워즈 우주선 대체)
        (0, NOW(), NOW(), 53,
-        'https://images.unsplash.com/photo-1620825937374-87fc7d62fb6f?q=80&w=1974&auto=format&fit=crop', 0);
+        'https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?q=80&w=2074&auto=format&fit=crop', 0);
 
 -- 3. 상품 검수 상태 (APPROVED)
 INSERT INTO product_inspection (deleted, created_at, updated_at, seller_id, product_id, inspector_id, inspection_status,
