@@ -36,4 +36,4 @@ scrape_configs:
   - job_name: auth-service
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: [ "auth-service:8089" ]
+      - targets: [ "auth-service:8080" ]
