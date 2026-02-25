@@ -1,6 +1,8 @@
 package com.bugzero.rarego.global.exception;
 
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -21,6 +23,11 @@ public class GlobalExceptionHandler {
 		return ExceptionResponseDto.from(e.getErrorType(), e.getMessage());
 	}
 
+	@ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})
+	public ExceptionResponseDto handleAccessDenied(Exception e) {
+		return ExceptionResponseDto.from(ErrorType.AUTH_FORBIDDEN);
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ExceptionResponseDto handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
 		log.error("MethodArgumentNotValidException 발생: {}", e.getMessage());
@@ -38,7 +45,7 @@ public class GlobalExceptionHandler {
 	public ExceptionResponseDto handleInvalidDataAccessApiUsageException(
 		InvalidDataAccessApiUsageException e) {
 		log.error("InvalidDataAccessApiUsageException 발생: {}", e.getMessage(), e);
-		
+
 		return ExceptionResponseDto.from(ErrorType.INVALID_INPUT, "데이터 처리 중 잘못된 요청이 발생했습니다: " + e.getMessage());
 	}
 
