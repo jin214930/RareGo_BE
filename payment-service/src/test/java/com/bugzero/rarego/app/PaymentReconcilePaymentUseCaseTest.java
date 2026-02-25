@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.bugzero.rarego.config.PaymentMetrics;
 import com.bugzero.rarego.domain.Payment;
 import com.bugzero.rarego.domain.PaymentStatus;
 import com.bugzero.rarego.global.exception.CustomException;
@@ -31,6 +32,9 @@ class PaymentRecoveryUseCaseTest {
 
 	@Mock
 	private TossPaymentsApiClient tossApiClient;
+
+	@Mock
+	private PaymentMetrics paymentMetrics;
 
 	@Test
 	@DisplayName("복구 대상이 없으면 로직이 바로 종료된다")

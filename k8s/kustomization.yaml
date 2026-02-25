@@ -44,3 +44,19 @@ images:
   - name: rarego-product-elasticsearch
     newName: ghcr.io/prgrms-be-adv-devcourse/beadv4_4_bugzero_be-product-elasticsearch
     newTag: dev
+
+configMapGenerator:
+  - name: prometheus-config
+    files:
+      - prometheus.yml=infra/monitoring/prometheus/prometheus.yml
+  - name: grafana-datasources
+    files:
+      - datasources.yml=infra/monitoring/grafana/provisioning/datasources/datasources.yml
+  - name: grafana-dashboard-provider
+    files:
+      - dashboards.yml=infra/monitoring/grafana/provisioning/dashboards/dashboards.yml
+  - name: grafana-dashboards
+    files:
+      - business-kpi.json=infra/monitoring/grafana/dashboards/business-kpi.json
+      - jvm-monitoring.json=infra/monitoring/grafana/dashboards/jvm-monitoring.json
+      - service-overview.json=infra/monitoring/grafana/dashboards/service-overview.json
