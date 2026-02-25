@@ -28,6 +28,7 @@ jobs:
       product_elasticsearch: ${{ steps.filter.outputs.product_elasticsearch }}
       kafka_manifest: ${{ steps.filter.outputs.kafka_manifest }}
       monitoring: ${{ steps.filter.outputs.monitoring }}
+      monitoring_kustomization: ${{ steps.filter.outputs.monitoring_kustomization }}
       auth: ${{ steps.filter.outputs.auth }}
       common: ${{ steps.filter.outputs.common }}
       k8s: ${{ steps.filter.outputs.k8s }}
@@ -55,6 +56,8 @@ jobs:
               - 'k8s/infra/monitoring/**'
               - 'k8s/infra/prometheus.yaml'
               - 'k8s/infra/grafana.yaml'
+            monitoring_kustomization:
+              - 'k8s/kustomization.yaml'
             auth:
               - 'auth-service/**'
             common:
@@ -330,9 +333,9 @@ jobs:
               \"if [ '${{ needs.detect-changes.outputs.notification }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.common }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/notification-service -n rarego || true; fi\",
               \"if [ '${{ needs.detect-changes.outputs.product }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.common }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/product-service -n rarego || true; fi\",
               \"if [ '${{ needs.detect-changes.outputs.k8s }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/rarego-nginx -n rarego || true; fi\",
-              \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego get configmap prometheus-config grafana-datasources grafana-dashboard-provider grafana-dashboards; fi\",
-              \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/prometheus -n rarego && kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status deploy/prometheus --timeout=600s; fi\",
-              \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/grafana -n rarego && kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status deploy/grafana --timeout=600s; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.monitoring_kustomization }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego get configmap prometheus-config grafana-datasources grafana-dashboard-provider grafana-dashboards; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.monitoring_kustomization }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/prometheus -n rarego && kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status deploy/prometheus --timeout=600s; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.monitoring_kustomization }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/grafana -n rarego && kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status deploy/grafana --timeout=600s; fi\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status statefulset/mysql --timeout=300s\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego exec mysql-0 -- mysql -uroot -p'${{ secrets.DB_ROOT_PASSWORD }}' -e \\\"CREATE USER IF NOT EXISTS '${{ secrets.DB_USERNAME }}'@'%' IDENTIFIED BY '${{ secrets.DB_PASSWORD }}'; ALTER USER '${{ secrets.DB_USERNAME }}'@'%' IDENTIFIED BY '${{ secrets.DB_PASSWORD }}'; GRANT ALL PRIVILEGES ON *.* TO '${{ secrets.DB_USERNAME }}'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;\\\"\",
               \"rm -rf /tmp/k8s\"
