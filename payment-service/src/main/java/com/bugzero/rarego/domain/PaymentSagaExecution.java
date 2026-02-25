@@ -3,6 +3,7 @@ package com.bugzero.rarego.domain;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.jpa.entity.BaseIdAndTime;
 
 import jakarta.persistence.Column;
@@ -114,7 +115,7 @@ public class PaymentSagaExecution extends BaseIdAndTime {
 	public void markFailed(String failedStep, Exception ex, LocalDateTime nextRetryAt, boolean retryable) {
 		this.status = PaymentSagaExecutionStatus.FAILED;
 		this.failedStep = failedStep;
-		this.lastErrorType = ex.getClass().getSimpleName();
+		this.lastErrorType = resolveErrorType(ex);
 		this.lastErrorMessage = truncate(ex.getMessage());
 		this.nextRetryAt = nextRetryAt;
 		this.retryable = retryable;
@@ -150,5 +151,12 @@ public class PaymentSagaExecution extends BaseIdAndTime {
 		return message.length() > ERROR_MESSAGE_MAX_LENGTH
 			? message.substring(0, ERROR_MESSAGE_MAX_LENGTH)
 			: message;
+	}
+
+	private String resolveErrorType(Exception ex) {
+		if (ex instanceof CustomException customException) {
+			return customException.getErrorType().name();
+		}
+		return ex.getClass().getSimpleName();
 	}
 }

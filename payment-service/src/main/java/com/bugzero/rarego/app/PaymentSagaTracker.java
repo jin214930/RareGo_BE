@@ -105,8 +105,7 @@ public class PaymentSagaTracker {
 			log.error(
 				"Saga 실패: type={}, businessKey={}, failedStep={}, commandId={}, attempt={}, retryable={}, nextRetryAt={}, error={}",
 				sagaType, businessKey, failedStep.name(), saga.getCommandId(), saga.getAttemptCount(), retryable,
-				nextRetryAt,
-				ex.getMessage());
+				nextRetryAt, ex.getMessage(), ex);
 		});
 	}
 
@@ -117,6 +116,6 @@ public class PaymentSagaTracker {
 		log.error(
 			"Saga 실패(동일 TX): type={}, businessKey={}, failedStep={}, commandId={}, attempt={}, retryable={}, nextRetryAt={}, error={}",
 			saga.getSagaType(), saga.getBusinessKey(), failedStep.name(), saga.getCommandId(), saga.getAttemptCount(),
-			retryable, nextRetryAt, ex.getMessage());
+			retryable, nextRetryAt, ex.getMessage(), ex);
 	}
 }

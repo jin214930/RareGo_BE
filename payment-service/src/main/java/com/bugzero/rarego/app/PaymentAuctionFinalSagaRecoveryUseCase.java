@@ -115,10 +115,8 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		}
 
 		Long auctionId = Long.parseLong(sagaBusinessKey);
-		AuctionFinalPaymentSagaStep failedStep = resolveStepOrDefault(saga.getFailedStep(),
-			AuctionFinalPaymentSagaStep.INITIATED);
-		AuctionFinalPaymentSagaStep checkpoint = resolveStepOrDefault(saga.getCheckpointStep(),
-			AuctionFinalPaymentSagaStep.INITIATED);
+		AuctionFinalPaymentSagaStep failedStep = resolveStepOrDefault(saga.getFailedStep());
+		AuctionFinalPaymentSagaStep checkpoint = resolveStepOrDefault(saga.getCheckpointStep());
 
 		String sagaCommandId = sagaTracker.startOrResume(saga, checkpoint);
 
@@ -143,9 +141,7 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 				return;
 			}
 
-			throw new IllegalStateException(
-				"복구 불가능한 경매 주문 상태: auctionId=" + auctionId + ", status=" + order.status()
-					+ ", failedStep=" + failedStep);
+			throw new CustomException(ErrorType.PAYMENT_SAGA_RECOVERY_INVALID_ORDER_STATUS);
 		} catch (Exception ex) {
 			sagaTracker.markFailed(saga, failedStep, ex);
 			throw ex;
@@ -169,20 +165,26 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		PaymentMember seller = paymentSupport.findMemberById(order.sellerId());
 
 		if (!hasReached(checkpoint, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE)) {
-			if (deposit.getStatus() != DepositStatus.HOLD) {
-				throw new IllegalStateException("로컬 차감 재개 불가 - 보증금 상태가 HOLD가 아님. auctionId=" + auctionId
-					+ ", status=" + deposit.getStatus());
-			}
-			deposit.use();
-			wallet.useDeposit(depositAmount);
-			recordTransaction(buyer, wallet, WalletTransactionType.DEPOSIT_USED,
-				-depositAmount, -depositAmount, ReferenceType.DEPOSIT, deposit.getId());
+			if (deposit.getStatus() == DepositStatus.USED) {
+				// 체크포인트 기록이 누락됐지만 로컬 차감은 커밋된 상태로 간주하고 다음 단계로 진행한다.
+				log.warn("낙찰 최종결제 Saga 재개 시 보증금이 이미 USED 상태입니다. LOCAL_DEBIT_DONE으로 보정합니다. auctionId={}",
+					auctionId);
+				safeMarkStep(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
+				safeMarkCheckpoint(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
+			} else if (deposit.getStatus() != DepositStatus.HOLD) {
+				throw new CustomException(ErrorType.PAYMENT_SAGA_RECOVERY_INVALID_DEPOSIT_STATE);
+			} else {
+				deposit.use();
+				wallet.useDeposit(depositAmount);
+				recordTransaction(buyer, wallet, WalletTransactionType.DEPOSIT_USED,
+					-depositAmount, -depositAmount, ReferenceType.DEPOSIT, deposit.getId());
 
-			wallet.pay(paymentAmount);
-			recordTransaction(buyer, wallet, WalletTransactionType.AUCTION_PAYMENT,
-				-paymentAmount, 0, ReferenceType.AUCTION_ORDER, order.orderId());
-			safeMarkStep(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
-			safeMarkCheckpoint(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
+				wallet.pay(paymentAmount);
+				recordTransaction(buyer, wallet, WalletTransactionType.AUCTION_PAYMENT,
+					-paymentAmount, 0, ReferenceType.AUCTION_ORDER, order.orderId());
+				safeMarkStep(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
+				safeMarkCheckpoint(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
+			}
 		}
 
 		if (completeRemoteOrder && !hasReached(checkpoint, AuctionFinalPaymentSagaStep.AUCTION_COMPLETE_SENT)) {
@@ -207,7 +209,7 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		);
 		if (!hasReached(checkpoint, AuctionFinalPaymentSagaStep.COMPLETED)) {
 			outboxUseCase.saveOutbox(event);
-			safeMarkCompleted(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.COMPLETED);
+			safeMarkCompleted(saga, sagaBusinessKey);
 		}
 
 		log.info("낙찰 최종결제 Saga 재개 성공: auctionId={}, remoteCompleteCalled={}, finalPrice={}",
@@ -216,7 +218,7 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 
 	private Deposit findDepositForRecovery(Long memberId, Long auctionId) {
 		return depositRepository.findByMemberIdAndAuctionId(memberId, auctionId)
-			.orElseThrow(() -> new IllegalStateException("복구 가능한 보증금이 없습니다. auctionId=" + auctionId));
+			.orElseThrow(() -> new CustomException(ErrorType.PAYMENT_SAGA_RECOVERY_DEPOSIT_NOT_FOUND));
 	}
 
 	private boolean hasReached(AuctionFinalPaymentSagaStep checkpoint, AuctionFinalPaymentSagaStep target) {
@@ -258,14 +260,16 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		return new ArrayList<>(merged.values());
 	}
 
-	private AuctionFinalPaymentSagaStep resolveStepOrDefault(String stepName, AuctionFinalPaymentSagaStep defaultStep) {
+	private AuctionFinalPaymentSagaStep resolveStepOrDefault(String stepName) {
 		if (stepName == null || stepName.isBlank()) {
-			return defaultStep;
+			return AuctionFinalPaymentSagaStep.INITIATED;
 		}
 		try {
 			return AuctionFinalPaymentSagaStep.valueOf(stepName);
 		} catch (IllegalArgumentException e) {
-			return defaultStep;
+			log.warn("유효하지 않은 Saga step 값을 기본값으로 대체합니다. stepName={}, defaultStep={}", stepName,
+				AuctionFinalPaymentSagaStep.INITIATED);
+			return AuctionFinalPaymentSagaStep.INITIATED;
 		}
 	}
 
@@ -294,7 +298,8 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		}
 	}
 
-	private void safeMarkCheckpoint(PaymentSagaExecution saga, String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
+	private void safeMarkCheckpoint(PaymentSagaExecution saga, String sagaBusinessKey,
+		AuctionFinalPaymentSagaStep step) {
 		try {
 			sagaTracker.markCheckpoint(saga, step);
 		} catch (Exception e) {
@@ -303,12 +308,12 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		}
 	}
 
-	private void safeMarkCompleted(PaymentSagaExecution saga, String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
+	private void safeMarkCompleted(PaymentSagaExecution saga, String sagaBusinessKey) {
 		try {
-			sagaTracker.markCompleted(saga, step);
+			sagaTracker.markCompleted(saga, AuctionFinalPaymentSagaStep.COMPLETED);
 		} catch (Exception e) {
 			log.error("낙찰 최종결제 Saga 재개 완료 기록 실패: auctionId={}, step={}, error={}",
-				sagaBusinessKey, step, e.getMessage());
+				sagaBusinessKey, AuctionFinalPaymentSagaStep.COMPLETED, e.getMessage());
 		}
 	}
 }
