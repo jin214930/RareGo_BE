@@ -5,10 +5,14 @@ import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.bugzero.rarego.domain.AuctionFinalPaymentSagaStep;
 import com.bugzero.rarego.domain.Deposit;
 import com.bugzero.rarego.domain.DepositStatus;
 import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.domain.PaymentSagaType;
 import com.bugzero.rarego.domain.PaymentTransaction;
 import com.bugzero.rarego.domain.ReferenceType;
 import com.bugzero.rarego.domain.Settlement;
@@ -40,6 +44,7 @@ public class PaymentAuctionFinalUseCase {
 	private final SettlementRepository settlementRepository;
 	private final PaymentSupport paymentSupport;
 	private final OutboxUseCase outboxUseCase;
+	private final PaymentSagaTracker sagaTracker;
 
 	@Value("${auction.payment-timeout-days:3}")
 	private int paymentTimeoutDays;
@@ -47,64 +52,95 @@ public class PaymentAuctionFinalUseCase {
 	@Transactional
 	public AuctionFinalPaymentResponseDto finalPayment(String memberPublicId, Long auctionId,
 		AuctionFinalPaymentRequestDto request) {
-		Long memberId = paymentSupport.findMemberByPublicId(memberPublicId).getId();
+		AuctionFinalPaymentSagaStep failedStep = null;
+		String sagaBusinessKey = String.valueOf(auctionId);
+		String sagaCommandId = null;
 
-		// TODO: 배송 로직 구현 시 request(배송 정보)를 사용하여 배송 정보 저장 필요
-		// 1. 주문 조회 및 검증 (Port를 통해 Auction 모듈 접근)
-		AuctionOrderDto order = findAndValidateOrder(auctionId, memberId);
+		try {
+			Long memberId = paymentSupport.findMemberByPublicId(memberPublicId).getId();
 
-		// 2. 보증금 조회
-		Deposit deposit = findDeposit(memberId, auctionId);
+			// TODO: 배송 로직 구현 시 request(배송 정보)를 사용하여 배송 정보 저장 필요
+			// 1. 주문 조회 및 검증 (Port를 통해 Auction 모듈 접근)
+			AuctionOrderDto order = findAndValidateOrder(auctionId, memberId);
 
-		// 3. 금액 계산
-		int finalPrice = order.finalPrice();
-		int depositAmount = deposit.getAmount();
-		int paymentAmount = finalPrice - depositAmount;
+			sagaCommandId = sagaTracker.startOrResume(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey,
+				AuctionFinalPaymentSagaStep.INITIATED);
+			failedStep = AuctionFinalPaymentSagaStep.INITIATED;
 
-		// 4. 지갑 조회
-		Wallet wallet = paymentSupport.findWalletByMemberIdForUpdate(memberId);
-		PaymentMember buyer = paymentSupport.findMemberById(memberId);
+			// 2. 보증금 조회
+			Deposit deposit = findDeposit(memberId, auctionId);
 
-		// 5. 보증금 사용 처리
-		deposit.use();
-		wallet.useDeposit(depositAmount);
-		recordTransaction(buyer, wallet, WalletTransactionType.DEPOSIT_USED,
-			-depositAmount, -depositAmount, ReferenceType.DEPOSIT, deposit.getId());
+			// 3. 금액 계산
+			int finalPrice = order.finalPrice();
+			int depositAmount = deposit.getAmount();
+			int paymentAmount = finalPrice - depositAmount;
 
-		// 6. 잔금 결제 처리
-		wallet.pay(paymentAmount);
-		recordTransaction(buyer, wallet, WalletTransactionType.AUCTION_PAYMENT,
-			-paymentAmount, 0, ReferenceType.AUCTION_ORDER, order.orderId());
+			// 4. 지갑 조회
+			Wallet wallet = paymentSupport.findWalletByMemberIdForUpdate(memberId);
+			PaymentMember buyer = paymentSupport.findMemberById(memberId);
 
-		// 7. 주문 완료 처리 (Client를 통해 Auction 모듈에 요청)
-		auctionOrderApiClient.completeOrder(auctionId);
+			// 5. 보증금 사용 처리
+			failedStep = AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE;
+			deposit.use();
+			wallet.useDeposit(depositAmount);
+			recordTransaction(buyer, wallet, WalletTransactionType.DEPOSIT_USED,
+				-depositAmount, -depositAmount, ReferenceType.DEPOSIT, deposit.getId());
 
-		// 8. 정산 정보 생성 (status = READY)
-		PaymentMember seller = paymentSupport.findMemberById(order.sellerId());
-		Settlement settlement = Settlement.create(auctionId, order.productName(), seller, finalPrice);
-		settlementRepository.save(settlement);
+			// 6. 잔금 결제 처리
+			wallet.pay(paymentAmount);
+			recordTransaction(buyer, wallet, WalletTransactionType.AUCTION_PAYMENT,
+				-paymentAmount, 0, ReferenceType.AUCTION_ORDER, order.orderId());
+			safeMarkStep(sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
+			registerAfterCommitCheckpoint(sagaBusinessKey, AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE);
 
-		log.info("낙찰 결제 완료: auctionId={}, memberId={}, finalPrice={}, paid={}, settlementId={}",
-			auctionId, memberId, finalPrice, paymentAmount, settlement.getId());
+			// 7. 주문 완료 처리 (Client를 통해 Auction 모듈에 요청)
+			failedStep = AuctionFinalPaymentSagaStep.AUCTION_COMPLETE_SENT;
+			auctionOrderApiClient.completeOrder(auctionId, sagaCommandId);
+			safeMarkStep(sagaBusinessKey, AuctionFinalPaymentSagaStep.AUCTION_COMPLETE_SENT);
 
-		// 9. 낙찰 결제 완료 이벤트 발행
-		AuctionPaymentCompletedEvent event = new AuctionPaymentCompletedEvent(
-			order.orderId(),
-			auctionId,
-			order.sellerId(),
-			memberId,
-			order.productName(),
-			finalPrice);
-		outboxUseCase.saveOutbox(event);
+			// 8. 정산 정보 생성 (status = READY)
+			failedStep = AuctionFinalPaymentSagaStep.SETTLEMENT_READY;
+			PaymentMember seller = paymentSupport.findMemberById(order.sellerId());
+			Settlement settlement = Settlement.create(auctionId, order.productName(), seller, finalPrice);
+			settlementRepository.save(settlement);
+			safeMarkStep(sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
+			registerAfterCommitCheckpoint(sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
 
-		return AuctionFinalPaymentResponseDto.of(
-			order.orderId(),
-			auctionId,
-			buyer.getPublicId(),
-			finalPrice,
-			depositAmount,
-			wallet.getBalance(),
-			LocalDateTime.now());
+			log.info("낙찰 결제 완료: auctionId={}, memberId={}, finalPrice={}, paid={}, settlementId={}",
+				auctionId, memberId, finalPrice, paymentAmount, settlement.getId());
+
+			// 9. 낙찰 결제 완료 이벤트 발행
+			failedStep = AuctionFinalPaymentSagaStep.COMPLETED;
+			AuctionPaymentCompletedEvent event = new AuctionPaymentCompletedEvent(
+				order.orderId(),
+				auctionId,
+				order.sellerId(),
+				memberId,
+				order.productName(),
+				finalPrice);
+			outboxUseCase.saveOutbox(event);
+			safeMarkStep(sagaBusinessKey, AuctionFinalPaymentSagaStep.COMPLETED);
+			registerAfterCommitCompleted(sagaBusinessKey, AuctionFinalPaymentSagaStep.COMPLETED);
+
+			return AuctionFinalPaymentResponseDto.of(
+				order.orderId(),
+				auctionId,
+				buyer.getPublicId(),
+				finalPrice,
+				depositAmount,
+				wallet.getBalance(),
+				LocalDateTime.now());
+		} catch (Exception ex) {
+			if (failedStep != null) {
+				try {
+					sagaTracker.markFailed(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey, failedStep, ex);
+				} catch (Exception sagaEx) {
+					log.error("낙찰 최종결제 Saga 실패 기록 중 추가 오류 발생: auctionId={}, failedStep={}, error={}",
+						auctionId, failedStep, sagaEx.getMessage());
+				}
+			}
+			throw ex;
+		}
 	}
 
 	private AuctionOrderDto findAndValidateOrder(Long auctionId, Long memberId) {
@@ -147,5 +183,48 @@ public class PaymentAuctionFinalUseCase {
 			.referenceId(refId)
 			.build();
 		transactionRepository.save(transaction);
+	}
+
+	private void safeMarkStep(String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
+		try {
+			sagaTracker.markStep(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey, step);
+		} catch (Exception e) {
+			log.error("낙찰 최종결제 Saga 단계 기록 실패(비즈니스 로직은 계속 진행): auctionId={}, step={}, error={}",
+				sagaBusinessKey, step, e.getMessage());
+		}
+	}
+
+	private void registerAfterCommitCheckpoint(String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
+		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+			return;
+		}
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				try {
+					sagaTracker.markCheckpoint(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey, step);
+				} catch (Exception e) {
+					log.error("낙찰 최종결제 Saga 체크포인트 기록 실패: auctionId={}, step={}, error={}",
+						sagaBusinessKey, step, e.getMessage());
+				}
+			}
+		});
+	}
+
+	private void registerAfterCommitCompleted(String sagaBusinessKey, AuctionFinalPaymentSagaStep step) {
+		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+			return;
+		}
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				try {
+					sagaTracker.markCompleted(PaymentSagaType.AUCTION_FINAL_PAYMENT, sagaBusinessKey, step);
+				} catch (Exception e) {
+					log.error("낙찰 최종결제 Saga 완료 기록 실패: auctionId={}, step={}, error={}",
+						sagaBusinessKey, step, e.getMessage());
+				}
+			}
+		});
 	}
 }
