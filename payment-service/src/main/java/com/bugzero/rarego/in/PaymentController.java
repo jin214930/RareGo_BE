@@ -8,6 +8,7 @@ import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -103,6 +104,7 @@ public class PaymentController {
 
 	@Operation(summary = "정산 내역 조회", description = "정산 내역을 조회합니다.")
 	@GetMapping("me/settlements")
+	@PreAuthorize("hasRole('SELLER')")
 	public SuccessResponseDto<PagedResponseDto<SettlementResponseDto>> getSettlements(
 		@AuthenticationPrincipal MemberPrincipal principal,
 		@RequestParam(defaultValue = "0") int page,
@@ -113,10 +115,6 @@ public class PaymentController {
 		@RequestParam(required = false)
 		@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
 	) {
-		if (!"SELLER".equals(principal.role())) {
-			throw new CustomException(ErrorType.AUTH_FORBIDDEN);
-		}
-
 		return SuccessResponseDto.from(SuccessType.OK,
 			paymentFacade.getSettlements(principal.publicId(), page, size, status, from, to));
 	}
