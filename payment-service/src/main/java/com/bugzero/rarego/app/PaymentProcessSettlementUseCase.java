@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementStatus;
-import com.bugzero.rarego.global.event.EventPublisher;
 import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.shared.payment.dto.SettlementResponseDto;
@@ -25,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentProcessSettlementUseCase {
 	private final SettlementRepository settlementRepository;
 	private final PaymentSettlementProcessor paymentSettlementProcessor;
-	private final EventPublisher eventPublisher;
 	private final OutboxUseCase outboxUseCase;
 
 	@Value("${custom.payment.settlement.holdDays:7}")
@@ -40,9 +38,6 @@ public class PaymentProcessSettlementUseCase {
 			SettlementStatus.READY, cutoffDate, limit);
 
 		if (settlements.isEmpty()) {
-			// 정산할 게 없어도, 혹시 이전에 남겨진 수수료가 있다면 처리
-			SettlementFinishedEvent event = SettlementFinishedEvent.of(List.of());
-			eventPublisher.publish(event);
 			return 0;
 		}
 
@@ -78,7 +73,6 @@ public class PaymentProcessSettlementUseCase {
 		if (!event.settlements().isEmpty()) {
 			outboxUseCase.saveOutbox(event);
 		}
-		eventPublisher.publish(event);
 
 		return successSettlements.size();
 	}

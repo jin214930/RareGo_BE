@@ -32,6 +32,7 @@ public class SettlementBatchConfig {
 	public Job settlementJob() {
 		return new JobBuilder("settlementJob", jobRepository)
 			.start(mainStep())
+			.next(systemWalletDepositStep())
 			.build();
 	}
 
@@ -60,6 +61,25 @@ public class SettlementBatchConfig {
 				contribution.incrementWriteCount(processedCount);
 
 				return RepeatStatus.CONTINUABLE;
+			}, transactionManager).build();
+	}
+
+	@Bean
+	public Step systemWalletDepositStep() {
+		return new StepBuilder("systemWalletDepositStep", jobRepository)
+			.tasklet((contribution, chunkContext) -> {
+				int limit = 1000;
+				int processedCount;
+				int totalProcessed = 0;
+
+				do {
+					processedCount = paymentFacade.processSettlementFees(limit);
+					totalProcessed += processedCount;
+				} while (processedCount == limit);
+				// limit 만큼 가져왔으면 다음 데이터가 있을 가능성이 높음
+
+				contribution.incrementWriteCount(totalProcessed);
+				return RepeatStatus.FINISHED;
 			}, transactionManager).build();
 	}
 
