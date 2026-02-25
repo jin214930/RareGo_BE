@@ -122,9 +122,9 @@ public class Auction extends BaseIdAndTime {
 	}
 
 	public boolean extendEndTimeIfClose(LocalDateTime now) {
-		long minutesRemaining = ChronoUnit.MINUTES.between(now, this.endTime);
+		long secondsRemaining = ChronoUnit.SECONDS.between(now, this.endTime);
 
-		if (minutesRemaining >= 0 && minutesRemaining <= 3) {
+		if (secondsRemaining >= 0 && secondsRemaining <= 180) {
 			this.endTime = this.endTime.plusMinutes(3);
 			return true;
 		}

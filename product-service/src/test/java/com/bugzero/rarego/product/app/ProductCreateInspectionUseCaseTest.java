@@ -27,6 +27,7 @@ import com.bugzero.rarego.product.domain.dto.ProductInspectionRequestDto;
 import com.bugzero.rarego.product.domain.dto.ProductInspectionResponseDto;
 import com.bugzero.rarego.product.out.InspectionRepository;
 import com.bugzero.rarego.shared.auction.out.AuctionApiClient;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
@@ -96,7 +97,15 @@ class ProductCreateInspectionUseCaseTest {
 		given(productSupport.verifyValidateMember(ADMIN_UUID)).willReturn(commonAdmin);
 
 		// [3] AuctionApiClient Mocking (이전 질문에서 추가한 부분 유지)
-		AuctionInfoResponseDto mockAuctionInfo = new AuctionInfoResponseDto(1L, 123L, 10000, LocalDateTime.now());
+		AuctionInfoResponseDto mockAuctionInfo = new AuctionInfoResponseDto(
+			1L,
+			123L,
+			10000,
+			0,
+			AuctionStatus.SCHEDULED,
+			LocalDateTime.now(),
+			null
+		);
 		// anyLong() 대신 구체적인 값을 명시해도 됩니다. (null만 아니면 됨)
 		given(auctionApiClient.getAuctionInfo(any())).willReturn(mockAuctionInfo);
 
@@ -120,7 +129,7 @@ class ProductCreateInspectionUseCaseTest {
 		verify(spyProduct).determineProductCondition(ProductCondition.MISB);
 
 		// [추가 검증] ES 적재가 올바른 ID로 호출되었는지 확인
-		verify(productSearchService).save(any(), any(), eq(123L), eq(10000), any());
+		verify(productSearchService).save(eq(spyProduct), any(), eq(mockAuctionInfo));
 	}
 
 	@Nested
@@ -205,7 +214,15 @@ class ProductCreateInspectionUseCaseTest {
 			when(mockInspection.getProduct()).thenReturn(mockProduct);
 
 			// 4. [중요] ES 적재를 위한 경매 정보 Mocking (이거 없으면 NPE 발생)
-			AuctionInfoResponseDto auctionInfo = new AuctionInfoResponseDto(1L, 555L, 10000, LocalDateTime.now());
+			AuctionInfoResponseDto auctionInfo = new AuctionInfoResponseDto(
+				1L,
+				555L,
+				10000,
+				0,
+				AuctionStatus.SCHEDULED,
+				LocalDateTime.now(),
+				null
+			);
 			when(auctionApiClient.getAuctionInfo(productId)).thenReturn(auctionInfo);
 
 			// when
@@ -213,13 +230,7 @@ class ProductCreateInspectionUseCaseTest {
 
 			// then
 			// ES 적재 메서드가 호출되었는지 확인
-			verify(productSearchService, times(1)).save(
-				eq(mockProduct),
-				any(), // images
-				eq(555L),  // auctionId
-				eq(10000), // startPrice
-				any()      // startedAt
-			);
+			verify(productSearchService, times(1)).save(eq(mockProduct), any(), eq(auctionInfo));
 		}
 
 		@Test
