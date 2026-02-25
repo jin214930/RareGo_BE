@@ -75,12 +75,6 @@ public class EsSyncScheduler {
 		AuctionInfoResponseDto auctionInfo = auctionApiClient.getAuctionInfo(product.getId());
 
 		// ES 저장
-		productSearchService.save(
-			product,
-			product.getImages(),
-			auctionInfo.auctionId(),
-			auctionInfo.startPrice(),
-			auctionInfo.startedAt()
-		);
+		productSearchService.save(product, product.getImages(), auctionInfo);
 	}
 }

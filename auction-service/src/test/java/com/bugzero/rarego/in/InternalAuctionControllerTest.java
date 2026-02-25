@@ -27,9 +27,8 @@ import com.bugzero.rarego.app.AuctionFacade;
 import com.bugzero.rarego.app.AuctionOrderService;
 import com.bugzero.rarego.app.AuctionSettleAuctionFacade;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
-import com.bugzero.rarego.global.response.SuccessType;
-import com.bugzero.rarego.in.dto.AuctionAutoSettleResponseDto;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
@@ -56,61 +55,6 @@ class InternalAuctionControllerTest {
 
 	@Autowired
 	private ObjectMapper objectMapper;
-
-	@Nested
-	@DisplayName("경매 정산 API")
-	class SettleTests {
-
-		@Test
-		@DisplayName("경매 자동 낙찰 처리 API 호출 성공")
-		void settle_Success() throws Exception {
-			// given
-			AuctionAutoSettleResponseDto mockResponse = AuctionAutoSettleResponseDto.builder()
-				.requestTime(LocalDateTime.now())
-				.processedCount(10)
-				.successCount(8)
-				.failCount(2)
-				.details(List.of())
-				.build();
-
-			given(facade.settle()).willReturn(mockResponse);
-
-			// when & then
-			mockMvc.perform(post("/api/v1/internal/auctions/settle"))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value(SuccessType.OK.getHttpStatus()))
-				.andExpect(jsonPath("$.message").value(SuccessType.OK.getMessage()))
-				.andExpect(jsonPath("$.data.processedCount").value(10))
-				.andExpect(jsonPath("$.data.successCount").value(8))
-				.andExpect(jsonPath("$.data.failCount").value(2));
-
-			verify(facade, times(1)).settle();
-		}
-
-		@Test
-		@DisplayName("처리할 경매가 없는 경우")
-		void settle_NoAuctions() throws Exception {
-			// given
-			AuctionAutoSettleResponseDto mockResponse = AuctionAutoSettleResponseDto.builder()
-				.requestTime(LocalDateTime.now())
-				.processedCount(0)
-				.successCount(0)
-				.failCount(0)
-				.details(List.of())
-				.build();
-
-			given(facade.settle()).willReturn(mockResponse);
-
-			// when & then
-			mockMvc.perform(post("/api/v1/internal/auctions/settle"))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.processedCount").value(0));
-
-			verify(facade, times(1)).settle();
-		}
-	}
 
 	@Nested
 	@DisplayName("경매정보 API")
@@ -290,7 +234,10 @@ class InternalAuctionControllerTest {
 			productId,
 			100L,
 			10000,
-			LocalDateTime.now()
+			0,
+			AuctionStatus.SCHEDULED,
+			LocalDateTime.now(),
+			null
 		);
 
 		given(auctionFacade.getAuctionInfoByProductId(productId)).willReturn(responseDto);
@@ -316,10 +263,10 @@ class InternalAuctionControllerTest {
 		String productIdsParam = "10,20"; // param은 콤마로 구분
 
 		AuctionInfoResponseDto dto1 = new AuctionInfoResponseDto(
-			10L, 100L, 10000, LocalDateTime.now()
+			10L, 100L, 10000, 0, AuctionStatus.SCHEDULED, LocalDateTime.now(), null
 		);
 		AuctionInfoResponseDto dto2 = new AuctionInfoResponseDto(
-			20L, 200L, 20000, LocalDateTime.now().plusDays(1)
+			20L, 200L, 20000, 0, AuctionStatus.SCHEDULED, LocalDateTime.now().plusDays(1), null
 		);
 
 		given(auctionFacade.getAuctionInfosByProductIds(productIds)).willReturn(List.of(dto1, dto2));

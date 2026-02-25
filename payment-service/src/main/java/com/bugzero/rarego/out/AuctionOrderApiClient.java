@@ -21,6 +21,7 @@ import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 @Service
 public class AuctionOrderApiClient {
 	private static final String HAS_NEXT_HEADER = "X-Has-Next";
+	private static final String COMMAND_ID_HEADER = "X-Command-Id";
 
 	private final RestClient restClient;
 	private final InternalApiErrorHandler errorHandler;
@@ -54,9 +55,14 @@ public class AuctionOrderApiClient {
 		return response.data();
 	}
 
-	public void completeOrder(Long auctionId) {
+	public void completeOrder(Long auctionId, String commandId) {
 		restClient.post()
 			.uri("/orders/{auctionId}/complete", auctionId)
+			.headers(headers -> {
+				if (commandId != null && !commandId.isBlank()) {
+					headers.set(COMMAND_ID_HEADER, commandId);
+				}
+			})
 			.retrieve()
 			.onStatus(HttpStatusCode::isError, errorHandler::handle)
 			.toBodilessEntity();

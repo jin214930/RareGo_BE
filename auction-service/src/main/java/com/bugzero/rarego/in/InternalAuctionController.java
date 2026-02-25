@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,7 +25,6 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
 import com.bugzero.rarego.global.response.SuccessType;
-import com.bugzero.rarego.in.dto.AuctionAutoSettleResponseDto;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
@@ -46,12 +46,6 @@ public class InternalAuctionController {
 	private final AuctionSettleAuctionFacade auctionSettleAuctionFacade;
 	private final AuctionFacade auctionFacade;
 	private final AuctionOrderService auctionOrderService;
-
-	@Operation(summary = "경매 정산", description = "종료된 경매를 정산합니다")
-	@PostMapping("/settle")
-	public SuccessResponseDto<AuctionAutoSettleResponseDto> settle() {
-		return SuccessResponseDto.from(SuccessType.OK, auctionSettleAuctionFacade.settle());
-	}
 
 	@Operation(summary = "진행 중인 입찰이 있는지 확인", description = "진행 중인 입찰이 있는지 확인합니다")
 	@GetMapping("/members/{publicId}/bids/active")
@@ -80,8 +74,11 @@ public class InternalAuctionController {
 
 	@Operation(summary = "경매 주문 완료 처리", description = "auctionId 기준 주문을 완료 처리합니다.")
 	@PostMapping("/orders/{auctionId}/complete")
-	public SuccessResponseDto<Void> completeOrder(@PathVariable Long auctionId) {
-		auctionOrderService.completeOrder(auctionId);
+	public SuccessResponseDto<Void> completeOrder(
+		@PathVariable Long auctionId,
+		@RequestHeader(value = "X-Command-Id", required = false) String commandId
+	) {
+		auctionOrderService.completeOrder(auctionId, commandId);
 		return SuccessResponseDto.from(SuccessType.OK);
 	}
 
@@ -187,4 +184,3 @@ public class InternalAuctionController {
 		);
 	}
 }
-
