@@ -28,7 +28,7 @@ public class PaymentSettlementProcessor {
 
 	@Value("${custom.payment.systemMemberId}")
 	private Long systemMemberId;
-
+	
 	public boolean processSellerDeposit(Settlement settlement) {
 		if (settlement.getStatus() != SettlementStatus.READY) {
 			return false;
@@ -56,12 +56,12 @@ public class PaymentSettlementProcessor {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void processFees(int limit) {
+	public int processFees(int limit) {
 		// 1. [SKIP LOCKED] 다른 스레드가 처리 중인 건 건너뛰고 조회
 		List<SettlementFee> fees = settlementFeeRepository.findAllForBatch(limit);
 
 		if (fees.isEmpty()) {
-			return;
+			return 0;
 		}
 
 		// 2. 금액 합산
@@ -84,6 +84,8 @@ public class PaymentSettlementProcessor {
 
 		// 4. 처리된 수수료 데이터 삭제 (Queue 비우기)
 		settlementFeeRepository.deleteAllInBatch(fees);
+
+		return fees.size();
 	}
 
 	private void saveSettlementTransaction(Wallet wallet, WalletTransactionType type, int amount, Long settlementId) {
