@@ -71,13 +71,7 @@ public class ProductCreateInspectionUseCase {
 		try {
 			if (status == InspectionStatus.APPROVED) {
 				AuctionInfoResponseDto auctionInfo = auctionApiClient.getAuctionInfo(product.getId());
-				productSearchService.save(
-					product,
-					product.getImages(),
-					auctionInfo.auctionId(),
-					auctionInfo.startPrice(),
-					auctionInfo.startedAt()
-				);
+				productSearchService.save(product, product.getImages(), auctionInfo);
 			} else {
 				productSearchService.delete(product.getId());
 			}

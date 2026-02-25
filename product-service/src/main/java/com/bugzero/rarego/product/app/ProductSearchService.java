@@ -59,7 +59,10 @@ public class ProductSearchService {
 				product.getImages(),
 				auctionInfo.auctionId(),
 				auctionInfo.startPrice(),
-				auctionInfo.startedAt()
+				auctionInfo.finalPrice(),
+				auctionInfo.auctionStatus(),
+				auctionInfo.startedAt(),
+				auctionInfo.closedAt()
 			);
 			documents.add(doc);
 		}
@@ -75,11 +78,40 @@ public class ProductSearchService {
 	public void save(
 		Product product,
 		List<ProductImage> images,
+		AuctionInfoResponseDto auctionInfo
+	) {
+		ProductSearchDocument doc = buildDocument(
+			product,
+			images,
+			auctionInfo.auctionId(),
+			auctionInfo.startPrice(),
+			auctionInfo.finalPrice(),
+			auctionInfo.auctionStatus(),
+			auctionInfo.startedAt(),
+			auctionInfo.closedAt()
+		);
+		searchRepository.save(doc);
+		log.info("Product Indexed (APPROVED): productId={}, auctionId={}", product.getId(), auctionInfo.auctionId());
+	}
+
+	@Transactional
+	public void save(
+		Product product,
+		List<ProductImage> images,
 		Long auctionId,
 		int startPrice,
 		LocalDateTime startedAt
 	) {
-		ProductSearchDocument doc = buildDocument(product, images, auctionId, startPrice, startedAt);
+		ProductSearchDocument doc = buildDocument(
+			product,
+			images,
+			auctionId,
+			startPrice,
+			0,
+			AuctionStatus.SCHEDULED,
+			startedAt,
+			null
+		);
 		searchRepository.save(doc);
 		log.info("Product Indexed (APPROVED): productId={}, auctionId={}", product.getId(), auctionId);
 	}
@@ -89,7 +121,10 @@ public class ProductSearchService {
 		List<ProductImage> images,
 		Long auctionId,
 		int startPrice,
-		LocalDateTime startedAt
+		int finalPrice,
+		AuctionStatus auctionStatus,
+		LocalDateTime startedAt,
+		LocalDateTime closedAt
 	) {
 		String docId = ProductSearchDocument.generateId(product.getId(), auctionId);
 
@@ -124,9 +159,9 @@ public class ProductSearchService {
 			.auctionId(auctionId)
 			.startPrice(startPrice)
 			.startedAt(startedAt)
-			.auctionStatus(AuctionStatus.SCHEDULED) // 초기 상태
-			.finalPrice(0)
-			.closedAt(null)
+			.auctionStatus(auctionStatus != null ? auctionStatus : AuctionStatus.SCHEDULED)
+			.finalPrice(finalPrice)
+			.closedAt(closedAt)
 			.build();
 	}
 
