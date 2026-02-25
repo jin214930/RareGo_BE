@@ -27,8 +27,10 @@ import com.bugzero.rarego.out.es.ProductSearchClient;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class AuctionOrderService {
 	private final AuctionOrderRepository auctionOrderRepository;
@@ -43,9 +45,13 @@ public class AuctionOrderService {
 	}
 
 	@Transactional
-	public void completeOrder(Long auctionId) {
+	public void completeOrder(Long auctionId, String commandId) {
 		AuctionOrder order = auctionOrderRepository.findByAuctionIdForUpdate(auctionId)
 			.orElseThrow(() -> new CustomException(ErrorType.AUCTION_ORDER_NOT_FOUND));
+		if (order.getStatus() == AuctionOrderStatus.SUCCESS) {
+			log.info("경매 주문 완료 중복 요청 수신 - 이미 SUCCESS 상태. auctionId={}, commandId={}", auctionId, commandId);
+			return;
+		}
 		order.complete();
 	}
 
@@ -82,10 +88,10 @@ public class AuctionOrderService {
 	@Transactional(readOnly = true)
 	public Slice<AuctionOrderDto> findExpiringSoonOrders(LocalDateTime targetEndedAt, Pageable pageable) {
 		Slice<AuctionOrder> orders = auctionOrderRepository.findByStatusAndNoticedAtIsNullAndCreatedAtBefore(
-				AuctionOrderStatus.PROCESSING,
-				targetEndedAt,
-				pageable
-			);
+			AuctionOrderStatus.PROCESSING,
+			targetEndedAt,
+			pageable
+		);
 		return toDtoSlice(orders);
 	}
 
