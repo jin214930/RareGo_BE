@@ -64,3 +64,11 @@ auction:
 payment:
   outbox:
     retry-delay-ms: 300000
+  saga:
+    retry:
+      max-attempts: 5
+      delay-seconds: 300
+    auction-final-recovery:
+      cron: "0 */10 * * * *"
+      batch-size: 20
+      in-progress-timeout-seconds: 600
