@@ -19,6 +19,7 @@ import com.bugzero.rarego.shared.auction.event.AuctionStartedEvent;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.member.event.MemberJoinedEvent;
 import com.bugzero.rarego.shared.member.event.MemberUpdatedEvent;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -138,9 +139,15 @@ public class ProductConsumer {
 			productSearchService.save(
 				product,
 				product.getImages(),
-				event.newAuctionId(),
-				event.startPrice(),
-				event.startedAt()
+				new AuctionInfoResponseDto(
+					event.productId(),
+					event.newAuctionId(),
+					event.startPrice(),
+					0,
+					AuctionStatus.SCHEDULED,
+					event.startedAt(),
+					null
+				)
 			);
 
 			log.info("[product] 경매 재등록 처리 완료 - productId: {}, newAuctionId: {}",

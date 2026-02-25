@@ -94,28 +94,6 @@ public class ProductSearchService {
 		log.info("Product Indexed (APPROVED): productId={}, auctionId={}", product.getId(), auctionInfo.auctionId());
 	}
 
-	@Transactional
-	public void save(
-		Product product,
-		List<ProductImage> images,
-		Long auctionId,
-		int startPrice,
-		LocalDateTime startedAt
-	) {
-		ProductSearchDocument doc = buildDocument(
-			product,
-			images,
-			auctionId,
-			startPrice,
-			0,
-			AuctionStatus.SCHEDULED,
-			startedAt,
-			null
-		);
-		searchRepository.save(doc);
-		log.info("Product Indexed (APPROVED): productId={}, auctionId={}", product.getId(), auctionId);
-	}
-
 	private ProductSearchDocument buildDocument(
 		Product product,
 		List<ProductImage> images,

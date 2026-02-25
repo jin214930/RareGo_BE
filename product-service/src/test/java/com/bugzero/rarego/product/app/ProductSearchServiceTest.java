@@ -26,6 +26,7 @@ import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.document.ProductSearchDocument;
 import com.bugzero.rarego.product.out.ProductSearchRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.Category;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
 
@@ -70,7 +71,19 @@ class ProductSearchServiceTest {
 		ProductImage mockImage = createMockImage("http://image.url", 0);
 
 		// when
-		productSearchService.save(mockProduct, List.of(mockImage), auctionId, startPrice, startedAt);
+		productSearchService.save(
+			mockProduct,
+			List.of(mockImage),
+			new AuctionInfoResponseDto(
+				productId,
+				auctionId,
+				startPrice,
+				0,
+				AuctionStatus.SCHEDULED,
+				startedAt,
+				null
+			)
+		);
 
 		// then
 		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
@@ -96,7 +109,20 @@ class ProductSearchServiceTest {
 		ProductImage image3 = createMockImage("http://third.jpg", 2);
 
 		// when
-		productSearchService.save(mockProduct, List.of(image1, image2, image3), 101L, 500000, LocalDateTime.now());
+		LocalDateTime startedAt = LocalDateTime.now();
+		productSearchService.save(
+			mockProduct,
+			List.of(image1, image2, image3),
+			new AuctionInfoResponseDto(
+				2L,
+				101L,
+				500000,
+				0,
+				AuctionStatus.SCHEDULED,
+				startedAt,
+				null
+			)
+		);
 
 		// then
 		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
@@ -196,8 +222,21 @@ class ProductSearchServiceTest {
 		ProductImage mockImage = createMockImage("http://image.url", 0);
 
 		// when & then - 예외 없이 정상 수행
+		LocalDateTime startedAt = LocalDateTime.now();
 		assertThatCode(() ->
-			productSearchService.save(mockProduct, List.of(mockImage), 100L, 500000, LocalDateTime.now())
+			productSearchService.save(
+				mockProduct,
+				List.of(mockImage),
+				new AuctionInfoResponseDto(
+					10L,
+					100L,
+					500000,
+					0,
+					AuctionStatus.SCHEDULED,
+					startedAt,
+					null
+				)
+			)
 		).doesNotThrowAnyException();
 
 		// ES 저장이 호출되었는지 확인
