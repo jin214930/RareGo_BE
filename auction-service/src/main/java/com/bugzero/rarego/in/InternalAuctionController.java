@@ -24,7 +24,6 @@ import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.global.response.SuccessResponseDto;
 import com.bugzero.rarego.global.response.SuccessType;
-import com.bugzero.rarego.in.dto.AuctionAutoSettleResponseDto;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
@@ -46,12 +45,6 @@ public class InternalAuctionController {
 	private final AuctionSettleAuctionFacade auctionSettleAuctionFacade;
 	private final AuctionFacade auctionFacade;
 	private final AuctionOrderService auctionOrderService;
-
-	@Operation(summary = "경매 정산", description = "종료된 경매를 정산합니다")
-	@PostMapping("/settle")
-	public SuccessResponseDto<AuctionAutoSettleResponseDto> settle() {
-		return SuccessResponseDto.from(SuccessType.OK, auctionSettleAuctionFacade.settle());
-	}
 
 	@Operation(summary = "진행 중인 입찰이 있는지 확인", description = "진행 중인 입찰이 있는지 확인합니다")
 	@GetMapping("/members/{publicId}/bids/active")
