@@ -547,12 +547,144 @@ SET holding_amount = 0;
 -- 2. Holding Amount 재계산 (HOLD 상태인 Deposit 합계)
 UPDATE payment_wallet w
     JOIN (SELECT member_id, SUM(amount) as total_hold
-    FROM payment_deposit
-    WHERE status = 'HOLD'
-    GROUP BY member_id) d ON w.member_id = d.member_id
-    SET w.holding_amount = d.total_hold;
+          FROM payment_deposit
+          WHERE status = 'HOLD'
+          GROUP BY member_id) d ON w.member_id = d.member_id
+SET w.holding_amount = d.total_hold;
 
 -- 3. Balance 보정 (기본금 + Holding보다 많게)
 UPDATE payment_wallet
 SET balance = holding_amount + 10000000
 WHERE balance < holding_amount;
+
+/* ==================================================================================
+   [STEP 13] AI 가격 추천 서비스용 낙찰 데이터 추가 (ID: 44 ~ 53)
+   * 상태: ENDED(경매 종료), SUCCESS(주문/결제 완료), DONE(정산 완료)
+   ================================================================================== */
+
+-- 1. 상품(Product) 데이터 생성
+INSERT INTO product_product (id, deleted, created_at, updated_at, seller_id, category, name, description,
+                             inspection_status, product_condition)
+VALUES (44, 0, NOW(), NOW(), 3, 'STARWARS', '레고 스타워즈 타이 파이터', '단종된 희귀 모델', 'APPROVED', 'MISB'),
+       (45, 0, NOW(), NOW(), 4, 'HARRYPOTTER', '레고 해리포터 비밀의 방', '박스 상태 S급', 'APPROVED', 'NISB'),
+       (46, 0, NOW(), NOW(), 5, 'ORIGINAL', '레고 아이디어 그랜드 피아노', '1회 조립 후 분해', 'APPROVED', 'USED'),
+       (47, 0, NOW(), NOW(), 6, 'STARWARS', '레고 엑스윙 스타파이터 UCS', '전시용 보관', 'APPROVED', 'MISB'),
+       (48, 0, NOW(), NOW(), 7, 'ORIGINAL', '레고 베스파 125', '미개봉 새상품', 'APPROVED', 'MISB'),
+       (49, 0, NOW(), NOW(), 3, 'HARRYPOTTER', '레고 호그와트 성 (마이크로)', '부품 누락 없음', 'APPROVED', 'USED'),
+       (50, 0, NOW(), NOW(), 4, 'STARWARS', '레고 만달로리안 N-1 스타파이터', '피규어 모두 포함', 'APPROVED', 'MISP'),
+       (51, 0, NOW(), NOW(), 5, 'ORIGINAL', '레고 빈센트 반 고흐 별이 빛나는 밤', '명작 컬렉션', 'APPROVED', 'MISB'),
+       (52, 0, NOW(), NOW(), 6, 'HARRYPOTTER', '레고 해리포터 헤드위그', '기믹 작동 확인', 'APPROVED', 'USED'),
+       (53, 0, NOW(), NOW(), 7, 'STARWARS', '레고 보바 펫의 우주선', '상태 양호', 'APPROVED', 'NISB');
+
+-- 2. 상품 이미지 세팅
+INSERT INTO product_image (deleted, created_at, updated_at, product_id, image_url, sort_order)
+SELECT 0,
+       NOW(),
+       NOW(),
+       id,
+       'https://images.unsplash.com/photo-1611604548018-d56bbd85d681?q=80&w=2070&auto=format&fit=crop',
+       0
+FROM product_product
+WHERE id >= 44;
+
+-- 3. 상품 검수 상태 (APPROVED)
+INSERT INTO product_inspection (deleted, created_at, updated_at, seller_id, product_id, inspector_id, inspection_status,
+                                product_condition)
+SELECT 0,
+       NOW(),
+       NOW(),
+       seller_id,
+       id,
+       2,
+       'APPROVED',
+       product_condition
+FROM product_product
+WHERE id >= 44;
+
+-- 4. 경매 상태 (ENDED) - 합리적인 시작가 및 최종가 세팅
+INSERT INTO auction_auction (id, deleted, created_at, updated_at, product_id, seller_id, duration_days, start_price,
+                             tick_size, status, start_time, end_time, current_price)
+VALUES (44, 0, NOW(), NOW(), 44, 3, 5, 80000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 20 DAY),
+        DATE_SUB(NOW(), INTERVAL 15 DAY), 125000),
+       (45, 0, NOW(), NOW(), 45, 4, 3, 100000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 18 DAY),
+        DATE_SUB(NOW(), INTERVAL 15 DAY), 160000),
+       (46, 0, NOW(), NOW(), 46, 5, 7, 300000, 10000, 'ENDED', DATE_SUB(NOW(), INTERVAL 25 DAY),
+        DATE_SUB(NOW(), INTERVAL 18 DAY), 420000),
+       (47, 0, NOW(), NOW(), 47, 6, 5, 200000, 10000, 'ENDED', DATE_SUB(NOW(), INTERVAL 15 DAY),
+        DATE_SUB(NOW(), INTERVAL 10 DAY), 280000),
+       (48, 0, NOW(), NOW(), 48, 7, 3, 120000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 12 DAY),
+        DATE_SUB(NOW(), INTERVAL 9 DAY), 155000),
+       (49, 0, NOW(), NOW(), 49, 3, 5, 450000, 10000, 'ENDED', DATE_SUB(NOW(), INTERVAL 30 DAY),
+        DATE_SUB(NOW(), INTERVAL 25 DAY), 580000),
+       (50, 0, NOW(), NOW(), 50, 4, 3, 60000, 2000, 'ENDED', DATE_SUB(NOW(), INTERVAL 14 DAY),
+        DATE_SUB(NOW(), INTERVAL 11 DAY), 86000),
+       (51, 0, NOW(), NOW(), 51, 5, 7, 180000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 20 DAY),
+        DATE_SUB(NOW(), INTERVAL 13 DAY), 245000),
+       (52, 0, NOW(), NOW(), 52, 6, 3, 40000, 2000, 'ENDED', DATE_SUB(NOW(), INTERVAL 10 DAY),
+        DATE_SUB(NOW(), INTERVAL 7 DAY), 58000),
+       (53, 0, NOW(), NOW(), 53, 7, 5, 70000, 5000, 'ENDED', DATE_SUB(NOW(), INTERVAL 15 DAY),
+        DATE_SUB(NOW(), INTERVAL 10 DAY), 105000);
+
+-- 5. 입찰 내역 (최종가 도달을 위한 과정)
+INSERT INTO auction_bid (deleted, created_at, updated_at, auction_id, bid_amount, bid_time, bidder_id)
+VALUES (0, NOW(), NOW(), 44, 85000, DATE_SUB(NOW(), INTERVAL 19 DAY), 9),
+       (0, NOW(), NOW(), 44, 125000, DATE_SUB(NOW(), INTERVAL 15 DAY), 8),
+       (0, NOW(), NOW(), 45, 110000, DATE_SUB(NOW(), INTERVAL 17 DAY), 10),
+       (0, NOW(), NOW(), 45, 160000, DATE_SUB(NOW(), INTERVAL 15 DAY), 9),
+       (0, NOW(), NOW(), 46, 350000, DATE_SUB(NOW(), INTERVAL 20 DAY), 8),
+       (0, NOW(), NOW(), 46, 420000, DATE_SUB(NOW(), INTERVAL 18 DAY), 10),
+       (0, NOW(), NOW(), 47, 250000, DATE_SUB(NOW(), INTERVAL 12 DAY), 9),
+       (0, NOW(), NOW(), 47, 280000, DATE_SUB(NOW(), INTERVAL 10 DAY), 8),
+       (0, NOW(), NOW(), 48, 135000, DATE_SUB(NOW(), INTERVAL 11 DAY), 10),
+       (0, NOW(), NOW(), 48, 155000, DATE_SUB(NOW(), INTERVAL 9 DAY), 9),
+       (0, NOW(), NOW(), 49, 500000, DATE_SUB(NOW(), INTERVAL 28 DAY), 8),
+       (0, NOW(), NOW(), 49, 580000, DATE_SUB(NOW(), INTERVAL 25 DAY), 10),
+       (0, NOW(), NOW(), 50, 70000, DATE_SUB(NOW(), INTERVAL 13 DAY), 9),
+       (0, NOW(), NOW(), 50, 86000, DATE_SUB(NOW(), INTERVAL 11 DAY), 8),
+       (0, NOW(), NOW(), 51, 200000, DATE_SUB(NOW(), INTERVAL 16 DAY), 10),
+       (0, NOW(), NOW(), 51, 245000, DATE_SUB(NOW(), INTERVAL 13 DAY), 9),
+       (0, NOW(), NOW(), 52, 50000, DATE_SUB(NOW(), INTERVAL 9 DAY), 8),
+       (0, NOW(), NOW(), 52, 58000, DATE_SUB(NOW(), INTERVAL 7 DAY), 10),
+       (0, NOW(), NOW(), 53, 90000, DATE_SUB(NOW(), INTERVAL 12 DAY), 9),
+       (0, NOW(), NOW(), 53, 105000, DATE_SUB(NOW(), INTERVAL 10 DAY), 8);
+
+-- 6. 보증금 (낙찰자 결제 완료로 인한 USED 처리)
+INSERT INTO payment_deposit (deleted, created_at, updated_at, member_id, auction_id, amount, status)
+VALUES (0, NOW(), NOW(), 8, 44, 8000, 'USED'),
+       (0, NOW(), NOW(), 9, 45, 10000, 'USED'),
+       (0, NOW(), NOW(), 10, 46, 30000, 'USED'),
+       (0, NOW(), NOW(), 8, 47, 20000, 'USED'),
+       (0, NOW(), NOW(), 9, 48, 12000, 'USED'),
+       (0, NOW(), NOW(), 10, 49, 45000, 'USED'),
+       (0, NOW(), NOW(), 8, 50, 6000, 'USED'),
+       (0, NOW(), NOW(), 9, 51, 18000, 'USED'),
+       (0, NOW(), NOW(), 10, 52, 4000, 'USED'),
+       (0, NOW(), NOW(), 8, 53, 7000, 'USED');
+
+-- 7. 주문 내역 (SUCCESS)
+INSERT INTO auction_auctionorder (deleted, created_at, updated_at, auction_id, bidder_id, final_price, seller_id,
+                                  status)
+VALUES (0, NOW(), NOW(), 44, 8, 125000, 3, 'SUCCESS'),
+       (0, NOW(), NOW(), 45, 9, 160000, 4, 'SUCCESS'),
+       (0, NOW(), NOW(), 46, 10, 420000, 5, 'SUCCESS'),
+       (0, NOW(), NOW(), 47, 8, 280000, 6, 'SUCCESS'),
+       (0, NOW(), NOW(), 48, 9, 155000, 7, 'SUCCESS'),
+       (0, NOW(), NOW(), 49, 10, 580000, 3, 'SUCCESS'),
+       (0, NOW(), NOW(), 50, 8, 86000, 4, 'SUCCESS'),
+       (0, NOW(), NOW(), 51, 9, 245000, 5, 'SUCCESS'),
+       (0, NOW(), NOW(), 52, 10, 58000, 6, 'SUCCESS'),
+       (0, NOW(), NOW(), 53, 8, 105000, 7, 'SUCCESS');
+
+-- 8. 정산 내역 (DONE) - 수수료 10% 제외
+INSERT INTO payment_settlement (deleted, created_at, updated_at, auction_id, seller_id, product_name, sales_amount,
+                                fee_amount, settlement_amount, status, try_count)
+VALUES (0, NOW(), NOW(), 44, 3, '레고 스타워즈 타이 파이터', 125000, 12500, 112500, 'DONE', 0),
+       (0, NOW(), NOW(), 45, 4, '레고 해리포터 비밀의 방', 160000, 16000, 144000, 'DONE', 0),
+       (0, NOW(), NOW(), 46, 5, '레고 아이디어 그랜드 피아노', 420000, 42000, 378000, 'DONE', 0),
+       (0, NOW(), NOW(), 47, 6, '레고 엑스윙 스타파이터 UCS', 280000, 28000, 252000, 'DONE', 0),
+       (0, NOW(), NOW(), 48, 7, '레고 베스파 125', 155000, 15500, 139500, 'DONE', 0),
+       (0, NOW(), NOW(), 49, 3, '레고 호그와트 성 (마이크로)', 580000, 58000, 522000, 'DONE', 0),
+       (0, NOW(), NOW(), 50, 4, '레고 만달로리안 N-1 스타파이터', 86000, 8600, 77400, 'DONE', 0),
+       (0, NOW(), NOW(), 51, 5, '레고 빈센트 반 고흐 별이 빛나는 밤', 245000, 24500, 220500, 'DONE', 0),
+       (0, NOW(), NOW(), 52, 6, '레고 해리포터 헤드위그', 58000, 5800, 52200, 'DONE', 0),
+       (0, NOW(), NOW(), 53, 7, '레고 보바 펫의 우주선', 105000, 10500, 94500, 'DONE', 0);
