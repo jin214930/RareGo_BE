@@ -28,6 +28,7 @@ import com.bugzero.rarego.app.AuctionOrderService;
 import com.bugzero.rarego.app.AuctionSettleAuctionFacade;
 import com.bugzero.rarego.global.aspect.ResponseAspect;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
+import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
@@ -233,7 +234,10 @@ class InternalAuctionControllerTest {
 			productId,
 			100L,
 			10000,
-			LocalDateTime.now()
+			0,
+			AuctionStatus.SCHEDULED,
+			LocalDateTime.now(),
+			null
 		);
 
 		given(auctionFacade.getAuctionInfoByProductId(productId)).willReturn(responseDto);
@@ -259,10 +263,10 @@ class InternalAuctionControllerTest {
 		String productIdsParam = "10,20"; // param은 콤마로 구분
 
 		AuctionInfoResponseDto dto1 = new AuctionInfoResponseDto(
-			10L, 100L, 10000, LocalDateTime.now()
+			10L, 100L, 10000, 0, AuctionStatus.SCHEDULED, LocalDateTime.now(), null
 		);
 		AuctionInfoResponseDto dto2 = new AuctionInfoResponseDto(
-			20L, 200L, 20000, LocalDateTime.now().plusDays(1)
+			20L, 200L, 20000, 0, AuctionStatus.SCHEDULED, LocalDateTime.now().plusDays(1), null
 		);
 
 		given(auctionFacade.getAuctionInfosByProductIds(productIds)).willReturn(List.of(dto1, dto2));
