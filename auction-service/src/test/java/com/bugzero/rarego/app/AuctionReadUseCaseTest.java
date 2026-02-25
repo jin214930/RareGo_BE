@@ -984,6 +984,7 @@ class AuctionReadUseCaseTest {
 		void getAuctionInfoByProductId_success() {
 			// given
 			given(support.findAuctionByProductId(productId)).willReturn(auction);
+			given(auctionOrderRepository.findByAuctionId(auctionId)).willReturn(Optional.empty());
 
 			// when
 			AuctionInfoResponseDto result = auctionReadUseCase.getAuctionInfoByProductId(productId);
@@ -992,7 +993,10 @@ class AuctionReadUseCaseTest {
 			assertThat(result.productId()).isEqualTo(productId);
 			assertThat(result.auctionId()).isEqualTo(auctionId);
 			assertThat(result.startPrice()).isEqualTo(10000);
+			assertThat(result.finalPrice()).isEqualTo(0);
+			assertThat(result.auctionStatus()).isEqualTo(AuctionStatus.IN_PROGRESS);
 			assertThat(result.startedAt()).isEqualTo(auction.getStartTime());
+			assertThat(result.closedAt()).isEqualTo(auction.getEndTime());
 		}
 
 		@Test
@@ -1032,7 +1036,10 @@ class AuctionReadUseCaseTest {
 			ReflectionTestUtils.setField(auction2, "id", 2L);
 			ReflectionTestUtils.setField(auction2, "status", AuctionStatus.SCHEDULED);
 
+			AuctionOrder order = createOrder(100L, auctionId, sellerId, 999L, 45000);
+
 			given(support.findAllByProductIds(productIds)).willReturn(List.of(auction, auction2));
+			given(auctionOrderRepository.findAllByAuctionIdIn(Set.of(auctionId, 2L))).willReturn(List.of(order));
 
 			// when
 			List<AuctionInfoResponseDto> results = auctionReadUseCase.getAuctionInfosByProductIds(productIds);
@@ -1046,6 +1053,7 @@ class AuctionReadUseCaseTest {
 				.findFirst().orElseThrow();
 			assertThat(dto1.auctionId()).isEqualTo(auctionId);
 			assertThat(dto1.startPrice()).isEqualTo(10000);
+			assertThat(dto1.finalPrice()).isEqualTo(45000);
 
 			// 2번 상품 매핑 검증
 			AuctionInfoResponseDto dto2 = results.stream()
@@ -1053,6 +1061,7 @@ class AuctionReadUseCaseTest {
 				.findFirst().orElseThrow();
 			assertThat(dto2.auctionId()).isEqualTo(2L);
 			assertThat(dto2.startPrice()).isEqualTo(20000);
+			assertThat(dto2.finalPrice()).isEqualTo(0);
 		}
 
 		@Test
