@@ -104,8 +104,13 @@ public class AuctionReadUseCase {
         AuctionMember member = support.getPublicMember(memberPublicId);
 
         List<Long> myProductIds = productSearchClient.getProductIdsBySellerId(member.getId());
+        Pageable fixedSortPageable = PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(Sort.Direction.DESC, "id")
+        );
 
-        Page<Auction> auctionPage = fetchAuctionsByFilter(myProductIds, auctionFilterType, pageable);
+        Page<Auction> auctionPage = fetchAuctionsByFilter(myProductIds, auctionFilterType, fixedSortPageable);
         List<Auction> auctions = auctionPage.getContent();
 
         if (auctions.isEmpty()) {

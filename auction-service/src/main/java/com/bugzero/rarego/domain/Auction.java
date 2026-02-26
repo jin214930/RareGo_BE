@@ -117,6 +117,13 @@ public class Auction extends BaseIdAndTime {
 		this.status = AuctionStatus.WITHDRAWN;
 	}
 
+	public void relist() {
+		if (this.status != AuctionStatus.ENDED) {
+			throw new CustomException(ErrorType.AUCTION_NOT_ENDED);
+		}
+		this.status = AuctionStatus.RELISTED;
+	}
+
 	public Integer getCurrentPriceOrStartPrice() {
 		return currentPrice != null ? currentPrice : startPrice;
 	}
