@@ -114,7 +114,8 @@ public class ProductSearchService {
 		processBeforeInspection(product, images, startPrice, durationDays, true);
 	}
 
-	private void processBeforeInspection(Product product, List<ProductImage> images, int startPrice, int durationDays, boolean isUpdate) {
+	private void processBeforeInspection(Product product, List<ProductImage> images, int startPrice, int durationDays,
+		boolean isUpdate) {
 		String docId = ProductSearchDocument.generateId(product.getId());
 
 		// 수정 시에만 존재 여부 체크 (성능을 위해 existsById 사용)
@@ -144,7 +145,49 @@ public class ProductSearchService {
 			.build();
 
 		searchRepository.save(doc);
-		log.info("Product Document {} (Before Inspection): productId={}", isUpdate ? "Updated" : "Saved", product.getId());
+		log.info("Product Document {} (Before Inspection): productId={}", isUpdate ? "Updated" : "Saved",
+			product.getId());
+	}
+
+	// 초기화 시 PENDING/REJECTED 상품 일괄 적재
+	public void saveAllBeforeInspection(List<Product> products, Map<Long, AuctionInfoResponseDto> auctionMap) {
+		List<ProductSearchDocument> documents = new ArrayList<>();
+
+		for (Product product : products) {
+			AuctionInfoResponseDto auctionInfo = auctionMap.get(product.getId());
+			int startPrice = (auctionInfo != null) ? auctionInfo.startPrice() : 0;
+
+			String docId = ProductSearchDocument.generateId(product.getId());
+
+			List<String> imageUrls = (product.getImages() != null && !product.getImages().isEmpty())
+				? product.getImages().stream()
+				.sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+				.map(ProductImage::getImageUrl)
+				.toList()
+				: List.of();
+
+			ProductSearchDocument doc = ProductSearchDocument.builder()
+				.id(docId)
+				.productId(product.getId())
+				.productName(product.getName())
+				.description(product.getDescription())
+				.productCondition(product.getProductCondition())
+				.category(product.getCategory())
+				.sellerId(product.getSeller().getId())
+				.imageUrls(imageUrls)
+				.startPrice(startPrice)
+				.inspectionStatus(product.getInspectionStatus())
+				.auctionStatus(AuctionStatus.SCHEDULED)
+				.finalPrice(0)
+				.build();
+
+			documents.add(doc);
+		}
+
+		if (!documents.isEmpty()) {
+			searchRepository.saveAll(documents);
+			log.info("Bulk Save (Non-Approved): {} documents indexed.", documents.size());
+		}
 	}
 
 	public void rejectedInspection(
@@ -223,6 +266,7 @@ public class ProductSearchService {
 			.auctionStatus(auctionStatus)
 			.finalPrice(finalPrice)
 			.closedAt(closedAt)
+			.inspectionStatus(InspectionStatus.APPROVED)
 			.build();
 	}
 
@@ -255,6 +299,7 @@ public class ProductSearchService {
 			.sellerId(doc.getSellerId())
 			.imageUrls(doc.getImageUrls())
 			.embedding(doc.getEmbedding())
+			.inspectionStatus(doc.getInspectionStatus())
 			.build();
 
 		searchRepository.save(updatedDoc);
@@ -282,6 +327,7 @@ public class ProductSearchService {
 				.closedAt(doc.getClosedAt())
 				// 새로운 상태 적용
 				.auctionStatus(newStatus)
+				.inspectionStatus(doc.getInspectionStatus())
 				.build();
 
 			searchRepository.save(updated);
