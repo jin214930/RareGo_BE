@@ -92,6 +92,7 @@ class AuctionRelistUseCaseTest {
 		// then
 		assertThat(result.newAuctionId()).isEqualTo(2L);
 		assertThat(result.productId()).isEqualTo(50L);
+		assertThat(oldAuction.getStatus()).isEqualTo(AuctionStatus.RELISTED);
 		verify(auctionRepository).save(any(Auction.class));
 
 		// 아웃박스 저장 검증
@@ -110,6 +111,7 @@ class AuctionRelistUseCaseTest {
 		Long oldAuctionId = 1L;
 		Auction oldAuction = Auction.builder().productId(50L).sellerId(100L).durationDays(1).build();
 		ReflectionTestUtils.setField(oldAuction, "id", oldAuctionId);
+		ReflectionTestUtils.setField(oldAuction, "status", AuctionStatus.ENDED);
 
 		AuctionMember seller = AuctionMember.builder().build();
 		ReflectionTestUtils.setField(seller, "id", 100L);
@@ -135,6 +137,7 @@ class AuctionRelistUseCaseTest {
 
 		// then
 		assertThat(result).isNotNull();
+		assertThat(oldAuction.getStatus()).isEqualTo(AuctionStatus.RELISTED);
 		verify(outboxUseCase).saveOutbox(any(AuctionRelistedEvent.class));
 	}
 
@@ -203,6 +206,7 @@ class AuctionRelistUseCaseTest {
 
 		Auction oldAuction = Auction.builder().productId(50L).sellerId(100L).durationDays(1).build();
 		ReflectionTestUtils.setField(oldAuction, "id", oldAuctionId);
+		ReflectionTestUtils.setField(oldAuction, "status", AuctionStatus.ENDED);
 
 		given(support.getPublicMember(anyString())).willReturn(seller);
 		given(support.findAuctionById(anyLong())).willReturn(oldAuction);
@@ -227,5 +231,6 @@ class AuctionRelistUseCaseTest {
 		verify(outboxUseCase).saveOutbox(outboxCaptor.capture());
 		AuctionRelistedEvent event = (AuctionRelistedEvent)outboxCaptor.getValue();
 		assertThat(event.productName()).isEqualTo("Unknown Product");
+		assertThat(oldAuction.getStatus()).isEqualTo(AuctionStatus.RELISTED);
 	}
 }
