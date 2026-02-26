@@ -13,6 +13,7 @@ import lombok.Builder;
 @Builder
 public record MySaleResponseDto(
 	Long auctionId,
+	Long productId,
 	String title,
 	String thumbnailUrl,
 	long currentPrice,
@@ -35,6 +36,7 @@ public record MySaleResponseDto(
 	) {
 		return MySaleResponseDto.builder()
 			.auctionId(auction.getId())
+			.productId(product != null ? product.id() : null)
 			.title(resolveTitle(product))
 			.thumbnailUrl(resolveThumbnail(product))
 			.currentPrice(resolvePrice(auction, order))
