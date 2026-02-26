@@ -25,6 +25,9 @@ jobs:
       notification: ${{ steps.filter.outputs.notification }}
       auction: ${{ steps.filter.outputs.auction }}
       product: ${{ steps.filter.outputs.product }}
+      product_elasticsearch: ${{ steps.filter.outputs.product_elasticsearch }}
+      monitoring: ${{ steps.filter.outputs.monitoring }}
+      monitoring_kustomization: ${{ steps.filter.outputs.monitoring_kustomization }}
       auth: ${{ steps.filter.outputs.auth }}
       common: ${{ steps.filter.outputs.common }}
       k8s: ${{ steps.filter.outputs.k8s }}
@@ -44,6 +47,14 @@ jobs:
               - 'auction-service/**'
             product:
               - 'product-service/**'
+            product_elasticsearch:
+              - 'docker/elasticsearch/**'
+            monitoring:
+              - 'k8s/infra/monitoring/**'
+              - 'k8s/infra/prometheus.yaml'
+              - 'k8s/infra/grafana.yaml'
+            monitoring_kustomization:
+              - 'k8s/kustomization.yaml'
             auth:
               - 'auth-service/**'
             common:
@@ -163,7 +174,7 @@ jobs:
           - name: product-elasticsearch
             dockerfile: docker/elasticsearch/Dockerfile
             image_suffix: "-product-elasticsearch"
-            key: common # Infrastructure image depends on common/global changes
+            key: product_elasticsearch
     steps:
       - name: Checkout
         if: needs.detect-changes.outputs[matrix.key] == 'true' || needs.detect-changes.outputs.common == 'true'
@@ -234,6 +245,8 @@ jobs:
           fi
           if [ "${{ needs.detect-changes.outputs.product }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
             kustomize edit set image rarego-product-service=ghcr.io/${REPO_NAME}-product-service:${IMAGE_TAG}
+          fi
+          if [ "${{ needs.detect-changes.outputs.product_elasticsearch }}" == "true" ]; then
             kustomize edit set image rarego-product-elasticsearch=ghcr.io/${REPO_NAME}-product-elasticsearch:${IMAGE_TAG}
           fi
           if [ "${{ needs.detect-changes.outputs.payment }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
@@ -300,23 +313,67 @@ jobs:
       - name: Deploy to K8S via SSM
         run: |
           K8S_FILES_BASE64=$(tar -czf - -C k8s . | base64 -w 0)
+          INSTANCE_ID=${{ steps.get-instance.outputs.instance_id }}
 
-          aws ssm send-command \
-            --instance-ids ${{ steps.get-instance.outputs.instance_id }} \
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --parameters commands="[
               \"mkdir -p /tmp/k8s\",
               \"echo '$K8S_FILES_BASE64' | base64 -d | tar -xzf - -C /tmp/k8s\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf apply -k /tmp/k8s/\",
+              \"kubectl --kubeconfig /etc/kubernetes/admin.conf apply -k /tmp/k8s/ > /tmp/k8s-apply.log 2>&1; rc=\$?; cat /tmp/k8s-apply.log; if [ \$rc -ne 0 ] && grep -q 'StatefulSet .*kafka.*spec: Forbidden' /tmp/k8s-apply.log; then echo '[WARN] Ignoring known kafka StatefulSet immutable field error'; rc=0; fi; exit \$rc\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego create secret docker-registry ghcr-creds --docker-server=ghcr.io --docker-username='${{ secrets.GHCR_USERNAME }}' --docker-password='${{ secrets.GHCR_TOKEN }}' --dry-run=client -o yaml | kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f -\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf patch serviceaccount default -n rarego -p '{\\\"imagePullSecrets\\\":[{\\\"name\\\":\\\"ghcr-creds\\\"}]}'\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deployment -n rarego\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart statefulset -n rarego\",
+              \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deployment -n rarego || true\",
+              \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.monitoring_kustomization }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego get configmap prometheus-config grafana-datasources grafana-dashboard-provider grafana-dashboards; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.monitoring_kustomization }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/prometheus -n rarego && kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status deploy/prometheus --timeout=600s; fi\",
+              \"if [ '${{ needs.detect-changes.outputs.monitoring }}' = 'true' ] || [ '${{ needs.detect-changes.outputs.monitoring_kustomization }}' = 'true' ]; then kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deploy/grafana -n rarego && kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status deploy/grafana --timeout=600s; fi\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego rollout status statefulset/mysql --timeout=300s\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego exec mysql-0 -- mysql -uroot -p'${{ secrets.DB_ROOT_PASSWORD }}' -e \\\"CREATE USER IF NOT EXISTS '${{ secrets.DB_USERNAME }}'@'%' IDENTIFIED BY '${{ secrets.DB_PASSWORD }}'; ALTER USER '${{ secrets.DB_USERNAME }}'@'%' IDENTIFIED BY '${{ secrets.DB_PASSWORD }}'; GRANT ALL PRIVILEGES ON *.* TO '${{ secrets.DB_USERNAME }}'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;\\\"\",
               \"rm -rf /tmp/k8s\"
             ]" \
-            --output text
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM command id: $COMMAND_ID"
+
+          while true; do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query "Status" \
+              --output text 2>/dev/null || true)
+
+            case "$STATUS" in
+              Success)
+                echo "SSM command completed successfully."
+                aws ssm get-command-invocation \
+                  --command-id "$COMMAND_ID" \
+                  --instance-id "$INSTANCE_ID" \
+                  --query "StandardOutputContent" \
+                  --output text || true
+                break
+                ;;
+              Failed|TimedOut|Cancelled|Cancelling)
+                echo "SSM command failed with status: $STATUS"
+                aws ssm get-command-invocation \
+                  --command-id "$COMMAND_ID" \
+                  --instance-id "$INSTANCE_ID" \
+                  --query "StandardOutputContent" \
+                  --output text || true
+                aws ssm get-command-invocation \
+                  --command-id "$COMMAND_ID" \
+                  --instance-id "$INSTANCE_ID" \
+                  --query "StandardErrorContent" \
+                  --output text || true
+                exit 1
+                ;;
+              *)
+                echo "SSM command status: ${STATUS:-Pending}"
+                sleep 5
+                ;;
+            esac
+          done
 
       - name: Clean up local secrets
         if: always()

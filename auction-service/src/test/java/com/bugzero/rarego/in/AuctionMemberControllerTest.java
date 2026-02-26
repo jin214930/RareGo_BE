@@ -228,8 +228,8 @@ class AuctionMemberControllerTest {
 
 		// MySaleResponseDto 생성자는 기존 코드를 참고하여 작성 (필요시 수정)
 		MySaleResponseDto saleDto = new MySaleResponseDto(
-			100L, "판매 상품", "thumb.jpg", 10000, 5, AuctionStatus.IN_PROGRESS, AuctionOrderStatus.SUCCESS,
-			LocalDateTime.now(), false
+			100L, 100L,"판매 상품", "thumb.jpg", 10000, 5, AuctionStatus.IN_PROGRESS, AuctionOrderStatus.SUCCESS,
+			LocalDateTime.now(), false, null
 		);
 
 		PagedResponseDto<MySaleResponseDto> response = new PagedResponseDto<>(

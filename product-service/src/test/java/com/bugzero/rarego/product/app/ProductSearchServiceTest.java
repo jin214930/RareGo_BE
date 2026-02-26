@@ -5,7 +5,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +28,9 @@ import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.document.ProductSearchDocument;
 import com.bugzero.rarego.product.out.ProductSearchRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
+import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -37,10 +41,8 @@ class ProductSearchServiceTest {
 
 	@Mock
 	private ProductSearchRepository searchRepository;
-
 	@Mock
 	private ElasticsearchClient elasticsearchClient;
-
 	@Mock
 	private EmbeddingModel embeddingModel;
 
@@ -48,6 +50,8 @@ class ProductSearchServiceTest {
 	private ProductSearchService productSearchService;
 
 	private static final float[] DUMMY_VECTOR = new float[1536];
+	private final Long PRODUCT_ID = 1L;
+	private final Long AUCTION_ID = 100L;
 
 	@BeforeEach
 	void setUp() {
@@ -55,159 +59,150 @@ class ProductSearchServiceTest {
 	}
 
 	@Test
-	@DisplayName("상품을 ES에 적재하면 복합 ID(pid_aid)와 SCHEDULED 상태로 저장된다")
-	void save_shouldSaveProductWithCompositeIdAndStatus() {
+	@DisplayName("성공: 검수 전 저장 시 임베딩 없이 SCHEDULED 상태로 저장된다")
+	void saveBeforeInspection_Success() {
 		// given
-		Long productId = 1L;
-		Long auctionId = 100L;
-		String productName = "다스베이더 레고";
-		String expectedDocId = productId + "_" + auctionId; // 예상되는 복합 ID
-
-		int startPrice = 1000000;
-		LocalDateTime startedAt = LocalDateTime.now().minusHours(1);
-
-		Product mockProduct = createMockProduct(productId, productName, "설명", Category.STARWARS);
-		ProductImage mockImage = createMockImage("http://image.url", 0);
+		Product mockProduct = createMockProduct(PRODUCT_ID, "레고", "설명", Category.TECHNIC);
+		ProductImage mockImage = createMockImage("http://image.jpg", 0);
 
 		// when
-		productSearchService.save(mockProduct, List.of(mockImage), auctionId, startPrice, startedAt);
+		productSearchService.saveBeforeInspection(mockProduct, List.of(mockImage), 10000, 7);
 
 		// then
 		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
 		verify(searchRepository).save(captor.capture());
 
 		ProductSearchDocument savedDoc = captor.getValue();
-
-		// [검증] ID가 "1_100" 형태로 생성되었는지 확인
-		assertThat(savedDoc.getId()).isEqualTo(expectedDocId);
-		assertThat(savedDoc.getProductId()).isEqualTo(productId);
-		assertThat(savedDoc.getAuctionId()).isEqualTo(auctionId);
-		assertThat(savedDoc.getAuctionStatus()).isEqualTo(AuctionStatus.SCHEDULED);
-		assertThat(savedDoc.getImageUrls()).containsExactly("http://image.url");
-	}
-
-	@Test
-	@DisplayName("여러 이미지 중 sortOrder가 가장 낮은 이미지가 대표 이미지로 저장된다")
-	void save_shouldSelectFirstImageBySortOrder() {
-		// given
-		Product mockProduct = createMockProduct(2L, "테스트 상품", "설명", Category.STARWARS);
-		ProductImage image1 = createMockImage("http://second.jpg", 1);
-		ProductImage image2 = createMockImage("http://first.jpg", 0);
-		ProductImage image3 = createMockImage("http://third.jpg", 2);
-
-		// when
-		productSearchService.save(mockProduct, List.of(image1, image2, image3), 101L, 500000, LocalDateTime.now());
-
-		// then
-		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
-		verify(searchRepository).save(captor.capture());
-
-		assertThat(captor.getValue().getImageUrls())
-			.containsExactly("http://first.jpg", "http://second.jpg", "http://third.jpg");
-	}
-
-	@Test
-	@DisplayName("상품 삭제 시 ES에서 해당 상품의 모든 문서가 제거된다 (deleteByProductId 호출)")
-	void delete_shouldCallDeleteByProductId() {
-		// given
-		Long productId = 3L;
-
-		// when
-		productSearchService.delete(productId);
-
-		// then
-		// [변경] delete(entity)가 아니라 deleteByProductId(id)가 호출되어야 함
-		verify(searchRepository).deleteByProductId(productId);
-	}
-
-	@Test
-	@DisplayName("낙찰 시 해당 경매(auctionId)를 찾아 최종 가격과 ENDED 상태로 업데이트한다")
-	void updateSoldPrice_shouldUpdateFinalPriceAndStatus() {
-		// given
-		Long productId = 4L;
-		Long auctionId = 200L;
-		int finalPrice = 750000;
-		String docId = productId + "_" + auctionId; // 복합 키
-
-		ProductSearchDocument existingDoc = ProductSearchDocument.builder()
-			.id(docId)
-			.productId(productId)
-			.auctionId(auctionId)
-			.productName("테스트 상품")
-			.auctionStatus(AuctionStatus.IN_PROGRESS)
-			.startPrice(500000)
-			.finalPrice(0)
-			.build();
-
-		// [변경] findByProductId 대신 findById(복합키) Mocking
-		given(searchRepository.findById(docId)).willReturn(Optional.of(existingDoc));
-
-		// when
-		// [변경] auctionId 파라미터 추가
-		productSearchService.updateSoldPrice(productId, auctionId, finalPrice);
-
-		// then
-		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
-		verify(searchRepository).save(captor.capture());
-
-		ProductSearchDocument updatedDoc = captor.getValue();
-		assertThat(updatedDoc.getId()).isEqualTo(docId); // ID 유지 확인
-		assertThat(updatedDoc.getFinalPrice()).isEqualTo(finalPrice);
-		assertThat(updatedDoc.getAuctionStatus()).isEqualTo(AuctionStatus.ENDED);
-		assertThat(updatedDoc.getClosedAt()).isNotNull();
-	}
-
-	@Test
-	@DisplayName("특정 경매의 상태를 변경할 수 있다")
-	void updateAuctionStatus_shouldUpdateStatus() {
-		// given
-		Long productId = 5L;
-		Long auctionId = 300L;
-		String docId = productId + "_" + auctionId;
-
-		ProductSearchDocument existingDoc = ProductSearchDocument.builder()
-			.id(docId)
-			.productId(productId)
-			.auctionId(auctionId)
-			.auctionStatus(AuctionStatus.SCHEDULED)
-			.build();
-
-		// [변경] findById Mocking
-		given(searchRepository.findById(docId)).willReturn(Optional.of(existingDoc));
-
-		// when
-		// [변경] auctionId 파라미터 추가
-		productSearchService.updateAuctionStatus(productId, auctionId, AuctionStatus.IN_PROGRESS);
-
-		// then
-		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
-		verify(searchRepository).save(captor.capture());
-
-		assertThat(captor.getValue().getAuctionStatus()).isEqualTo(AuctionStatus.IN_PROGRESS);
-	}
-
-	@Test
-	@DisplayName("임베딩 생성 실패 시에도 ES 적재가 정상 수행된다 (embedding = null)")
-	void save_shouldSucceedWhenEmbeddingFails() {
-		// given
-		given(embeddingModel.embed(anyString())).willThrow(new RuntimeException("API 키 고갈"));
-
-		Product mockProduct = createMockProduct(10L, "테스트 상품", "설명", Category.STARWARS);
-		ProductImage mockImage = createMockImage("http://image.url", 0);
-
-		// when & then - 예외 없이 정상 수행
-		assertThatCode(() ->
-			productSearchService.save(mockProduct, List.of(mockImage), 100L, 500000, LocalDateTime.now())
-		).doesNotThrowAnyException();
-
-		// ES 저장이 호출되었는지 확인
-		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
-		verify(searchRepository).save(captor.capture());
-
-		ProductSearchDocument savedDoc = captor.getValue();
-		assertThat(savedDoc.getProductId()).isEqualTo(10L);
+		assertThat(savedDoc.getId()).isEqualTo(String.valueOf(PRODUCT_ID));
 		assertThat(savedDoc.getEmbedding()).isNull();
 		assertThat(savedDoc.getAuctionStatus()).isEqualTo(AuctionStatus.SCHEDULED);
+		assertThat(savedDoc.getInspectionStatus()).isEqualTo(InspectionStatus.PENDING);
+	}
+
+	@Test
+	@DisplayName("성공: 검수 승인 후 데이터 적재 시 복합 ID와 임베딩이 포함된다")
+	void save_Success_AfterInspection() {
+		// given
+		Product mockProduct = createMockProduct(PRODUCT_ID, "승인된 레고", "설명", Category.TECHNIC);
+		ProductImage mockImage = createMockImage("http://image.jpg", 0);
+		AuctionInfoResponseDto auctionInfo = new AuctionInfoResponseDto(
+			PRODUCT_ID, AUCTION_ID, 500000, 0, AuctionStatus.SCHEDULED, LocalDateTime.now(), null
+		);
+
+		// when
+		productSearchService.save(mockProduct, List.of(mockImage), auctionInfo);
+
+		// then
+		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
+		verify(searchRepository).save(captor.capture());
+
+		ProductSearchDocument savedDoc = captor.getValue();
+		assertThat(savedDoc.getId()).isEqualTo(PRODUCT_ID + "_" + AUCTION_ID);
+		assertThat(savedDoc.getEmbedding()).isNotNull();
+		assertThat(savedDoc.getAuctionStatus()).isEqualTo(AuctionStatus.SCHEDULED);
+	}
+
+	@Test
+	@DisplayName("성공: 검수 전 데이터 수정 시 문서 존재 여부를 확인하고 덮어쓴다")
+	void updatedBeforeInspection_Success() {
+		// given
+		Product mockProduct = createMockProduct(PRODUCT_ID, "수정 레고", "수정 설명", Category.TECHNIC);
+		String docId = String.valueOf(PRODUCT_ID);
+		given(searchRepository.existsById(docId)).willReturn(true);
+
+		// when
+		productSearchService.updatedBeforeInspection(mockProduct, List.of(), 20000, 5);
+
+		// then
+		verify(searchRepository).existsById(docId);
+		verify(searchRepository).save(any(ProductSearchDocument.class));
+	}
+
+	@Test
+	@DisplayName("성공: 벌크 저장 시 경매 상태가 null인 항목은 제외하고 인덱싱한다")
+	void saveAll_shouldSkipNullAuctionStatus() {
+		// given
+		Product p1 = createMockProduct(21L, "상품1", "설명1", Category.STARWARS);
+		Product p2 = createMockProduct(22L, "상품2", "설명2", Category.STARWARS);
+
+		AuctionInfoResponseDto invalidInfo = new AuctionInfoResponseDto(
+			21L, 201L, 10000, 0, null, LocalDateTime.now(), null); // 상태 null
+		AuctionInfoResponseDto validInfo = new AuctionInfoResponseDto(
+			22L, 202L, 20000, 0, AuctionStatus.SCHEDULED, LocalDateTime.now(), null);
+
+		// when
+		productSearchService.saveAll(List.of(p1, p2), Map.of(21L, invalidInfo, 22L, validInfo));
+
+		// then
+		ArgumentCaptor<List<ProductSearchDocument>> captor = ArgumentCaptor.forClass(List.class);
+		verify(searchRepository).saveAll(captor.capture());
+
+		List<ProductSearchDocument> docs = captor.getValue();
+		assertThat(docs).hasSize(1);
+		assertThat(docs.get(0).getProductId()).isEqualTo(22L);
+	}
+
+	@Test
+	@DisplayName("성공: 임베딩 생성 실패 시 에러를 던지지 않고 embedding 필드만 null로 저장한다")
+	void save_shouldHandleEmbeddingErrorGracefully() {
+		// given
+		given(embeddingModel.embed(anyString())).willThrow(new RuntimeException("OpenAI Timeout"));
+		Product mockProduct = createMockProduct(PRODUCT_ID, "에러 테스트", "설명", Category.TECHNIC);
+		AuctionInfoResponseDto auctionInfo = new AuctionInfoResponseDto(
+			PRODUCT_ID, AUCTION_ID, 10000, 0, AuctionStatus.SCHEDULED, LocalDateTime.now(), null
+		);
+
+		// when & then
+		assertThatCode(() -> productSearchService.save(mockProduct, List.of(), auctionInfo))
+			.doesNotThrowAnyException();
+
+		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
+		verify(searchRepository).save(captor.capture());
+		assertThat(captor.getValue().getEmbedding()).isNull();
+	}
+
+	@Test
+	@DisplayName("성공: 낙찰 시 복합 ID로 조회하여 ENDED 상태와 최종가를 업데이트한다")
+	void updateSoldPrice_Success() {
+		// given
+		String docId = PRODUCT_ID + "_" + AUCTION_ID;
+		ProductSearchDocument existingDoc = ProductSearchDocument.builder()
+			.id(docId).productId(PRODUCT_ID).auctionId(AUCTION_ID).build();
+
+		given(searchRepository.findById(docId)).willReturn(Optional.of(existingDoc));
+
+		// when
+		productSearchService.updateSoldPrice(PRODUCT_ID, AUCTION_ID, 777000);
+
+		// then
+		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
+		verify(searchRepository).save(captor.capture());
+
+		ProductSearchDocument updated = captor.getValue();
+		assertThat(updated.getAuctionStatus()).isEqualTo(AuctionStatus.ENDED);
+		assertThat(updated.getFinalPrice()).isEqualTo(777000);
+		assertThat(updated.getClosedAt()).isNotNull();
+	}
+
+	@Test
+	@DisplayName("성공: 검수 반려 시 상태를 REJECTED로 변경하고 종료 시간을 기록한다")
+	void rejectedInspection_Success() {
+		// given
+		String docId = String.valueOf(PRODUCT_ID);
+		ProductSearchDocument existingDoc = ProductSearchDocument.builder()
+			.id(docId).productId(PRODUCT_ID).build();
+
+		given(searchRepository.findById(docId)).willReturn(Optional.of(existingDoc));
+
+		// when
+		productSearchService.rejectedInspection(PRODUCT_ID);
+
+		// then
+		ArgumentCaptor<ProductSearchDocument> captor = ArgumentCaptor.forClass(ProductSearchDocument.class);
+		verify(searchRepository).save(captor.capture());
+
+		assertThat(captor.getValue().getInspectionStatus()).isEqualTo(InspectionStatus.REJECTED);
+		assertThat(captor.getValue().getClosedAt()).isNotNull();
 	}
 
 	// === Helper Methods ===
@@ -223,6 +218,7 @@ class ProductSearchServiceTest {
 		when(mockProduct.getProductCondition()).thenReturn(ProductCondition.MISB);
 		when(mockProduct.getSeller()).thenReturn(mockSeller);
 		when(mockSeller.getId()).thenReturn(999L);
+		when(mockProduct.getImages()).thenReturn(new ArrayList<>());
 
 		return mockProduct;
 	}

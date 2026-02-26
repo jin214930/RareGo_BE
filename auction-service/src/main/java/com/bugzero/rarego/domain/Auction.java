@@ -117,14 +117,21 @@ public class Auction extends BaseIdAndTime {
 		this.status = AuctionStatus.WITHDRAWN;
 	}
 
+	public void relist() {
+		if (this.status != AuctionStatus.ENDED) {
+			throw new CustomException(ErrorType.AUCTION_NOT_ENDED);
+		}
+		this.status = AuctionStatus.RELISTED;
+	}
+
 	public Integer getCurrentPriceOrStartPrice() {
 		return currentPrice != null ? currentPrice : startPrice;
 	}
 
 	public boolean extendEndTimeIfClose(LocalDateTime now) {
-		long minutesRemaining = ChronoUnit.MINUTES.between(now, this.endTime);
+		long secondsRemaining = ChronoUnit.SECONDS.between(now, this.endTime);
 
-		if (minutesRemaining >= 0 && minutesRemaining <= 3) {
+		if (secondsRemaining >= 0 && secondsRemaining <= 180) {
 			this.endTime = this.endTime.plusMinutes(3);
 			return true;
 		}

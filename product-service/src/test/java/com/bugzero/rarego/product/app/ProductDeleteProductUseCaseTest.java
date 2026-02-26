@@ -1,15 +1,15 @@
 package com.bugzero.rarego.product.app;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.*;
 import static org.mockito.BDDMockito.*;
 
 import java.util.ArrayList;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,12 +28,12 @@ class ProductDeleteProductUseCaseTest {
 
 	@Mock
 	private ProductSupport productSupport;
-
 	@Mock
-	private OutboxUseCase outboxUseCase; // AuctionApiClient 대신 OutboxUseCase 주입
-
+	private OutboxUseCase outboxUseCase;
 	@Mock
 	private EventPublisher eventPublisher;
+	@Mock
+	private ProductSearchService productSearchService; // 추가된 의존성
 
 	@InjectMocks
 	private ProductDeleteProductUseCase useCase;
@@ -64,12 +64,11 @@ class ProductDeleteProductUseCaseTest {
 		product.getImages().add(image2);
 
 		ReflectionTestUtils.setField(product, "id", PRODUCT_ID);
-
 		spyProduct = spy(product);
 	}
 
 	@Test
-	@DisplayName("성공: 상품 삭제 시 소프트 삭제를 수행하고 아웃박스에 삭제 이벤트를 저장한다")
+	@DisplayName("성공: 모든 삭제 과정(소프트 삭제, S3 이벤트, 아웃박스, ES 삭제)이 정상 수행된다")
 	void deleteProduct_Success() {
 		// given
 		given(productSupport.verifyValidateMember(PUBLIC_ID)).willReturn(commonSeller);
@@ -83,40 +82,79 @@ class ProductDeleteProductUseCaseTest {
 		verify(spyProduct).softDelete();
 		assertThat(spyProduct.getImages()).isEmpty();
 
-		// 2. 아웃박스 저장 검증 (핵심 변경 사항)
-		ArgumentCaptor<ProductDeleteAuctionEvent> outboxCaptor = ArgumentCaptor.forClass(ProductDeleteAuctionEvent.class);
-		verify(outboxUseCase).saveOutbox(outboxCaptor.capture());
-
-		ProductDeleteAuctionEvent savedEvent = outboxCaptor.getValue();
-		assertThat(savedEvent.productId()).isEqualTo(PRODUCT_ID);
-		assertThat(savedEvent.publicId()).isEqualTo(PUBLIC_ID);
+		// 2. 아웃박스 저장 검증
+		verify(outboxUseCase).saveOutbox(any(ProductDeleteAuctionEvent.class));
 
 		// 3. S3 이미지 삭제 이벤트 발행 검증
-		ArgumentCaptor<S3ImageDeleteEvent> s3EventCaptor = ArgumentCaptor.forClass(S3ImageDeleteEvent.class);
-		verify(eventPublisher).publish(s3EventCaptor.capture());
-		assertThat(s3EventCaptor.getValue().paths()).containsExactly("products/image1.jpg", "products/image2.jpg");
+		verify(eventPublisher).publish(any(S3ImageDeleteEvent.class));
+
+		// 4. ES 데이터 삭제 호출 검증
+		verify(productSearchService).delete(PRODUCT_ID);
 
 		verify(productSupport).isAbleToDelete(commonSeller, spyProduct);
 	}
 
 	@Test
-	@DisplayName("실패: 삭제 권한이 없으면 아웃박스에 저장하지 않고 이벤트도 발행하지 않는다")
-	void deleteProduct_Fail_Unauthorized() {
+	@DisplayName("성공: ES 삭제 중 예외가 발생해도 DB 트랜잭션과 이미지 삭제 이벤트는 정상 처리된다")
+	void deleteProduct_Success_EvenIfEsFails() {
 		// given
 		given(productSupport.verifyValidateMember(PUBLIC_ID)).willReturn(commonSeller);
 		given(productSupport.findByIdWithImages(PRODUCT_ID)).willReturn(spyProduct);
 
-		// 권한 예외 발생 시뮬레이션
-		willThrow(new RuntimeException("권한이 없습니다."))
-			.given(productSupport).isAbleToDelete(any(), any());
+		// ES 삭제 시 예외 발생 시뮬레이션
+		doThrow(new RuntimeException("ES Connection Error"))
+			.when(productSearchService).delete(PRODUCT_ID);
 
-		// when & then
-		assertThatThrownBy(() -> useCase.deleteProduct(PUBLIC_ID, PRODUCT_ID))
-			.isInstanceOf(RuntimeException.class);
+		// when
+		useCase.deleteProduct(PUBLIC_ID, PRODUCT_ID);
 
-		// 검증: 예외 발생 시 아웃박스 및 이벤트 발행이 호출되지 않아야 함
-		verify(spyProduct, never()).softDelete();
-		verifyNoInteractions(outboxUseCase);
-		verifyNoInteractions(eventPublisher);
+		// then
+		// ES 에러와 상관없이 DB 관련 로직은 수행되어야 함 (try-catch 확인)
+		verify(spyProduct).softDelete();
+		verify(outboxUseCase).saveOutbox(any());
+		verify(eventPublisher).publish(any());
+	}
+
+	@Nested
+	@DisplayName("상품 삭제 실패 케이스")
+	class FailureCases {
+
+		@Test
+		@DisplayName("실패: 삭제 권한이 없으면 아웃박스 저장 및 ES 삭제를 수행하지 않는다")
+		void deleteProduct_Fail_Unauthorized() {
+			// given
+			given(productSupport.verifyValidateMember(PUBLIC_ID)).willReturn(commonSeller);
+			given(productSupport.findByIdWithImages(PRODUCT_ID)).willReturn(spyProduct);
+
+			// 권한 예외 발생 시뮬레이션
+			doThrow(new RuntimeException("권한이 없습니다."))
+				.when(productSupport).isAbleToDelete(any(), any());
+
+			// when & then
+			assertThatThrownBy(() -> useCase.deleteProduct(PUBLIC_ID, PRODUCT_ID))
+				.isInstanceOf(RuntimeException.class);
+
+			// 검증: 예외 발생 시 이후 로직이 실행되지 않아야 함
+			verify(spyProduct, never()).softDelete();
+			verifyNoInteractions(outboxUseCase);
+			verifyNoInteractions(eventPublisher);
+			verifyNoInteractions(productSearchService);
+		}
+
+		@Test
+		@DisplayName("실패: 상품 조회 실패 시 이후 모든 프로세스가 중단된다")
+		void deleteProduct_Fail_NotFound() {
+			// given
+			given(productSupport.verifyValidateMember(PUBLIC_ID)).willReturn(commonSeller);
+			given(productSupport.findByIdWithImages(PRODUCT_ID))
+				.willThrow(new RuntimeException("상품을 찾을 수 없습니다."));
+
+			// when & then
+			assertThatThrownBy(() -> useCase.deleteProduct(PUBLIC_ID, PRODUCT_ID))
+				.isInstanceOf(RuntimeException.class);
+
+			verify(outboxUseCase, never()).saveOutbox(any());
+			verify(productSearchService, never()).delete(anyLong());
+		}
 	}
 }

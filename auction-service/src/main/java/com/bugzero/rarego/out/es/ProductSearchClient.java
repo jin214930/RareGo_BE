@@ -20,6 +20,7 @@ import com.bugzero.rarego.global.util.S3Utils;
 import com.bugzero.rarego.in.dto.es.ProductSearchDocumentDto;
 import com.bugzero.rarego.shared.product.dto.ProductAuctionResponseDto;
 import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -114,6 +115,7 @@ public class ProductSearchClient {
     public List<Long> searchProductIds(String keyword, Category category) {
         try {
             List<Query> filters = new ArrayList<>();
+            filters.add(Query.of(q -> q.term(t -> t.field("inspectionStatus").value(InspectionStatus.APPROVED.name()))));
             if (category != null) {
                 filters.add(Query.of(q -> q.term(t -> t.field("category").value(category.name()))));
             }
@@ -215,7 +217,7 @@ public class ProductSearchClient {
                         .size(APPROVED_PAGE_SIZE)
                         .source(src -> src.filter(f -> f.includes("productId")))
                         .sort(sort -> sort.field(f -> f.field("productId").order(SortOrder.Asc)))
-                        .query(q -> q.matchAll(m -> m));
+                        .query(q -> q.term(t -> t.field("inspectionStatus").value(InspectionStatus.APPROVED.name())));
 
                     if (cursor != null) {
                         s.searchAfter(List.of(FieldValue.of(cursor)));
@@ -265,6 +267,7 @@ public class ProductSearchClient {
             .category(doc.category())
             .thumbnailUrl(thumbnailUrl)
             .imageUrls(imageUrls)
+            .inspectionStatus(doc.inspectionStatus())
             .build();
     }
 }

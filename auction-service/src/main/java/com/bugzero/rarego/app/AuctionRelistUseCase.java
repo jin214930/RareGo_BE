@@ -56,6 +56,7 @@ public class AuctionRelistUseCase {
 			.build();
 
 		Auction savedAuction = auctionRepository.save(newAuction);
+		oldAuction.relist();
 
 		String productName = getProductName(savedAuction.getProductId());
 		List<Long> bookmarkedMemberIds = auctionBookmarkRepository.findMemberIdsByAuctionId(oldAuctionId);

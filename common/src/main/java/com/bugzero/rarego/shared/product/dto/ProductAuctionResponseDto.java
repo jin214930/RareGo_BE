@@ -12,6 +12,7 @@ public record ProductAuctionResponseDto(
 	String description,
 	String category,
 	String thumbnailUrl,
-	List<String> imageUrls
+	List<String> imageUrls,
+	String inspectionStatus
 ) {
 }

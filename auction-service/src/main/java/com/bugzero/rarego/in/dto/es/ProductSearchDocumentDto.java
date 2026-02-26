@@ -29,7 +29,10 @@ public record ProductSearchDocumentDto(
 	Long sellerId,
 
 	@JsonProperty("category")
-	String category
+	String category,
+
+	@JsonProperty("inspectionStatus")
+	String inspectionStatus
 
 ) {
 

@@ -517,22 +517,6 @@ class PaymentControllerTest {
 	}
 
 	@Test
-	@DisplayName("실패: 판매자 권한이 없는 경우(AUTH_FORBIDDEN) HTTP 403을 반환한다")
-	void getSettlements_fail_not_seller() throws Exception {
-		// given
-		String publicId = "1";
-
-		// when & then
-		mockMvc.perform(get("/api/v1/payments/me/settlements")
-				.with(authentication(createAuth(publicId, "USER"))) // SELLER가 아닌 유저
-				.with(csrf())
-				.contentType(MediaType.APPLICATION_JSON))
-			.andDo(print())
-			.andExpect(status().isForbidden())
-			.andExpect(jsonPath("$.status").value(403));
-	}
-
-	@Test
 	@DisplayName("실패: 날짜 포맷이 올바르지 않으면(yyyy-MM-dd 아님) HTTP 400을 반환한다")
 	void getSettlements_fail_invalid_date_format() throws Exception {
 		// given

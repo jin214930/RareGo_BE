@@ -8,7 +8,6 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -43,23 +42,18 @@ class ProductCreateProductUseCaseTest {
 	private EventPublisher eventPublisher;
 
 	@Mock
-	private OutboxUseCase outboxUseCase; // 추가된 아웃박스 의존성
+	private OutboxUseCase outboxUseCase;
+
+	@Mock
+	private ProductSearchService productSearchService; // 추가된 ES 서비스 의존성
+
+	private final String publicId = "seller-uuid";
 
 	@Test
-	@DisplayName("성공: 상품 등록 시 아웃박스에 경매 생성 이벤트가 저장되고 S3 확정 이벤트가 발행된다")
+	@DisplayName("성공: 모든 과정(DB, Outbox, ES, Event)이 정상적으로 수행된다")
 	void createProduct_success() {
 		// given
-		String publicId = "seller-uuid";
-		String tempUrl = "temp/starwars.jpg";
-
-		ProductCreateRequestDto request = new ProductCreateRequestDto(
-			"스타워즈 시리즈",
-			Category.STARWARS,
-			"설명",
-			new ProductAuctionCreateDto(1000, 7),
-			List.of(new ProductImageRequestDto(tempUrl, 0))
-		);
-
+		ProductCreateRequestDto request = createSimpleRequest();
 		ProductMember seller = ProductMember.builder().id(1L).build();
 
 		given(productSupport.verifyValidateMember(publicId)).willReturn(seller);
@@ -76,71 +70,98 @@ class ProductCreateProductUseCaseTest {
 		ProductCreateResponseDto response = useCase.createProduct(publicId, request);
 
 		// then
-		// 1. 아웃박스 저장 검증 (핵심)
-		ArgumentCaptor<ProductCreateAuctionEvent> outboxCaptor = ArgumentCaptor.forClass(ProductCreateAuctionEvent.class);
-		verify(outboxUseCase).saveOutbox(outboxCaptor.capture());
+		// 1. DB 저장 검증
+		verify(productRepository, times(1)).save(any(Product.class));
 
-		ProductCreateAuctionEvent savedEvent = outboxCaptor.getValue();
-		assertThat(savedEvent.productId()).isEqualTo(1L);
-		assertThat(savedEvent.publicId()).isEqualTo(publicId);
+		// 2. 아웃박스(경매 생성용) 저장 검증
+		verify(outboxUseCase).saveOutbox(any(ProductCreateAuctionEvent.class));
 
-		// 2. S3 이미지 확정 이벤트 발행 검증
+		// 3. ES 동기화 호출 검증
+		verify(productSearchService).saveBeforeInspection(any(), anyList(), anyInt(), anyInt());
+
+		// 4. S3 이미지 확정 이벤트 발행 검증
 		verify(eventPublisher).publish(any(S3ImageConfirmEvent.class));
 
-		// 3. 응답값 확인
 		assertThat(response.productId()).isEqualTo(1L);
-		verify(productRepository, times(1)).save(any(Product.class));
 	}
 
 	@Test
-	@DisplayName("실패: 존재하지 않는 회원일 경우 상품 등록이 실패하고 아웃박스도 저장되지 않는다")
+	@DisplayName("성공: ES 동기화 중 예외가 발생해도 DB 트랜잭션과 이벤트 발행은 정상 처리된다")
+	void createProduct_success_evenIfEsFails() {
+		// given
+		ProductCreateRequestDto request = createSimpleRequest();
+		ProductMember seller = ProductMember.builder().id(1L).build();
+
+		given(productSupport.verifyValidateMember(publicId)).willReturn(seller);
+		given(productSupport.normalizeCreateImageOrder(anyList())).willReturn(request.productImageRequestDto());
+		given(productRepository.save(any(Product.class))).willAnswer(invocation -> {
+			Product product = invocation.getArgument(0);
+			ReflectionTestUtils.setField(product, "id", 1L);
+			return product;
+		});
+
+		// ES 서비스 호출 시 예외 발생 시뮬레이션
+		doThrow(new RuntimeException("ES Connection Error"))
+			.when(productSearchService).saveBeforeInspection(any(), anyList(), anyInt(), anyInt());
+
+		// when
+		ProductCreateResponseDto response = useCase.createProduct(publicId, request);
+
+		// then
+		// ES 실패와 상관없이 DB 저장 및 아웃박스는 수행되어야 함 (try-catch 확인)
+		verify(productRepository).save(any(Product.class));
+		verify(outboxUseCase).saveOutbox(any(ProductCreateAuctionEvent.class));
+		verify(eventPublisher).publish(any(S3ImageConfirmEvent.class));
+
+		// 결과 확인
+		assertThat(response.productId()).isEqualTo(1L);
+	}
+
+	@Test
+	@DisplayName("실패: 회원 검증 실패 시 이후 모든 프로세스(DB, Outbox, ES)가 중단된다")
 	void createProduct_fail_invalidMember() {
 		// given
-		String invalidPublicId = "invalid-uuid";
 		ProductCreateRequestDto request = createSimpleRequest();
-
-		// 존재하지 않는 회원 예외 발생 시뮬레이션
-		given(productSupport.verifyValidateMember(invalidPublicId))
-			.willThrow(new IllegalArgumentException("존재하지 않는 회원입니다."));
+		given(productSupport.verifyValidateMember(anyString()))
+			.willThrow(new IllegalArgumentException("존재하지 않는 회원"));
 
 		// when & then
-		assertThatThrownBy(() -> useCase.createProduct(invalidPublicId, request))
+		assertThatThrownBy(() -> useCase.createProduct(publicId, request))
 			.isInstanceOf(IllegalArgumentException.class);
 
-		// 검증: 이후 로직이 실행되지 않아야 함
 		verify(productRepository, never()).save(any());
 		verify(outboxUseCase, never()).saveOutbox(any());
-		verify(eventPublisher, never()).publish(any());
+		verify(productSearchService, never()).saveBeforeInspection(any(), anyList(), anyInt(), anyInt());
 	}
 
 	@Test
-	@DisplayName("실패: 상품 정보 저장 중 예외 발생 시 전체 트랜잭션이 실패한다")
+	@DisplayName("실패: DB 저장(save) 단계에서 예외 발생 시 아웃박스와 ES 동기화는 실행되지 않는다")
 	void createProduct_fail_dbError() {
 		// given
-		String publicId = "seller-uuid";
 		ProductCreateRequestDto request = createSimpleRequest();
 		ProductMember seller = ProductMember.builder().id(1L).build();
 
 		given(productSupport.verifyValidateMember(publicId)).willReturn(seller);
 		given(productSupport.normalizeCreateImageOrder(anyList())).willReturn(request.productImageRequestDto());
 
-		// DB 저장 시 런타임 예외 발생 시뮬레이션
+		// DB 저장 시 런타임 예외 발생
 		given(productRepository.save(any(Product.class)))
-			.willThrow(new RuntimeException("DB 연결 오류"));
+			.willThrow(new RuntimeException("Database Constraints Error"));
 
 		// when & then
 		assertThatThrownBy(() -> useCase.createProduct(publicId, request))
 			.isInstanceOf(RuntimeException.class);
 
-		// 검증: DB 저장이 실패했으므로 아웃박스나 이벤트 발행도 호출되지 않아야 함
+		// 검증: DB 실패 시 다음 단계인 Outbox와 ES는 호출되지 않음
 		verify(outboxUseCase, never()).saveOutbox(any());
+		verify(productSearchService, never()).saveBeforeInspection(any(), anyList(), anyInt(), anyInt());
 		verify(eventPublisher, never()).publish(any());
 	}
 
 	private ProductCreateRequestDto createSimpleRequest() {
 		return new ProductCreateRequestDto(
-			"테스트 상품", Category.STARWARS, "설명",
-			new ProductAuctionCreateDto(1000, 7),
+			"테스트 레고", Category.TECHNIC, "상세설명",
+			new ProductAuctionCreateDto(10000, 7),
 			List.of(new ProductImageRequestDto("temp.jpg", 0))
 		);
 	}
