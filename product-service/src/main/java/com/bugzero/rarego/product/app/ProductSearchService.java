@@ -23,6 +23,7 @@ import com.bugzero.rarego.product.out.ProductSearchRepository;
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.dto.AuctionInfoResponseDto;
 import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -101,6 +102,79 @@ public class ProductSearchService {
 		);
 		searchRepository.save(doc);
 		log.info("Product Indexed (APPROVED): productId={}, auctionId={}", product.getId(), auctionInfo.auctionId());
+	}
+
+	// 신규 저장
+	public void saveBeforeInspection(Product product, List<ProductImage> images, int startPrice, int durationDays) {
+		processBeforeInspection(product, images, startPrice, durationDays, false);
+	}
+
+	// 수정 저장 (존재 확인 필수)
+	public void updatedBeforeInspection(Product product, List<ProductImage> images, int startPrice, int durationDays) {
+		processBeforeInspection(product, images, startPrice, durationDays, true);
+	}
+
+	private void processBeforeInspection(Product product, List<ProductImage> images, int startPrice, int durationDays, boolean isUpdate) {
+		String docId = ProductSearchDocument.generateId(product.getId());
+
+		// 수정 시에만 존재 여부 체크 (성능을 위해 existsById 사용)
+		if (isUpdate && !searchRepository.existsById(docId)) {
+			throw new RuntimeException("수정 실패: ES에 해당 문서가 존재하지 않습니다. ID: " + docId);
+		}
+
+		List<String> imageUrls = (images != null && !images.isEmpty()) ? images.stream()
+			.sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+			.map(ProductImage::getImageUrl)
+			.toList() : List.of();
+
+		ProductSearchDocument doc = ProductSearchDocument.builder()
+			.id(docId)
+			.productId(product.getId())
+			.productName(product.getName())
+			.description(product.getDescription())
+			.productCondition(product.getProductCondition())
+			.category(product.getCategory())
+			.sellerId(product.getSeller().getId())
+			.imageUrls(imageUrls)
+			.startPrice(startPrice)
+			.durationDays(durationDays)
+			.inspectionStatus(InspectionStatus.PENDING)
+			.auctionStatus(AuctionStatus.SCHEDULED)
+			.finalPrice(0)
+			.build();
+
+		searchRepository.save(doc);
+		log.info("Product Document {} (Before Inspection): productId={}", isUpdate ? "Updated" : "Saved", product.getId());
+	}
+
+	public void rejectedInspection(
+		Long productId
+	) {
+		String docId = ProductSearchDocument.generateId(productId);
+
+		ProductSearchDocument doc = searchRepository.findById(docId)
+			.orElseThrow(() -> new RuntimeException("ES Document Not Found: " + docId));
+
+		ProductSearchDocument updatedDoc = ProductSearchDocument.builder()
+			.id(doc.getId())
+			.productId(doc.getProductId())
+			.auctionId(doc.getAuctionId())
+			.productName(doc.getProductName())
+			.description(doc.getDescription())
+			.productCondition(doc.getProductCondition())
+			.category(doc.getCategory())
+			.inspectionStatus(InspectionStatus.REJECTED)
+			.auctionStatus(doc.getAuctionStatus())
+			.startPrice(doc.getStartPrice())
+			.startedAt(doc.getStartedAt())
+			.closedAt(LocalDateTime.now())
+			.sellerId(doc.getSellerId())
+			.imageUrls(doc.getImageUrls())
+			.embedding(doc.getEmbedding())
+			.build();
+
+		searchRepository.save(updatedDoc);
+		log.info("Product and Auction Information Updated: docId = {} ", productId);
 	}
 
 	private ProductSearchDocument buildDocument(
