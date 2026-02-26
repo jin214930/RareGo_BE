@@ -44,26 +44,39 @@ public class ElasticsearchDataInitializer implements ApplicationRunner {
 
 		log.info("ES 인덱스가 비어 있습니다. DB 기반 초기 동기화를 시작합니다.");
 
-		// 2. 검수 승인(APPROVED) 상태인 상품만 전체 조회
-		List<Product> approvedProducts = productRepository.findAll().stream()
-			.filter(Product::isApproved)
-			.toList();
+		// 2. 전체 상품 조회 후 승인 여부로 분리
+		List<Product> allProducts = productRepository.findAll();
 
-		if (approvedProducts.isEmpty()) {
-			log.info("동기화할 승인된 상품이 없습니다.");
+		if (allProducts.isEmpty()) {
+			log.info("동기화할 상품이 없습니다.");
 			return;
 		}
 
-		// 3. 경매 정보 일괄 조회 (Bulk Read)
-		List<Long> productIds = approvedProducts.stream().map(Product::getId).toList();
-		List<AuctionInfoResponseDto> auctionInfos = auctionApiClient.getAuctionInfos(productIds);
+		List<Product> approvedProducts = allProducts.stream()
+			.filter(Product::isApproved)
+			.toList();
 
-		Map<Long, AuctionInfoResponseDto> auctionMap = auctionInfos.stream()
-			.collect(Collectors.toMap(AuctionInfoResponseDto::productId, Function.identity()));
+		List<Product> nonApprovedProducts = allProducts.stream()
+			.filter(p -> !p.isApproved())
+			.toList();
 
-		// 4. [핵심] Service에 넘겨서 Bulk Save 위임
-		// Initializer는 문서를 어떻게 만드는지, 임베딩을 어떻게 하는지 몰라도 됨
-		productSearchService.saveAll(approvedProducts, auctionMap);
+		// 3. APPROVED 상품: 경매 정보 포함하여 적재
+		if (!approvedProducts.isEmpty()) {
+			List<Long> approvedIds = approvedProducts.stream().map(Product::getId).toList();
+			List<AuctionInfoResponseDto> auctionInfos = auctionApiClient.getAuctionInfos(approvedIds);
+			Map<Long, AuctionInfoResponseDto> auctionMap = auctionInfos.stream()
+				.collect(Collectors.toMap(AuctionInfoResponseDto::productId, Function.identity()));
+			productSearchService.saveAll(approvedProducts, auctionMap);
+		}
+
+		// 4. PENDING/REJECTED 상품: startPrice만 참조, 검수 상태 그대로 적재
+		if (!nonApprovedProducts.isEmpty()) {
+			List<Long> nonApprovedIds = nonApprovedProducts.stream().map(Product::getId).toList();
+			List<AuctionInfoResponseDto> nonApprovedAuctionInfos = auctionApiClient.getAuctionInfos(nonApprovedIds);
+			Map<Long, AuctionInfoResponseDto> nonApprovedAuctionMap = nonApprovedAuctionInfos.stream()
+				.collect(Collectors.toMap(AuctionInfoResponseDto::productId, Function.identity()));
+			productSearchService.saveAllBeforeInspection(nonApprovedProducts, nonApprovedAuctionMap);
+		}
 
 		log.info("ES 초기화 로직 종료.");
 	}

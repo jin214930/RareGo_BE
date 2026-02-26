@@ -10,6 +10,7 @@ import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.product.domain.Product;
 import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.dto.ProductUpdateResponseDto;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionUpdateDto;
 import com.bugzero.rarego.shared.product.dto.ProductImageUpdateDto;
 import com.bugzero.rarego.shared.product.dto.ProductUpdateDto;
 import com.bugzero.rarego.shared.product.event.ProductUpdateAuctionEvent;
@@ -17,13 +18,16 @@ import com.bugzero.rarego.shared.product.event.S3ImageConfirmEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageDeleteEvent;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductUpdateProductUseCase {
 	private final ProductSupport productSupport;
 	private final OutboxUseCase outboxUseCase;
 	private final EventPublisher eventPublisher;
+	private final ProductSearchService productSearchService;
 
 	@Transactional
 	public ProductUpdateResponseDto updateProduct(String  publicId, Long productId, ProductUpdateDto dto) {
@@ -59,8 +63,26 @@ public class ProductUpdateProductUseCase {
 			.dto(dto.productAuctionUpdateDto())
 			.build());
 
+		synchronizeElasticsearch(product, dto.productAuctionUpdateDto());
+
 		return ProductUpdateResponseDto.builder()
 			.productId(productId)
 			.build();
+	}
+
+	private void synchronizeElasticsearch(Product product, ProductAuctionUpdateDto dto) {
+		try {
+			productSearchService.updatedBeforeInspection(
+				product,
+				product.getImages(),
+				dto.startPrice(),
+				dto.durationDays()
+
+			);
+		} catch (Exception e) {
+			// 예외를 catch하고 다시 throw하지 않음
+			log.error("ES 동기화 실패 (DB는 정상 커밋됨). 추후 배치로 복구 필요: productId={}, error={}",
+				product.getId(), e.getMessage());
+		}
 	}
 }

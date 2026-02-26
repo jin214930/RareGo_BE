@@ -13,6 +13,7 @@ import lombok.Builder;
 @Builder
 public record MySaleResponseDto(
 	Long auctionId,
+	Long productId,
 	String title,
 	String thumbnailUrl,
 	long currentPrice,
@@ -23,7 +24,9 @@ public record MySaleResponseDto(
 	AuctionOrderStatus tradeStatus,
 	LocalDateTime endTime,
 	// 재등록 버튼 활성화 여부
-	boolean actionRequired
+	boolean actionRequired,
+	// 상품 검수 상태
+	String inspectionStatus
 ) {
 	public static MySaleResponseDto from(
 		Auction auction,
@@ -33,6 +36,7 @@ public record MySaleResponseDto(
 	) {
 		return MySaleResponseDto.builder()
 			.auctionId(auction.getId())
+			.productId(product != null ? product.id() : null)
 			.title(resolveTitle(product))
 			.thumbnailUrl(resolveThumbnail(product))
 			.currentPrice(resolvePrice(auction, order))
@@ -41,6 +45,7 @@ public record MySaleResponseDto(
 			.tradeStatus(order != null ? order.getStatus() : null)
 			.endTime(auction.getEndTime())
 			.actionRequired(resolveActionRequired(auction, order, bidCount))
+			.inspectionStatus(product != null ? product.inspectionStatus() : null)
 			.build();
 	}
 

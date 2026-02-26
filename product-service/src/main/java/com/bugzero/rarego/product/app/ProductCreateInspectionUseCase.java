@@ -70,10 +70,15 @@ public class ProductCreateInspectionUseCase {
 	private void synchronizeElasticsearch(Product product, InspectionStatus status) {
 		try {
 			if (status == InspectionStatus.APPROVED) {
+				//검수 전 ES 데이터 명시적 삭제
+				productSearchService.delete(product.getId());
+
+				//검수 승인된 ES 데이터 새롭게 등록
 				AuctionInfoResponseDto auctionInfo = auctionApiClient.getAuctionInfo(product.getId());
 				productSearchService.save(product, product.getImages(), auctionInfo);
 			} else {
-				productSearchService.delete(product.getId());
+				//검수 반려 상태로 변경
+				productSearchService.rejectedInspection(product.getId());
 			}
 		} catch (Exception e) {
 			// 예외를 catch하고 다시 throw하지 않음

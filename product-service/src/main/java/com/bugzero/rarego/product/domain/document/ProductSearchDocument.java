@@ -12,6 +12,7 @@ import org.springframework.data.elasticsearch.annotations.Setting;
 
 import com.bugzero.rarego.shared.auction.type.AuctionStatus;
 import com.bugzero.rarego.shared.product.type.Category;
+import com.bugzero.rarego.shared.product.type.InspectionStatus;
 import com.bugzero.rarego.shared.product.type.ProductCondition;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -53,11 +54,17 @@ public class ProductSearchDocument {
 	@Field(type = FieldType.Keyword)
 	private AuctionStatus auctionStatus;
 
+	@Field(type = FieldType.Keyword)
+	private InspectionStatus inspectionStatus;
+
 	@Field(type = FieldType.Integer)
 	private int startPrice;
 
 	@Field(type = FieldType.Integer)
 	private int finalPrice;
+
+	@Field(type = FieldType.Integer)
+	private int durationDays;
 
 	@Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
@@ -83,6 +90,10 @@ public class ProductSearchDocument {
 
 	public static String generateId(Long productId, Long auctionId) {
 		return productId + "_" + auctionId;
+	}
+
+	public static String generateId(Long productId) {
+		return String.valueOf(productId);
 	}
 
 	public static final String EMBEDDING_TEMPLATE = "상품명: %s, 상세내용: %s, 카테고리: %s, 상품상태: %s";

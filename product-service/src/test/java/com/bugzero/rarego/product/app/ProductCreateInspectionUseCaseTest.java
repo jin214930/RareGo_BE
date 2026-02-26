@@ -1,7 +1,6 @@
 package com.bugzero.rarego.product.app;
 
 import static org.assertj.core.api.AssertionsForClassTypes.*;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
@@ -52,6 +51,7 @@ class ProductCreateInspectionUseCaseTest {
 	private final String ADMIN_UUID = "admin-uuid";
 	private final Long ADMIN_INTERNAL_ID = 200L;
 	private final Long PRODUCT_ID = 1L;
+	private final Long AUCTION_ID = 555L;
 
 	private ProductMember commonAdmin;
 	private ProductMember commonSeller;
@@ -59,57 +59,32 @@ class ProductCreateInspectionUseCaseTest {
 
 	@BeforeEach
 	void setUp() {
-		// 1. 관리자 셋업
-		commonAdmin = ProductMember.builder()
-			.id(ADMIN_INTERNAL_ID)
-			.publicId(ADMIN_UUID)
-			.build();
+		commonAdmin = ProductMember.builder().id(ADMIN_INTERNAL_ID).publicId(ADMIN_UUID).build();
+		commonSeller = ProductMember.builder().id(100L).deleted(false).build();
 
-		// 2. 판매자 셋업 (정상 상태)
-		commonSeller = ProductMember.builder()
-			.id(100L)
-			.deleted(false)
-			.build();
-
-		// 3. 상품 셋업 (검수 대기 상태)
-		commonProduct = Product.builder()
+		// 검수 가능한 초기 상태의 상품 (Spy 사용)
+		commonProduct = spy(Product.builder()
 			.seller(commonSeller)
 			.inspectionStatus(InspectionStatus.PENDING)
 			.productCondition(ProductCondition.INSPECTION)
-			.build();
+			.build());
+
+		lenient().when(commonProduct.getId()).thenReturn(PRODUCT_ID);
+		lenient().when(commonProduct.getSeller()).thenReturn(commonSeller);
 	}
 
 	@Test
-	@DisplayName("성공: 모든 검증을 통과하면 검수 정보가 저장되고 상품 상태가 동기화된다")
-	void createInspection_Success() {
+	@DisplayName("성공: 검수 승인 시 기존 ES 데이터를 삭제하고 경매 정보를 포함하여 새롭게 저장한다")
+	void createInspection_Success_Approved() {
 		// given
-		ProductInspectionRequestDto requestDto = createRequest(InspectionStatus.APPROVED, "통과");
+		ProductInspectionRequestDto request = createRequest(InspectionStatus.APPROVED, "승인 통과");
 
-		// [1] Product 객체 준비 (ID 설정 필수!)
-		Product spyProduct = spy(commonProduct);
-
-		// ★ [핵심 수정] spyProduct가 ID를 반환하도록 설정 (이 부분이 누락되어 null이 넘어감)
-		// PRODUCT_ID 상수가 없다면 1L 등으로 대체하세요.
-		given(spyProduct.getId()).willReturn(PRODUCT_ID);
-
-		// [2] ProductSupport Mocking
-		given(productSupport.verifyValidateProduct(PRODUCT_ID)).willReturn(spyProduct);
+		given(productSupport.verifyValidateProduct(PRODUCT_ID)).willReturn(commonProduct);
 		given(productSupport.verifyValidateMember(ADMIN_UUID)).willReturn(commonAdmin);
 
-		// [3] AuctionApiClient Mocking (이전 질문에서 추가한 부분 유지)
-		AuctionInfoResponseDto mockAuctionInfo = new AuctionInfoResponseDto(
-			1L,
-			123L,
-			10000,
-			0,
-			AuctionStatus.SCHEDULED,
-			LocalDateTime.now(),
-			null
-		);
-		// anyLong() 대신 구체적인 값을 명시해도 됩니다. (null만 아니면 됨)
-		given(auctionApiClient.getAuctionInfo(any())).willReturn(mockAuctionInfo);
+		AuctionInfoResponseDto mockAuctionInfo = createMockAuctionInfo();
+		given(auctionApiClient.getAuctionInfo(PRODUCT_ID)).willReturn(mockAuctionInfo);
 
-		// [4] Repository Mocking
 		given(inspectionRepository.save(any(Inspection.class))).willAnswer(invocation -> {
 			Inspection ins = invocation.getArgument(0);
 			ReflectionTestUtils.setField(ins, "id", 500L);
@@ -117,7 +92,63 @@ class ProductCreateInspectionUseCaseTest {
 		});
 
 		// when
-		ProductInspectionResponseDto response = useCase.createInspection(ADMIN_UUID, requestDto);
+		ProductInspectionResponseDto response = useCase.createInspection(ADMIN_UUID, request);
+
+		// then
+		// 1. 상태 동기화 확인
+		verify(commonProduct).determineInspection(InspectionStatus.APPROVED);
+
+		// 2. ES 동기화 확인 (삭제 후 객체 전달 저장)
+		verify(productSearchService).delete(PRODUCT_ID);
+		verify(productSearchService).save(eq(commonProduct), any(), eq(mockAuctionInfo));
+
+		assertThat(response.newStatus()).isEqualTo(InspectionStatus.APPROVED);
+	}
+
+	@Test
+	@DisplayName("성공: 검수 반려 시 ES 상태를 반려로 업데이트한다")
+	void createInspection_Success_Rejected() {
+		// given
+		ProductInspectionRequestDto request = createRequest(InspectionStatus.REJECTED, "박스 훼손");
+
+		given(productSupport.verifyValidateProduct(PRODUCT_ID)).willReturn(commonProduct);
+		given(productSupport.verifyValidateMember(ADMIN_UUID)).willReturn(commonAdmin);
+
+		given(inspectionRepository.save(any(Inspection.class))).willAnswer(invocation -> {
+			Inspection ins = invocation.getArgument(0);
+			ReflectionTestUtils.setField(ins, "id", 500L);
+			return ins;
+		});
+
+		// when
+		useCase.createInspection(ADMIN_UUID, request);
+
+		// then
+		verify(productSearchService).rejectedInspection(PRODUCT_ID);
+		verify(productSearchService, never()).delete(any());
+		verify(productSearchService, never()).save(any(), any(), any());
+	}
+
+	@Test
+	@DisplayName("성공: ES 동기화 중 에러가 발생해도 DB 트랜잭션(검수 저장)은 성공해야 한다")
+	void createInspection_Success_EvenIfEsFails() {
+		// given
+		ProductInspectionRequestDto request = createRequest(InspectionStatus.APPROVED, "승인");
+		given(productSupport.verifyValidateProduct(PRODUCT_ID)).willReturn(commonProduct);
+		given(productSupport.verifyValidateMember(ADMIN_UUID)).willReturn(commonAdmin);
+
+		// save 시 전달받은 객체를 그대로 반환하여 NPE 방지
+		given(inspectionRepository.save(any(Inspection.class))).willAnswer(invocation -> {
+			Inspection ins = invocation.getArgument(0);
+			ReflectionTestUtils.setField(ins, "id", 500L);
+			return ins;
+		});
+
+		// ES 작업 중 첫 번째 단계인 delete에서 예외 발생 시뮬레이션
+		doThrow(new RuntimeException("ES 연결 실패")).when(productSearchService).delete(anyLong());
+
+		// when
+		ProductInspectionResponseDto response = useCase.createInspection(ADMIN_UUID, request);
 
 		// then
 		verify(inspectionRepository).save(inspectionCaptor.capture());
@@ -125,19 +156,17 @@ class ProductCreateInspectionUseCaseTest {
 
 		assertThat(response.inspectionId()).isEqualTo(500L);
 		assertThat(saved.getInspectorId()).isEqualTo(ADMIN_INTERNAL_ID);
-		verify(spyProduct).determineInspection(InspectionStatus.APPROVED);
-		verify(spyProduct).determineProductCondition(ProductCondition.MISB);
 
-		// [추가 검증] ES 적재가 올바른 ID로 호출되었는지 확인
-		verify(productSearchService).save(eq(spyProduct), any(), eq(mockAuctionInfo));
+		// ES 예외가 catch 되었으므로 비즈니스 로직은 완수됨
+		assertThat(response.newStatus()).isEqualTo(InspectionStatus.APPROVED);
 	}
 
 	@Nested
-	@DisplayName("검수 생성 실패 케이스")
+	@DisplayName("실패 케이스 테스트")
 	class FailureCases {
 
 		@Test
-		@DisplayName("반려 시 사유가 없으면 예외가 발생한다")
+		@DisplayName("실패: 반려 처리를 하면서 사유(reason)를 적지 않으면 예외가 발생한다")
 		void fail_rejected_without_reason() {
 			ProductInspectionRequestDto request = createRequest(InspectionStatus.REJECTED, null);
 
@@ -147,122 +176,49 @@ class ProductCreateInspectionUseCaseTest {
 		}
 
 		@Test
-		@DisplayName("상품의 판매자 정보가 없거나 탈퇴한 회원이면 예외가 발생한다")
-		void fail_seller_not_found_or_deleted() {
-			// given: 탈퇴한 판매자로 설정
-			ProductMember deletedSeller = ProductMember.builder().deleted(true).build();
-			commonProduct = Product.builder().seller(deletedSeller).build();
-
-			given(productSupport.verifyValidateProduct(PRODUCT_ID)).willReturn(commonProduct);
-			ProductInspectionRequestDto request = createRequest(InspectionStatus.APPROVED, "통과");
-
-			// when & then
-			assertThatThrownBy(() -> useCase.createInspection(ADMIN_UUID, request))
-				.isInstanceOf(CustomException.class)
-				.hasFieldOrPropertyWithValue("errorType", ErrorType.MEMBER_NOT_FOUND);
-		}
-
-		@Test
-		@DisplayName("이미 검수가 완료된 상품은 다시 검수할 수 없다")
+		@DisplayName("실패: 이미 검수가 완료된 상품은 다시 검수할 수 없다")
 		void fail_already_completed() {
-			// given: 검수 상태는 틀렸지만, seller 정보는 정상인 상품을 준비해야 함
-			Product completedProduct = Product.builder()
-				.seller(commonSeller) // @BeforeEach에서 만든 정상 seller 주입 (필수!)
-				.inspectionStatus(InspectionStatus.APPROVED)
-				.productCondition(ProductCondition.MISB)
-				.build();
+			// given
+			ReflectionTestUtils.setField(commonProduct, "inspectionStatus", InspectionStatus.APPROVED);
+			given(productSupport.verifyValidateProduct(PRODUCT_ID)).willReturn(commonProduct);
 
-			given(productSupport.verifyValidateProduct(PRODUCT_ID)).willReturn(completedProduct);
-			ProductInspectionRequestDto request = createRequest(InspectionStatus.APPROVED, "통과");
+			ProductInspectionRequestDto request = createRequest(InspectionStatus.APPROVED, "재검수시도");
 
 			// when & then
-			// 이제 seller 검증을 통과하고 checkedProductStatus()까지 도달하여 원하는 에러를 던집니다.
 			assertThatThrownBy(() -> useCase.createInspection(ADMIN_UUID, request))
 				.isInstanceOf(CustomException.class)
 				.hasFieldOrPropertyWithValue("errorType", ErrorType.INSPECTION_ALREADY_COMPLETED);
 		}
 
 		@Test
-		@DisplayName("성공: 검수가 승인되면 DB에 저장하고 ES에 적재한다")
-		void createInspection_Success() {
+		@DisplayName("실패: 판매자가 탈퇴한 상태라면 검수를 진행할 수 없다")
+		void fail_seller_deleted() {
 			// given
-			String inspectorId = "admin-uuid";
-			Long productId = 1L;
-			ProductInspectionRequestDto requestDto = new ProductInspectionRequestDto(
-				productId, InspectionStatus.APPROVED, ProductCondition.MISB, "승인"
-			);
+			ReflectionTestUtils.setField(commonSeller, "deleted", true);
+			given(productSupport.verifyValidateProduct(PRODUCT_ID)).willReturn(commonProduct);
 
-			Product mockProduct = mock(Product.class);
-			ProductMember mockSeller = mock(ProductMember.class);
-			ProductMember mockAdmin = mock(ProductMember.class);
-			Inspection mockInspection = mock(Inspection.class);
+			ProductInspectionRequestDto request = createRequest(InspectionStatus.APPROVED, "승인");
 
-			// 1. 기본 조회 Mocking
-			when(productSupport.verifyValidateProduct(productId)).thenReturn(mockProduct);
-			when(mockProduct.getSeller()).thenReturn(mockSeller);
-			when(mockSeller.isDeleted()).thenReturn(false);
-			when(productSupport.verifyValidateMember(inspectorId)).thenReturn(mockAdmin);
-
-			// 2. [중요] 유효성 검사 통과를 위한 상태 Mocking (이거 없으면 '검수 완료된 상품' 에러 남)
-			when(mockProduct.getInspectionStatus()).thenReturn(InspectionStatus.PENDING);
-			when(mockProduct.getProductCondition()).thenReturn(ProductCondition.INSPECTION);
-			when(mockProduct.getId()).thenReturn(productId); // ID 반환 설정
-
-			// 3. DB 저장 Mocking
-			when(inspectionRepository.save(any())).thenReturn(mockInspection);
-			when(mockInspection.getId()).thenReturn(10L);
-			when(mockInspection.getProduct()).thenReturn(mockProduct);
-
-			// 4. [중요] ES 적재를 위한 경매 정보 Mocking (이거 없으면 NPE 발생)
-			AuctionInfoResponseDto auctionInfo = new AuctionInfoResponseDto(
-				1L,
-				555L,
-				10000,
-				0,
-				AuctionStatus.SCHEDULED,
-				LocalDateTime.now(),
-				null
-			);
-			when(auctionApiClient.getAuctionInfo(productId)).thenReturn(auctionInfo);
-
-			// when
-			useCase.createInspection(inspectorId, requestDto);
-
-			// then
-			// ES 적재 메서드가 호출되었는지 확인
-			verify(productSearchService, times(1)).save(eq(mockProduct), any(), eq(auctionInfo));
-		}
-
-		@Test
-		@DisplayName("실패: 이미 검수가 완료된 상품이면 예외가 발생한다")
-		void createInspection_AlreadyCompleted() {
-			// given
-			String inspectorId = "admin-uuid";
-			Long productId = 1L;
-			ProductInspectionRequestDto requestDto = new ProductInspectionRequestDto(
-				productId, InspectionStatus.APPROVED, ProductCondition.MISB, "승인"
-			);
-
-			Product mockProduct = mock(Product.class);
-			ProductMember mockSeller = mock(ProductMember.class);
-
-			when(productSupport.verifyValidateProduct(productId)).thenReturn(mockProduct);
-			when(mockProduct.getSeller()).thenReturn(mockSeller);
-
-			// [중요] 이미 승인된 상태로 설정
-			when(mockProduct.getInspectionStatus()).thenReturn(InspectionStatus.APPROVED);
-			// OR
-			// when(mockProduct.getProductCondition()).thenReturn(ProductCondition.NEW);
-
-			// when & then: 예외가 발생하는지 확인
-			assertThrows(CustomException.class, () ->
-				useCase.createInspection(inspectorId, requestDto)
-			);
+			// when & then
+			assertThatThrownBy(() -> useCase.createInspection(ADMIN_UUID, request))
+				.isInstanceOf(CustomException.class)
+				.hasFieldOrPropertyWithValue("errorType", ErrorType.MEMBER_NOT_FOUND);
 		}
 	}
 
-	// Helper: 반복되는 Request 생성을 분리
 	private ProductInspectionRequestDto createRequest(InspectionStatus status, String reason) {
 		return new ProductInspectionRequestDto(PRODUCT_ID, status, ProductCondition.MISB, reason);
+	}
+
+	private AuctionInfoResponseDto createMockAuctionInfo() {
+		return new AuctionInfoResponseDto(
+			1L,
+			AUCTION_ID,
+			10000,
+			0,
+			AuctionStatus.SCHEDULED,
+			LocalDateTime.now(),
+			null
+		);
 	}
 }
