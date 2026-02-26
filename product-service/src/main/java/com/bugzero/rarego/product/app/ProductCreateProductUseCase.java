@@ -13,20 +13,24 @@ import com.bugzero.rarego.product.domain.ProductImage;
 import com.bugzero.rarego.product.domain.ProductMember;
 import com.bugzero.rarego.product.domain.dto.ProductCreateResponseDto;
 import com.bugzero.rarego.product.out.ProductRepository;
+import com.bugzero.rarego.shared.product.dto.ProductAuctionCreateDto;
 import com.bugzero.rarego.shared.product.dto.ProductCreateRequestDto;
 import com.bugzero.rarego.shared.product.dto.ProductImageRequestDto;
 import com.bugzero.rarego.shared.product.event.ProductCreateAuctionEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageConfirmEvent;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductCreateProductUseCase {
 	private final ProductRepository productRepository;
 	private final ProductSupport productSupport;
 	private final EventPublisher eventPublisher;
 	private final OutboxUseCase outboxUseCase;
+	private final ProductSearchService productSearchService;
 
 	@Transactional
 	public ProductCreateResponseDto createProduct(String publicId, ProductCreateRequestDto dto) {
@@ -49,7 +53,10 @@ public class ProductCreateProductUseCase {
 			.dto(dto.productAuctionCreateDto())
 			.build());
 
-		// 4. 외부 시스템 연동 이벤트 발행 (커밋 후 실행될 녀석들)
+		// 4. ES 데이터 적재
+		synchronizeElasticsearch(savedProduct, dto.productAuctionCreateDto());
+
+		// 5. 외부 시스템 연동 이벤트 발행 (커밋 후 실행될 녀석들)
 		// 모든 DB 저장이 완벽하게 호출된 후, 마지막에 이벤트를 발행하는 것이 흐름상 명확함
 		eventPublisher.publish(new S3ImageConfirmEvent(tempPaths));
 
@@ -70,5 +77,18 @@ public class ProductCreateProductUseCase {
 				ProductImage.createConfirmedImage(product, imageRequestDto.imgUrl(), imageRequestDto.sortOrder()));
 		});
 		return tempPaths;
+	}
+
+	private void synchronizeElasticsearch(Product product, ProductAuctionCreateDto dto) {
+		try {
+			productSearchService.saveBeforeInspection(product,
+				product.getImages(),
+				dto.startPrice(),
+				dto.durationDays());
+		} catch (Exception e) {
+			// 예외를 catch하고 다시 throw하지 않음
+			log.error("ES 동기화 실패 (DB는 정상 커밋됨). 추후 배치로 복구 필요: productId={}, error={}",
+				product.getId(), e.getMessage());
+		}
 	}
 }

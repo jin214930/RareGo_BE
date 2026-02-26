@@ -14,14 +14,17 @@ import com.bugzero.rarego.shared.product.event.ProductDeleteAuctionEvent;
 import com.bugzero.rarego.shared.product.event.S3ImageDeleteEvent;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductDeleteProductUseCase {
 
 	private final ProductSupport productSupport;
 	private final OutboxUseCase outboxUseCase;
 	private final EventPublisher eventPublisher;
+	private final ProductSearchService productSearchService;
 
 	@Transactional
 	public void deleteProduct(String  publicId, Long productId) {
@@ -43,5 +46,17 @@ public class ProductDeleteProductUseCase {
 			.productId(productId)
 			.publicId(publicId)
 			.build());
+
+		synchronizeElasticsearch(productId);
+	}
+
+	private void synchronizeElasticsearch(Long productId) {
+		try {
+			productSearchService.delete(productId);
+		} catch (Exception e) {
+			// 예외를 catch하고 다시 throw하지 않음
+			log.error("ES 동기화 실패 (DB는 정상 커밋됨). 추후 배치로 복구 필요: productId={}, error={}",
+				productId, e.getMessage());
+		}
 	}
 }
