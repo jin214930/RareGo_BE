@@ -321,7 +321,7 @@ jobs:
             --parameters commands="[
               \"mkdir -p /tmp/k8s\",
               \"echo '$K8S_FILES_BASE64' | base64 -d | tar -xzf - -C /tmp/k8s\",
-              \"kubectl --kubeconfig /etc/kubernetes/admin.conf apply -k /tmp/k8s/ > /tmp/k8s-apply.log 2>&1; rc=\\$?; cat /tmp/k8s-apply.log; if [ \\$rc -ne 0 ] && grep -q 'The StatefulSet \"kafka\" is invalid: spec: Forbidden' /tmp/k8s-apply.log; then echo '[WARN] Ignoring known kafka StatefulSet immutable field error'; rc=0; fi; exit \\$rc\",
+              \"kubectl --kubeconfig /etc/kubernetes/admin.conf apply -k /tmp/k8s/ > /tmp/k8s-apply.log 2>&1; rc=\$?; cat /tmp/k8s-apply.log; if [ \$rc -ne 0 ] && grep -q 'The StatefulSet \"kafka\" is invalid: spec: Forbidden' /tmp/k8s-apply.log; then echo '[WARN] Ignoring known kafka StatefulSet immutable field error'; rc=0; fi; exit \$rc\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf -n rarego create secret docker-registry ghcr-creds --docker-server=ghcr.io --docker-username='${{ secrets.GHCR_USERNAME }}' --docker-password='${{ secrets.GHCR_TOKEN }}' --dry-run=client -o yaml | kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f -\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf patch serviceaccount default -n rarego -p '{\\\"imagePullSecrets\\\":[{\\\"name\\\":\\\"ghcr-creds\\\"}]}'\",
               \"kubectl --kubeconfig /etc/kubernetes/admin.conf rollout restart deployment -n rarego || true\",
