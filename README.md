@@ -82,3 +82,60 @@ RareGo는 대규모 트래픽 환경에서도 데이터 정합성을 유지하�
 
 ### 알림
 * **이벤트 기반 알림**: Kafka를 활용한 비동기 메시징 처리를 통해 입찰 현황, 경매 낙찰, 정산 완료 등을 실시간으로 사용자에게 알림
+
+___
+
+## 개발 환경 설정
+
+### 1. 환경 변수 설정
+프로젝트 루트 디렉토리에 `.env` 파일을 생성하고 아래 내용을 복사하여 필요한 값을 채워주세요.
+
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_ROOT_PASSWORD=root_password
+DB_NAME=rarego
+DB_USERNAME=rarego_user
+DB_PASSWORD=rarego_password
+TZ=Asia/Seoul
+
+# AWS Configuration (S3)
+AWS_ACCESS_KEY=<YOUR_AWS_ACCESS_KEY>
+AWS_SECRET_KEY=<YOUR_AWS_SECRET_KEY>
+
+# Social Login (OAuth2)
+GOOGLE_CLIENT=<YOUR_GOOGLE_CLIENT_ID>
+GOOGLE_SECRET=<YOUR_GOOGLE_CLIENT_SECRET>
+KAKAO_CLIENT=<YOUR_KAKAO_CLIENT_ID>
+NAVER_CLIENT=<YOUR_NAVER_CLIENT_ID>
+NAVER_SECRET=<YOUR_NAVER_CLIENT_SECRET>
+
+# Security
+JWT_SECRET=<YOUR_JWT_SECRET_KEY_MIN_32_CHARS>
+
+# Infrastructure & Proxy
+NGINX_BASIC_AUTH_USER=admin
+NGINX_BASIC_AUTH_PASS=admin_password
+INTERNAL_BACK_URL=http://backend:8080
+
+# External APIs
+TOSS_PAYMENTS_SECRET_KEY=<YOUR_TOSS_SECRET_KEY>
+OPENAI_API_KEY=<YOUR_OPENAI_API_KEY>
+SLACK_WEBHOOK_URL=<YOUR_SLACK_WEBHOOK_URL>
+SLACK_ENABLED=true
+```
+
+### 2. 실행 방법
+RareGo는 MSA 구조로 설계되어 있어, Docker Compose를 이용한 실행을 권장합니다.
+
+```bash
+# 1. 저장소 클론
+git clone https://github.com/prgrms-be-adv-devcourse/beadv4_4_bugzero_BE.git
+cd beadv4_4_bugzero_BE
+
+# 2. .env 파일 작성 (위의 예시 참고)
+
+# 3. 인프라 및 서비스 실행
+docker-compose up -d
+```
