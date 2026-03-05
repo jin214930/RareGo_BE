@@ -20,7 +20,6 @@ import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
-import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,126 +32,79 @@ class PaymentProcessSettlementUseCaseUnitTest {
 	private PaymentSettlementProcessor paymentSettlementProcessor;
 
 	@Mock
-	private SettlementRepository settlementRepository;
-
-	@Mock
 	private OutboxUseCase outboxUseCase;
 
 	@Test
-	@DisplayName("정상 흐름: 2건 모두 성공 시 - 판매자 처리 2회 후 결과가 담긴 Outbox 저장")
-	void success_all() {
+	@DisplayName("정상 흐름: 여러 판매자의 정산 건이 섞여있을 때 판매자별로 그룹화하여 처리하고 Outbox를 저장한다")
+	void processSettlements_success() {
 		// given
-		Settlement s1 = createMockSettlement(1L);
-		Settlement s2 = createMockSettlement(2L);
-		List<Settlement> list = List.of(s1, s2);
-
-		given(settlementRepository.findSettlementsForBatch(eq(SettlementStatus.READY), any(), anyInt()))
-			.willReturn(list);
-
-		given(paymentSettlementProcessor.processSellerDeposit(s1)).willReturn(true);
-		given(paymentSettlementProcessor.processSellerDeposit(s2)).willReturn(true);
+		// 판매자 100L: 2건, 판매자 200L: 1건
+		Settlement s1 = createMockSettlement(1L, 100L);
+		Settlement s2 = createMockSettlement(2L, 100L);
+		Settlement s3 = createMockSettlement(3L, 200L);
+		List<Settlement> settlements = List.of(s1, s2, s3);
 
 		// when
-		int count = useCase.processSettlements(10);
+		useCase.processSettlements(settlements);
 
 		// then
-		assertThat(count).isEqualTo(2);
+		// 1. 판매자별 그룹화 처리 검증 (100L은 2건 리스트, 200L은 1건 리스트로 전달되어야 함)
+		verify(paymentSettlementProcessor).processSellerDeposits(eq(100L), argThat(list -> list.size() == 2));
+		verify(paymentSettlementProcessor).processSellerDeposits(eq(200L), argThat(list -> list.size() == 1));
 
-		verify(paymentSettlementProcessor).processSellerDeposit(s1);
-		verify(paymentSettlementProcessor).processSellerDeposit(s2);
-
-		// EventPublisher 대신 OutboxUseCase 호출 검증
+		// 2. 전체 결과에 대한 Outbox 저장 검증
 		ArgumentCaptor<SettlementFinishedEvent> eventCaptor = ArgumentCaptor.forClass(SettlementFinishedEvent.class);
 		verify(outboxUseCase).saveOutbox(eventCaptor.capture());
 
 		SettlementFinishedEvent event = eventCaptor.getValue();
-		assertThat(event.settlements()).hasSize(2);
-		assertThat(event.settlements().get(0).id()).isEqualTo(1L);
-		assertThat(event.settlements().get(1).id()).isEqualTo(2L);
+		assertThat(event.settlements()).hasSize(3); // 총 3건의 결과 포함 여부
 	}
 
 	@Test
-	@DisplayName("동시성 방어: 프로세서가 false를 반환하면 카운트되지 않고 Outbox 저장도 발생하지 않음")
-	void skip_if_processor_returns_false() {
+	@DisplayName("예외 흐름: 프로세서 처리 중 예외 발생 시 UseCase 트랜잭션에 의해 상위로 전파된다 (Rollback 유도)")
+	void processSettlements_throws_exception() {
 		// given
-		Settlement s1 = createMockSettlement(1L);
-		given(settlementRepository.findSettlementsForBatch(any(), any(), anyInt()))
-			.willReturn(List.of(s1));
+		Settlement s1 = createMockSettlement(1L, 100L);
+		List<Settlement> settlements = List.of(s1);
 
-		given(paymentSettlementProcessor.processSellerDeposit(s1)).willReturn(false);
+		doThrow(new RuntimeException("DB Error"))
+			.when(paymentSettlementProcessor).processSellerDeposits(anyLong(), anyList());
 
-		// when
-		int count = useCase.processSettlements(10);
+		// when & then
+		assertThatThrownBy(() -> useCase.processSettlements(settlements))
+			.isInstanceOf(RuntimeException.class)
+			.hasMessage("DB Error");
 
-		// then
-		assertThat(count).isEqualTo(0);
-
-		// 성공한 정산이 없으므로 Outbox 저장 로직이 호출되지 않아야 함
-		then(outboxUseCase).shouldHaveNoInteractions();
+		// 예외 발생 시 이후 로직(Outbox 저장 등)이 실행되지 않아야 함
+		verify(outboxUseCase, never()).saveOutbox(any());
 	}
 
 	@Test
-	@DisplayName("부분 성공: 1건 성공, 1건 실패(예외) 시 - 실패 처리 후 성공한 건만 Outbox에 저장됨")
-	void partial_success() {
-		// given
-		Settlement successItem = createMockSettlement(1L);
-		Settlement failItem = createMockSettlement(2L);
-
-		given(settlementRepository.findSettlementsForBatch(any(), any(), anyInt()))
-			.willReturn(List.of(successItem, failItem));
-
-		given(paymentSettlementProcessor.processSellerDeposit(successItem)).willReturn(true);
-		given(paymentSettlementProcessor.processSellerDeposit(failItem))
-			.willThrow(new RuntimeException("Something wrong"));
-
+	@DisplayName("빈 데이터: 처리할 리스트가 비어있으면 아무 작업도 하지 않는다")
+	void processSettlements_empty() {
 		// when
-		int count = useCase.processSettlements(10);
+		useCase.processSettlements(Collections.emptyList());
+		useCase.processSettlements(null);
 
 		// then
-		assertThat(count).isEqualTo(1);
-
-		verify(failItem).fail();
-
-		// 성공한 1건에 대해서만 Outbox에 저장되는지 검증
-		ArgumentCaptor<SettlementFinishedEvent> eventCaptor = ArgumentCaptor.forClass(SettlementFinishedEvent.class);
-		verify(outboxUseCase).saveOutbox(eventCaptor.capture());
-
-		assertThat(eventCaptor.getValue().settlements()).hasSize(1);
-		assertThat(eventCaptor.getValue().settlements().get(0).id()).isEqualTo(1L);
+		verifyNoInteractions(paymentSettlementProcessor);
+		verifyNoInteractions(outboxUseCase);
 	}
 
-	@Test
-	@DisplayName("빈 데이터: 데이터가 없으면 아무 작업도 하지 않고 0 반환")
-	void empty_data_then_do_nothing() {
-		// given
-		given(settlementRepository.findSettlementsForBatch(any(), any(), anyInt()))
-			.willReturn(Collections.emptyList());
-
-		// when
-		int count = useCase.processSettlements(10);
-
-		// then
-		assertThat(count).isEqualTo(0);
-
-		then(paymentSettlementProcessor).shouldHaveNoInteractions();
-		then(outboxUseCase).shouldHaveNoInteractions();
-	}
-
-	private Settlement createMockSettlement(Long id) {
+	private Settlement createMockSettlement(Long id, Long sellerId) {
 		Settlement settlement = mock(Settlement.class);
 		PaymentMember seller = mock(PaymentMember.class);
 
 		lenient().when(settlement.getId()).thenReturn(id);
-
-		lenient().when(seller.getId()).thenReturn(id * 10);
+		lenient().when(seller.getId()).thenReturn(sellerId);
 		lenient().when(settlement.getSeller()).thenReturn(seller);
 
 		lenient().when(settlement.getAuctionId()).thenReturn(id * 100);
 		lenient().when(settlement.getSalesAmount()).thenReturn(10000);
 		lenient().when(settlement.getFeeAmount()).thenReturn(1000);
 		lenient().when(settlement.getSettlementAmount()).thenReturn(9000);
+		lenient().when(settlement.getProductName()).thenReturn("테스트 상품 " + id);
 		lenient().when(settlement.getStatus()).thenReturn(SettlementStatus.READY);
-		// DTO 생성 시 발생하는 NPE 방지를 위해 CreatedAt 추가
 		lenient().when(settlement.getCreatedAt()).thenReturn(LocalDateTime.now());
 
 		return settlement;

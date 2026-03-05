@@ -2,10 +2,12 @@ package com.bugzero.rarego.app;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.WalletTransactionType;
 import com.bugzero.rarego.global.response.PagedResponseDto;
@@ -84,8 +86,15 @@ public class PaymentFacade {
 	/**
 	 * 정산 처리
 	 */
-	public int processSettlements(int chunkSize) {
-		return paymentProcessSettlementUseCase.processSettlements(chunkSize);
+	public void processSettlements(List<? extends Settlement> settlements) {
+		paymentProcessSettlementUseCase.processSettlements(settlements);
+	}
+
+	/**
+	 * 정산 수수료 처리
+	 */
+	public int processSettlementFees() {
+		return paymentSettlementProcessor.processFees();
 	}
 
 	/**
@@ -159,12 +168,5 @@ public class PaymentFacade {
 	 */
 	public void withdraw(String memberPublicId, WithdrawRequestDto request) {
 		paymentWithdrawUseCase.withdraw(memberPublicId, request);
-	}
-
-	/**
-	 * 정산 수수료 처리
-	 */
-	public int processSettlementFees(int limit) {
-		return paymentSettlementProcessor.processFees(limit);
 	}
 }

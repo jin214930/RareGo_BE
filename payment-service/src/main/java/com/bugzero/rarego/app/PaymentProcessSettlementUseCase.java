@@ -1,17 +1,14 @@
 package com.bugzero.rarego.app;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Settlement;
-import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
-import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.shared.payment.dto.SettlementResponseDto;
 import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
 
@@ -22,58 +19,34 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class PaymentProcessSettlementUseCase {
-	private final SettlementRepository settlementRepository;
 	private final PaymentSettlementProcessor paymentSettlementProcessor;
 	private final OutboxUseCase outboxUseCase;
 
-	@Value("${custom.payment.settlement.holdDays:7}")
-	private int settlementHoldDays;
-
 	@Transactional
-	public int processSettlements(int limit) {
-		// 7일 경과한 정산만 처리
-		LocalDateTime cutoffDate = LocalDateTime.now().minusDays(settlementHoldDays);
-
-		List<Settlement> settlements = settlementRepository.findSettlementsForBatch(
-			SettlementStatus.READY, cutoffDate, limit);
-
-		if (settlements.isEmpty()) {
-			return 0;
+	public void processSettlements(List<? extends Settlement> settlements) {
+		if (settlements == null || settlements.isEmpty()) {
+			return;
 		}
 
-		List<SettlementResponseDto> successSettlements = new ArrayList<>();
+		Map<Long, List<Settlement>> settlementsBySeller = settlements.stream()
+			.collect(Collectors.groupingBy(s -> s.getSeller().getId()));
 
-		for (Settlement settlement : settlements) {
-			try {
-				if (paymentSettlementProcessor.processSellerDeposit(settlement)) {
-					successSettlements.add(new SettlementResponseDto(
-						settlement.getId(),
-						settlement.getAuctionId(),
-						settlement.getSeller().getId(),
-						settlement.getSalesAmount(),
-						settlement.getFeeAmount(),
-						settlement.getSettlementAmount(),
-						settlement.getProductName(),
-						settlement.getStatus().name(), // Enum -> String 변환
-						settlement.getCreatedAt()
-					));
-				}
-			} catch (Exception e) {
-				boolean isFinalFailure = settlement.fail();
+		settlementsBySeller.forEach(paymentSettlementProcessor::processSellerDeposits);
 
-				if (isFinalFailure) {
-					log.error("정산 최종 실패 - ID: {}, 원인: {}. 수동 처리 필요", settlement.getId(), e.getMessage(), e);
-				} else {
-					log.warn("일시적 정산 실패 - ID: {}, 원인: {}. 다음 배치에서 재시도", settlement.getId(), e.getMessage());
-				}
-			}
-		}
+		List<SettlementResponseDto> responses = settlements.stream()
+			.map(s -> new SettlementResponseDto(
+				s.getId(),
+				s.getAuctionId(),
+				s.getSeller().getId(),
+				s.getSalesAmount(),
+				s.getFeeAmount(),
+				s.getSettlementAmount(),
+				s.getProductName(),
+				s.getStatus().name(),
+				s.getCreatedAt()
+			))
+			.toList();
 
-		SettlementFinishedEvent event = SettlementFinishedEvent.of(successSettlements);
-		if (!event.settlements().isEmpty()) {
-			outboxUseCase.saveOutbox(event);
-		}
-
-		return successSettlements.size();
+		outboxUseCase.saveOutbox(SettlementFinishedEvent.of(responses));
 	}
 }

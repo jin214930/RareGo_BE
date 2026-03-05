@@ -1,22 +1,21 @@
 package com.bugzero.rarego.app;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.PaymentTransaction;
 import com.bugzero.rarego.domain.ReferenceType;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementFee;
-import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.domain.WalletTransactionType;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
 import com.bugzero.rarego.out.SettlementFeeRepository;
-import com.bugzero.rarego.out.WalletRepository;
+import com.bugzero.rarego.out.SettlementRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,42 +25,58 @@ public class PaymentSettlementProcessor {
 	private final PaymentSupport paymentSupport;
 	private final PaymentTransactionRepository paymentTransactionRepository;
 	private final SettlementFeeRepository settlementFeeRepository;
-	private final WalletRepository walletRepository;
+	private final SettlementRepository settlementRepository;
 
 	@Value("${custom.payment.systemMemberId}")
 	private Long systemMemberId;
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public boolean processSellerDeposit(Settlement settlement) {
-		if (settlement.getStatus() != SettlementStatus.READY) {
-			return false;
+	@Transactional
+	public void processSellerDeposits(Long sellerId, List<Settlement> settlements) {
+		if (settlements == null || settlements.isEmpty()) {
+			return;
 		}
 
-		Wallet sellerWallet = paymentSupport.findWalletByMemberIdForUpdate(settlement.getSeller().getId());
-		sellerWallet.addBalance(settlement.getSettlementAmount());
+		Wallet sellerWallet = paymentSupport.findWalletByMemberIdForUpdate(sellerId);
 
-		saveSettlementTransaction(
-			sellerWallet,
-			WalletTransactionType.SETTLEMENT_PAID,
-			settlement.getSettlementAmount(),
-			settlement.getId()
-		);
+		int runningBalance = sellerWallet.getBalance();
+		int totalSettlementAmount = 0;
+		List<SettlementFee> fees = new ArrayList<>();
 
-		settlement.complete();
+		for (Settlement settlement : settlements) {
+			int amount = settlement.getSettlementAmount();
 
-		SettlementFee fee = SettlementFee.builder()
-			.settlement(settlement)
-			.feeAmount(settlement.getFeeAmount())
-			.build();
-		settlementFeeRepository.save(fee);
+			runningBalance += amount;
+			totalSettlementAmount += amount;
 
-		return true;
+			saveSettlementTransaction(
+				sellerWallet,
+				WalletTransactionType.SETTLEMENT_PAID,
+				amount,
+				runningBalance,
+				settlement.getId()
+			);
+
+			settlement.complete();
+
+			SettlementFee fee = SettlementFee.builder()
+				.settlement(settlement)
+				.feeAmount(settlement.getFeeAmount())
+				.build();
+			fees.add(fee);
+		}
+
+		if (totalSettlementAmount > 0) {
+			sellerWallet.addBalance(totalSettlementAmount);
+		}
+
+		settlementFeeRepository.saveAll(fees);
+		settlementRepository.saveAll(settlements);
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public int processFees(int limit) {
-		// 1. [SKIP LOCKED] 다른 스레드가 처리 중인 건 건너뛰고 조회
-		List<SettlementFee> fees = settlementFeeRepository.findAllForBatch(limit);
+	@Transactional
+	public int processFees() {
+		// 1. 수수료 테이블 데이터 조회
+		List<SettlementFee> fees = settlementFeeRepository.findTop1000ByOrderByIdAsc();
 
 		if (fees.isEmpty()) {
 			return 0;
@@ -81,24 +96,25 @@ public class PaymentSettlementProcessor {
 				systemWallet,
 				WalletTransactionType.SETTLEMENT_FEE,
 				totalFeeAmount,
+				systemWallet.getBalance(),
 				0L // 여러 건 합산이므로 ID 0
 			);
 		}
 
-		// 4. 처리된 수수료 데이터 삭제 (Queue 비우기)
+		// 4. 처리된 수수료 데이터 일괄 삭제
 		settlementFeeRepository.deleteAllInBatch(fees);
 
 		return fees.size();
 	}
 
-	private void saveSettlementTransaction(Wallet wallet, WalletTransactionType type, int amount, Long settlementId) {
+	private void saveSettlementTransaction(Wallet wallet, WalletTransactionType type, int amount, int balanceAfter, Long settlementId) {
 		PaymentTransaction transaction = PaymentTransaction.builder()
 			.wallet(wallet)
 			.member(wallet.getMember())
 			.transactionType(type)
 			.balanceDelta(amount)
 			.holdingDelta(0)
-			.balanceAfter(wallet.getBalance())
+			.balanceAfter(balanceAfter)
 			.referenceType(ReferenceType.SETTLEMENT)
 			.referenceId(settlementId)
 			.build();
