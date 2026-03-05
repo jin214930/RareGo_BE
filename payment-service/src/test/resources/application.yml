@@ -2,7 +2,7 @@ spring:
     application:
         name: payment-service
     datasource:
-        url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
         driver-class-name: org.h2.Driver
         username: sa
         password:
@@ -15,8 +15,10 @@ spring:
                 format_sql: true
 
     batch:
-        job:
-            enabled: false
+      jdbc:
+        initialize-schema: always
+      job:
+        enabled: false
 
     data:
         redis:

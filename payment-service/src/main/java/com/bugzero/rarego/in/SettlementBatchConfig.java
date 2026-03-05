@@ -17,16 +17,20 @@ import org.springframework.transaction.PlatformTransactionManager;
 import com.bugzero.rarego.app.PaymentFacade;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class SettlementBatchConfig {
-	private static final int THREAD_SIZE = 5;
 	private final PaymentFacade paymentFacade;
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
 	@Value("${custom.payment.settlement.chunkSize:10}")
 	private int chunkSize;
+
+	@Value("${batch.thread.size:1}")
+	private int threadSize;
 
 	@Bean
 	public Job settlementJob() {
@@ -42,7 +46,7 @@ public class SettlementBatchConfig {
 		return new StepBuilder("mainStep", jobRepository)
 			.partitioner("subStep", new SimplePartitioner()) // 작업을 복제
 			.step(subStep())
-			.gridSize(THREAD_SIZE)  // 스레드 생성
+			.gridSize(threadSize)  // 스레드 생성
 			.taskExecutor(executor()) // 병렬 실행을 위한 스레드 풀
 			.build();
 	}
@@ -87,9 +91,10 @@ public class SettlementBatchConfig {
 	@Bean
 	public TaskExecutor executor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(THREAD_SIZE);
-		executor.setMaxPoolSize(THREAD_SIZE);
+		executor.setCorePoolSize(threadSize);
+		executor.setMaxPoolSize(threadSize);
 		executor.setThreadNamePrefix("settlement-thread-");
+		executor.setWaitForTasksToCompleteOnShutdown(true);
 		executor.initialize();
 		return executor;
 	}
