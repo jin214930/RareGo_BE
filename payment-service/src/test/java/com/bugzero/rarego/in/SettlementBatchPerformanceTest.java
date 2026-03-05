@@ -184,7 +184,7 @@ class MultiThreadPerformanceTest extends AbstractSettlementTest {
 	@Test
 	@DisplayName("멀티 스레드 - 1000건 정산 (충돌 높음 - 파티셔닝 검증)")
 	void testHighCollision() throws Exception {
-		createTestData(10000, 10);
+		createTestData(1000, 10);
 		runAndPrint("Multi-Thread | High Collision");
 	}
 }

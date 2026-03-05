@@ -14,7 +14,6 @@ import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.domain.WalletTransactionType;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
 import com.bugzero.rarego.out.SettlementFeeRepository;
-import com.bugzero.rarego.out.WalletRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,7 +23,6 @@ public class PaymentSettlementProcessor {
 	private final PaymentSupport paymentSupport;
 	private final PaymentTransactionRepository paymentTransactionRepository;
 	private final SettlementFeeRepository settlementFeeRepository;
-	private final WalletRepository walletRepository;
 
 	@Value("${custom.payment.systemMemberId}")
 	private Long systemMemberId;

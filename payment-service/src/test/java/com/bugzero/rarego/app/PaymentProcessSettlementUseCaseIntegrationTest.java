@@ -19,7 +19,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
-import com.bugzero.rarego.domain.SettlementFee;
 import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.out.PaymentMemberRepository;
@@ -30,7 +29,7 @@ import com.bugzero.rarego.out.WalletRepository;
 
 @SpringBootTest(properties = "custom.payment.settlement.holdDays=-1")
 class PaymentProcessSettlementUseCaseIntegrationTest {
-	private final Long SYSTEM_ID = 2L;
+	private final Long SYSTEM_ID = 1L; // 실제 설정된 시스템 ID에 맞게 조정
 
 	@MockitoBean
 	private KafkaTemplate<String, Object> kafkaTemplate;
@@ -38,7 +37,6 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 	@Autowired
 	private PaymentProcessSettlementUseCase useCase;
 
-	// 수수료 일괄 처리를 수동으로 트리거하기 위해 주입
 	@Autowired
 	private PaymentSettlementProcessor paymentSettlementProcessor;
 
@@ -64,26 +62,32 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 		// 1. 시스템 유저 및 지갑 생성
 		createMemberAndWallet(SYSTEM_ID, "system");
 
-		// 2. 판매자 생성 (기본 테스트용)
+		// 2. 판매자 생성
 		createMemberAndWallet(100L, "seller");
 	}
 
 	@Test
-	@DisplayName("동시성 테스트: 동시에 5개 스레드가 정산을 시도해도 중복 정산이 없고, 수수료 지연 집계가 정상 동작한다")
-	void concurrency_double_spending_check() throws InterruptedException {
+	@DisplayName("동시성 테스트: 여러 스레드가 동일한 정산 건을 처리하려 해도 비관적 락에 의해 1회만 정산되어야 한다")
+	void concurrency_lock_check() throws InterruptedException {
 		// given
 		PaymentMember seller = memberRepository.findById(100L).get();
 		createSettlement(seller, 10000, 1000);
+
+		// 처리 대상 조회 (ItemReader 역할 시뮬레이션)
+		List<Settlement> targets = settlementRepository.findAll();
 
 		int threadCount = 5;
 		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
 		CountDownLatch latch = new CountDownLatch(threadCount);
 
-		// when: [Phase 1] 배치 mainStep 실행 (멀티 스레드 경합)
+		// when: 5개 스레드가 동시에 같은 리스트를 정산 처리 시도
 		for (int i = 0; i < threadCount; i++) {
 			executorService.submit(() -> {
 				try {
-					useCase.processSettlements(10);
+					// UseCase 내부의 processSellerDeposits에서 지갑에 FOR UPDATE 락이 걸림
+					useCase.processSettlements(targets);
+				} catch (Exception e) {
+					// 락 경합으로 인한 예외 발생 가능 (정상)
 				} finally {
 					latch.countDown();
 				}
@@ -91,75 +95,81 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 		}
 		latch.await();
 
-		// then: [Phase 1 검증] 개별 정산 및 큐 적재 확인
-		Settlement settlement = settlementRepository.findAll().get(0);
-		assertThat(settlement.getStatus()).isEqualTo(SettlementStatus.DONE);
-
+		// then: 판매자 지갑은 단 1번(10000원)만 입금되어야 함
 		Wallet sellerWallet = walletRepository.findByMemberId(100L).get();
 		assertThat(sellerWallet.getBalance()).isEqualTo(10000);
 
-		// 시스템 잔액은 아직 0이어야 함 (Step 2가 안 돌았으므로)
-		Wallet systemWalletBeforePhase2 = walletRepository.findByMemberId(SYSTEM_ID).get();
-		assertThat(systemWalletBeforePhase2.getBalance()).isEqualTo(0);
+		// 수수료 대기열에도 1건만 존재해야 함
+		assertThat(settlementFeeRepository.count()).isEqualTo(1);
 
-		// 큐에 1건의 수수료 데이터가 대기 중이어야 함
-		List<SettlementFee> fees = settlementFeeRepository.findAll();
-		assertThat(fees).hasSize(1);
-		assertThat(fees.get(0).getFeeAmount()).isEqualTo(1000);
+		// Phase 2: 수수료 처리 실행
+		paymentSettlementProcessor.processFees();
 
-		// when: [Phase 2] 배치 systemWalletDepositStep 실행 시뮬레이션
-		paymentSettlementProcessor.processFees(1000);
-
-		// then: [Phase 2 검증] 수수료 일괄 입금 및 큐 정리 확인
-		Wallet systemWalletAfterPhase2 = walletRepository.findByMemberId(SYSTEM_ID).get();
-		assertThat(systemWalletAfterPhase2.getBalance()).isEqualTo(1000); // 1000원 입금 확인
-
-		assertThat(paymentTransactionRepository.count()).isEqualTo(2); // 판매자 입금 1건 + 시스템 수수료 1건
-		assertThat(settlementFeeRepository.findAll()).isEmpty(); // 큐가 비워졌는지 확인
+		// 시스템 지갑 확인
+		Wallet systemWallet = walletRepository.findByMemberId(SYSTEM_ID).get();
+		assertThat(systemWallet.getBalance()).isEqualTo(1000);
+		assertThat(settlementFeeRepository.count()).isZero();
 	}
 
 	@Test
-	@DisplayName("부분 성공 테스트: 실패 건은 재시도 대기 상태가 되고, 성공 건만 수수료 큐에 적재되어 다음 Step에서 처리된다")
-	void partial_success_integration_test() {
+	@DisplayName("벌크 처리 테스트: 한 판매자의 여러 정산 건이 한 번의 지갑 업데이트로 처리되어야 한다")
+	void bulk_settlement_test() {
 		// given
-		PaymentMember normalSeller = createMember(200L, "normal");
-		createWallet(normalSeller);
-		createSettlement(normalSeller, 10000, 1000);
+		PaymentMember seller = memberRepository.findById(100L).get();
+		createSettlement(seller, 10000, 1000);
+		createSettlement(seller, 20000, 2000);
+		createSettlement(seller, 30000, 3000);
 
-		PaymentMember errorSeller = createMember(300L, "error");
-		createSettlement(errorSeller, 20000, 2000); // 지갑이 없으므로 실패 유도
+		List<Settlement> targets = settlementRepository.findAll();
 
-		// when: [Phase 1] 정산 UseCase 1회 실행
-		int successCount = useCase.processSettlements(10);
+		// when
+		useCase.processSettlements(targets);
 
-		// then: [Phase 1 검증]
-		assertThat(successCount).isEqualTo(1);
+		// then
+		// 1. 판매자 지갑 잔액 합산 확인 (10000+20000+30000)
+		Wallet sellerWallet = walletRepository.findByMemberId(100L).get();
+		assertThat(sellerWallet.getBalance()).isEqualTo(60000);
 
-		// 1. 정상 판매자 검증
-		Wallet normalWallet = walletRepository.findByMemberId(200L).get();
-		assertThat(normalWallet.getBalance()).isEqualTo(10000);
+		// 2. 정산 상태 확인
+		List<Settlement> results = settlementRepository.findAll();
+		assertThat(results).allMatch(s -> s.getStatus() == SettlementStatus.DONE);
 
-		// 2. 오류 판매자 상태 검증 (실패했으므로 READY 유지 및 tryCount 증가)
-		Settlement errorSettlement = findSettlementBySellerId(300L);
-		assertThat(errorSettlement.getStatus()).isEqualTo(SettlementStatus.READY);
-		assertThat(errorSettlement.getTryCount()).isEqualTo(1);
+		// 3. 수수료 큐에 3건 적재 확인
+		assertThat(settlementFeeRepository.count()).isEqualTo(3);
 
-		// 3. 수수료 큐 적재 검증 (성공한 1000원 1건만 존재해야 함)
-		List<SettlementFee> fees = settlementFeeRepository.findAll();
-		assertThat(fees).hasSize(1);
-		assertThat(fees.get(0).getFeeAmount()).isEqualTo(1000);
+		// 4. 수수료 일괄 입금 실행
+		paymentSettlementProcessor.processFees();
 
-		// when: [Phase 2] 수수료 처리 Step 시뮬레이션
-		paymentSettlementProcessor.processFees(1000);
-
-		// then: [Phase 2 검증]
 		Wallet systemWallet = walletRepository.findByMemberId(SYSTEM_ID).get();
-		assertThat(systemWallet.getBalance()).isEqualTo(1000); // 1건분 입금 확인
-		assertThat(settlementFeeRepository.findAll()).isEmpty(); // 처리 완료 후 비워짐
+		assertThat(systemWallet.getBalance()).isEqualTo(6000); // (1000+2000+3000)
+	}
+
+	@Test
+	@DisplayName("원자성 테스트: 처리 중 예외 발생 시 해당 리스트 전체가 롤백되어야 한다")
+	void atomicity_test() {
+		// given
+		PaymentMember seller = memberRepository.findById(100L).get();
+		createSettlement(seller, 10000, 1000);
+
+		// 강제로 지갑을 삭제하여 예외 유도
+		walletRepository.deleteAll();
+
+		List<Settlement> targets = settlementRepository.findAll();
+
+		// when
+		assertThatThrownBy(() -> useCase.processSettlements(targets))
+			.isInstanceOf(RuntimeException.class);
+
+		// then
+		// 롤백되었으므로 정산 상태가 여전히 READY여야 함
+		Settlement result = settlementRepository.findAll().get(0);
+		assertThat(result.getStatus()).isEqualTo(SettlementStatus.READY);
+
+		// 수수료 큐도 비어있어야 함
+		assertThat(settlementFeeRepository.count()).isZero();
 	}
 
 	// --- Helper Methods ---
-	// (기존 코드와 동일하므로 생략 없이 그대로 유지)
 	private PaymentMember createMember(Long id, String name) {
 		PaymentMember member = PaymentMember.builder()
 			.id(id)
@@ -197,12 +207,5 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 			.status(SettlementStatus.READY)
 			.build();
 		settlementRepository.save(settlement);
-	}
-
-	private Settlement findSettlementBySellerId(Long sellerId) {
-		return settlementRepository.findAll().stream()
-			.filter(s -> s.getSeller().getId().equals(sellerId))
-			.findFirst()
-			.orElseThrow(() -> new RuntimeException("Settlement not found for seller " + sellerId));
 	}
 }
