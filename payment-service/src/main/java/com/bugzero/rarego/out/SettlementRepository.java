@@ -9,7 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementStatus;
@@ -41,18 +40,4 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 		""")
 	Page<Settlement> searchSettlements(Long sellerId, SettlementStatus status, LocalDateTime from,
 		LocalDateTime to, Pageable pageable);
-
-	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	@Query("""
-       SELECT s FROM Settlement s
-       WHERE s.status = com.bugzero.rarego.domain.SettlementStatus.READY
-       AND s.createdAt < :cutoffDate
-       AND MOD(s.seller.id, :gridSize) = :partitionIndex
-       """)
-	Page<Settlement> findSettlementsByPartition(
-		@Param("cutoffDate") LocalDateTime cutoffDate,
-		@Param("partitionIndex") Integer partitionIndex,
-		@Param("gridSize") Integer gridSize,
-		Pageable pageable
-	);
 }

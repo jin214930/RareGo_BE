@@ -1,5 +1,6 @@
 package com.bugzero.rarego.app;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,7 @@ import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.domain.WalletTransactionType;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
 import com.bugzero.rarego.out.SettlementFeeRepository;
+import com.bugzero.rarego.out.SettlementRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +25,7 @@ public class PaymentSettlementProcessor {
 	private final PaymentSupport paymentSupport;
 	private final PaymentTransactionRepository paymentTransactionRepository;
 	private final SettlementFeeRepository settlementFeeRepository;
+	private final SettlementRepository settlementRepository;
 
 	@Value("${custom.payment.systemMemberId}")
 	private Long systemMemberId;
@@ -35,19 +38,21 @@ public class PaymentSettlementProcessor {
 
 		Wallet sellerWallet = paymentSupport.findWalletByMemberIdForUpdate(sellerId);
 
-		int totalSettlementAmount = settlements.stream()
-			.mapToInt(Settlement::getSettlementAmount)
-			.sum();
-
-		if (totalSettlementAmount > 0) {
-			sellerWallet.addBalance(totalSettlementAmount);
-		}
+		int runningBalance = sellerWallet.getBalance();
+		int totalSettlementAmount = 0;
+		List<SettlementFee> fees = new ArrayList<>();
 
 		for (Settlement settlement : settlements) {
+			int amount = settlement.getSettlementAmount();
+
+			runningBalance += amount;
+			totalSettlementAmount += amount;
+
 			saveSettlementTransaction(
 				sellerWallet,
 				WalletTransactionType.SETTLEMENT_PAID,
-				settlement.getSettlementAmount(),
+				amount,
+				runningBalance,
 				settlement.getId()
 			);
 
@@ -57,8 +62,15 @@ public class PaymentSettlementProcessor {
 				.settlement(settlement)
 				.feeAmount(settlement.getFeeAmount())
 				.build();
-			settlementFeeRepository.save(fee);
+			fees.add(fee);
 		}
+
+		if (totalSettlementAmount > 0) {
+			sellerWallet.addBalance(totalSettlementAmount);
+		}
+
+		settlementFeeRepository.saveAll(fees);
+		settlementRepository.saveAll(settlements);
 	}
 
 	@Transactional
@@ -84,6 +96,7 @@ public class PaymentSettlementProcessor {
 				systemWallet,
 				WalletTransactionType.SETTLEMENT_FEE,
 				totalFeeAmount,
+				systemWallet.getBalance(),
 				0L // 여러 건 합산이므로 ID 0
 			);
 		}
@@ -94,14 +107,14 @@ public class PaymentSettlementProcessor {
 		return fees.size();
 	}
 
-	private void saveSettlementTransaction(Wallet wallet, WalletTransactionType type, int amount, Long settlementId) {
+	private void saveSettlementTransaction(Wallet wallet, WalletTransactionType type, int amount, int balanceAfter, Long settlementId) {
 		PaymentTransaction transaction = PaymentTransaction.builder()
 			.wallet(wallet)
 			.member(wallet.getMember())
 			.transactionType(type)
 			.balanceDelta(amount)
 			.holdingDelta(0)
-			.balanceAfter(wallet.getBalance())
+			.balanceAfter(balanceAfter)
 			.referenceType(ReferenceType.SETTLEMENT)
 			.referenceId(settlementId)
 			.build();

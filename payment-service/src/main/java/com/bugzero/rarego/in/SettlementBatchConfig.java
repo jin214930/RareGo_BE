@@ -1,7 +1,6 @@
 package com.bugzero.rarego.in;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,14 +13,13 @@ import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.infrastructure.item.ExecutionContext;
 import org.springframework.batch.infrastructure.item.ItemWriter;
-import org.springframework.batch.infrastructure.item.data.RepositoryItemReader;
-import org.springframework.batch.infrastructure.item.data.builder.RepositoryItemReaderBuilder;
+import org.springframework.batch.infrastructure.item.database.JpaCursorItemReader;
+import org.springframework.batch.infrastructure.item.database.builder.JpaCursorItemReaderBuilder;
 import org.springframework.batch.infrastructure.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -29,6 +27,7 @@ import com.bugzero.rarego.app.PaymentFacade;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.out.SettlementRepository;
 
+import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,6 +39,7 @@ public class SettlementBatchConfig {
 	private final SettlementRepository settlementRepository;
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
+	private final EntityManagerFactory entityManagerFactory;
 
 	@Value("${custom.payment.settlement.chunkSize:10}")
 	private int chunkSize;
@@ -95,19 +95,22 @@ public class SettlementBatchConfig {
 
 	@Bean
 	@StepScope
-	public RepositoryItemReader<Settlement> settlementReader(
+	public JpaCursorItemReader<Settlement> settlementReader(
 		@Value("#{stepExecutionContext['partitionIndex']}") Integer partitionIndex,
 		@Value("#{stepExecutionContext['gridSize']}") Integer gridSize
 	) {
 		LocalDateTime cutoffDate = LocalDateTime.now().minusDays(settlementHoldDays);
 
-		return new RepositoryItemReaderBuilder<Settlement>()
+		Map<String, Object> parameters = new HashMap<>();
+		parameters.put("cutoffDate", cutoffDate);
+		parameters.put("partitionIndex", partitionIndex);
+		parameters.put("gridSize", gridSize);
+
+		return new JpaCursorItemReaderBuilder<Settlement>()
 			.name("settlementReader")
-			.repository(settlementRepository)
-			.methodName("findSettlementsByPartition")
-			.arguments(cutoffDate, partitionIndex, gridSize)
-			.pageSize(chunkSize)
-			.sorts(Collections.singletonMap("id", Sort.Direction.ASC))
+			.entityManagerFactory(entityManagerFactory)
+			.queryString("SELECT s FROM Settlement s WHERE s.status = 'READY' AND s.createdAt < :cutoffDate AND MOD(s.seller.id, :gridSize) = :partitionIndex ORDER BY s.id ASC")
+			.parameterValues(parameters)
 			.build();
 	}
 

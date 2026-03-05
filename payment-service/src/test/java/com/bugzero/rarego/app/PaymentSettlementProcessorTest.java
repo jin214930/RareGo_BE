@@ -21,6 +21,7 @@ import com.bugzero.rarego.domain.SettlementFee;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
 import com.bugzero.rarego.out.SettlementFeeRepository;
+import com.bugzero.rarego.out.SettlementRepository;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentSettlementProcessorTest {
@@ -37,18 +38,22 @@ class PaymentSettlementProcessorTest {
 	@Mock
 	private SettlementFeeRepository settlementFeeRepository;
 
+	@Mock
+	private SettlementRepository settlementRepository;
+
+
 	@BeforeEach
 	void setUp() {
 		ReflectionTestUtils.setField(processor, "systemMemberId", 2L);
 	}
 
 	@Test
-	@DisplayName("processSellerDeposits 성공: 여러 건의 정산을 합산하여 입금하고 각각의 수수료를 저장한다")
+	@DisplayName("processSellerDeposits 성공: 여러 건의 정산을 합산하여 입금하고, 수수료와 정산 데이터를 벌크 저장한다")
 	void processSellerDeposits_success() {
 		// given
 		Long sellerId = 100L;
 
-		// 2건의 정산 데이터 준비 (금액: 10000, 20000 / 수수료: 1000, 2000)
+		// 2건의 정산 데이터 준비
 		Settlement s1 = mock(Settlement.class);
 		given(s1.getId()).willReturn(1L);
 		given(s1.getSettlementAmount()).willReturn(10000);
@@ -74,13 +79,16 @@ class PaymentSettlementProcessorTest {
 		// 1. 합산 금액이 한 번에 입금되었는지 확인
 		verify(sellerWallet, times(1)).addBalance(expectedTotalSettlement);
 
-		// 2. 각 정산 건에 대해 완료 처리 및 트랜잭션 기록 확인
+		// 2. 각 정산 건에 대해 완료 처리 및 개별 트랜잭션 기록 확인
 		verify(s1).complete();
 		verify(s2).complete();
 		verify(paymentTransactionRepository, times(2)).save(any(PaymentTransaction.class));
 
-		// 3. 각 정산 건에 대해 수수료 데이터가 저장되었는지 확인
-		verify(settlementFeeRepository, times(2)).save(any(SettlementFee.class));
+		// 💡 [수정됨] 3. 수수료 데이터가 save()가 아닌 saveAll()로 한 번에 저장되었는지 확인
+		verify(settlementFeeRepository, times(1)).saveAll(anyList());
+
+		// 💡 [추가] 4. 정산 데이터들도 saveAll()로 업데이트되었는지 검증
+		verify(settlementRepository, times(1)).saveAll(settlements);
 	}
 
 	@Test
@@ -101,13 +109,11 @@ class PaymentSettlementProcessorTest {
 		Wallet systemWallet = mock(Wallet.class);
 		PaymentMember systemMember = mock(PaymentMember.class);
 
-		// [변경] findTop1000ByOrderByIdAsc 메서드 스터빙
 		given(settlementFeeRepository.findTop1000ByOrderByIdAsc()).willReturn(fees);
 		given(paymentSupport.findWalletByMemberIdForUpdate(systemMemberId)).willReturn(systemWallet);
 		given(systemWallet.getMember()).willReturn(systemMember);
 
 		// when
-		// [변경] 파라미터 없이 호출
 		int processedCount = processor.processFees();
 
 		// then
