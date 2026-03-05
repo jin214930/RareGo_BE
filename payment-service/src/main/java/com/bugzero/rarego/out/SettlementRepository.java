@@ -42,16 +42,17 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 	Page<Settlement> searchSettlements(Long sellerId, SettlementStatus status, LocalDateTime from,
 		LocalDateTime to, Pageable pageable);
 
-	@Query(value = """
-		SELECT * FROM payment_settlement
-		WHERE status = :#{#status.name()}
-		AND created_at < :cutoffDate
-		ORDER BY id ASC
-		LIMIT :limit
-		FOR UPDATE SKIP LOCKED
-		""", nativeQuery = true)
-	List<Settlement> findSettlementsForBatch(
-		@Param("status") SettlementStatus status,
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+       SELECT s FROM Settlement s
+       WHERE s.status = com.bugzero.rarego.domain.SettlementStatus.READY
+       AND s.createdAt < :cutoffDate
+       AND MOD(s.seller.id, :gridSize) = :partitionIndex
+       """)
+	Page<Settlement> findSettlementsByPartition(
 		@Param("cutoffDate") LocalDateTime cutoffDate,
-		@Param("limit") int limit);
+		@Param("partitionIndex") Integer partitionIndex,
+		@Param("gridSize") Integer gridSize,
+		Pageable pageable
+	);
 }

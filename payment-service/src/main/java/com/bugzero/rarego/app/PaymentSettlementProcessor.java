@@ -4,14 +4,12 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.PaymentTransaction;
 import com.bugzero.rarego.domain.ReferenceType;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementFee;
-import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.domain.WalletTransactionType;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
@@ -31,37 +29,44 @@ public class PaymentSettlementProcessor {
 	@Value("${custom.payment.systemMemberId}")
 	private Long systemMemberId;
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public boolean processSellerDeposit(Settlement settlement) {
-		if (settlement.getStatus() != SettlementStatus.READY) {
-			return false;
+	@Transactional
+	public void processSellerDeposits(Long sellerId, List<Settlement> settlements) {
+		if (settlements == null || settlements.isEmpty()) {
+			return;
 		}
 
-		Wallet sellerWallet = paymentSupport.findWalletByMemberIdForUpdate(settlement.getSeller().getId());
-		sellerWallet.addBalance(settlement.getSettlementAmount());
+		Wallet sellerWallet = paymentSupport.findWalletByMemberIdForUpdate(sellerId);
 
-		saveSettlementTransaction(
-			sellerWallet,
-			WalletTransactionType.SETTLEMENT_PAID,
-			settlement.getSettlementAmount(),
-			settlement.getId()
-		);
+		int totalSettlementAmount = settlements.stream()
+			.mapToInt(Settlement::getSettlementAmount)
+			.sum();
 
-		settlement.complete();
+		if (totalSettlementAmount > 0) {
+			sellerWallet.addBalance(totalSettlementAmount);
+		}
 
-		SettlementFee fee = SettlementFee.builder()
-			.settlement(settlement)
-			.feeAmount(settlement.getFeeAmount())
-			.build();
-		settlementFeeRepository.save(fee);
+		for (Settlement settlement : settlements) {
+			saveSettlementTransaction(
+				sellerWallet,
+				WalletTransactionType.SETTLEMENT_PAID,
+				settlement.getSettlementAmount(),
+				settlement.getId()
+			);
 
-		return true;
+			settlement.complete();
+
+			SettlementFee fee = SettlementFee.builder()
+				.settlement(settlement)
+				.feeAmount(settlement.getFeeAmount())
+				.build();
+			settlementFeeRepository.save(fee);
+		}
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public int processFees(int limit) {
-		// 1. [SKIP LOCKED] 다른 스레드가 처리 중인 건 건너뛰고 조회
-		List<SettlementFee> fees = settlementFeeRepository.findAllForBatch(limit);
+	@Transactional
+	public int processFees() {
+		// 1. 수수료 테이블 데이터 조회
+		List<SettlementFee> fees = settlementFeeRepository.findTop1000ByOrderByIdAsc();
 
 		if (fees.isEmpty()) {
 			return 0;
@@ -85,7 +90,7 @@ public class PaymentSettlementProcessor {
 			);
 		}
 
-		// 4. 처리된 수수료 데이터 삭제 (Queue 비우기)
+		// 4. 처리된 수수료 데이터 일괄 삭제
 		settlementFeeRepository.deleteAllInBatch(fees);
 
 		return fees.size();

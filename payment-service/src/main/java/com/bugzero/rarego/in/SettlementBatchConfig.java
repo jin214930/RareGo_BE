@@ -1,20 +1,33 @@
 package com.bugzero.rarego.in;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
-import org.springframework.batch.core.partition.support.SimplePartitioner;
+import org.springframework.batch.core.partition.Partitioner;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.infrastructure.item.ExecutionContext;
+import org.springframework.batch.infrastructure.item.ItemWriter;
+import org.springframework.batch.infrastructure.item.data.RepositoryItemReader;
+import org.springframework.batch.infrastructure.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.batch.infrastructure.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import com.bugzero.rarego.app.PaymentFacade;
+import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.out.SettlementRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,13 +37,18 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SettlementBatchConfig {
 	private final PaymentFacade paymentFacade;
+	private final SettlementRepository settlementRepository;
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
+
 	@Value("${custom.payment.settlement.chunkSize:10}")
 	private int chunkSize;
 
 	@Value("${batch.thread.size:5}")
 	private int threadSize;
+
+	@Value("${custom.payment.settlement.holdDays:7}")
+	private int settlementHoldDays;
 
 	@Bean
 	public Job settlementJob() {
@@ -40,32 +58,63 @@ public class SettlementBatchConfig {
 			.build();
 	}
 
-	// 작업을 분할하고 subStep에 스레드를 할당하여 실행
 	@Bean
 	public Step mainStep() {
 		return new StepBuilder("mainStep", jobRepository)
-			.partitioner("subStep", new SimplePartitioner()) // 작업을 복제
+			.partitioner("subStep", sellerIdPartitioner())
 			.step(subStep())
-			.gridSize(threadSize)  // 스레드 생성
-			.taskExecutor(executor()) // 병렬 실행을 위한 스레드 풀
+			.gridSize(threadSize)
+			.taskExecutor(executor())
 			.build();
 	}
 
-	// 실제 정산 로직 수행
+	@Bean
+	public Partitioner sellerIdPartitioner() {
+		return gridSize -> {
+			Map<String, ExecutionContext> map = new HashMap<>();
+			for (int i = 0; i < gridSize; i++) {
+				ExecutionContext context = new ExecutionContext();
+				context.putInt("partitionIndex", i);
+				context.putInt("gridSize", gridSize);
+				map.put("partition" + i, context);
+			}
+
+			return map;
+		};
+	}
+
 	@Bean
 	public Step subStep() {
 		return new StepBuilder("settlementProcessStep", jobRepository)
-			.tasklet((contribution, chunkContext) -> {
-				int processedCount = paymentFacade.processSettlements(chunkSize);
+			.<Settlement, Settlement>chunk(chunkSize)
+			.transactionManager(transactionManager)
+			.reader(settlementReader(null, null))
+			.writer(settlementWriter())
+			.build();
+	}
 
-				if (processedCount == 0) {
-					return RepeatStatus.FINISHED;
-				}
+	@Bean
+	@StepScope
+	public RepositoryItemReader<Settlement> settlementReader(
+		@Value("#{stepExecutionContext['partitionIndex']}") Integer partitionIndex,
+		@Value("#{stepExecutionContext['gridSize']}") Integer gridSize
+	) {
+		LocalDateTime cutoffDate = LocalDateTime.now().minusDays(settlementHoldDays);
 
-				contribution.incrementWriteCount(processedCount);
+		return new RepositoryItemReaderBuilder<Settlement>()
+			.name("settlementReader")
+			.repository(settlementRepository)
+			.methodName("findSettlementsByPartition")
+			.arguments(cutoffDate, partitionIndex, gridSize)
+			.pageSize(chunkSize)
+			.sorts(Collections.singletonMap("id", Sort.Direction.ASC))
+			.build();
+	}
 
-				return RepeatStatus.CONTINUABLE;
-			}, transactionManager).build();
+	@Bean
+	@StepScope
+	public ItemWriter<Settlement> settlementWriter() {
+		return chunk -> paymentFacade.processSettlements(chunk.getItems());
 	}
 
 	@Bean
@@ -77,11 +126,9 @@ public class SettlementBatchConfig {
 				int totalProcessed = 0;
 
 				do {
-					processedCount = paymentFacade.processSettlementFees(limit);
+					processedCount = paymentFacade.processSettlementFees();
 					totalProcessed += processedCount;
 				} while (processedCount == limit);
-				// limit 만큼 가져왔으면 다음 데이터가 있을 가능성이 높음
-
 				contribution.incrementWriteCount(totalProcessed);
 				return RepeatStatus.FINISHED;
 			}, transactionManager).build();
