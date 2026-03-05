@@ -29,7 +29,7 @@ public class SettlementBatchConfig {
 	@Value("${custom.payment.settlement.chunkSize:10}")
 	private int chunkSize;
 
-	@Value("${batch.thread.size:1}")
+	@Value("${batch.thread.size:5}")
 	private int threadSize;
 
 	@Bean
