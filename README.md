@@ -62,6 +62,11 @@ RareGo는 대규모 트래픽 환경에서도 데이터 정합성을 유지하�
 
 ---
 
+## ERD
+<img width="1582" height="2059" alt="rarego" src="https://github.com/user-attachments/assets/777c8ac1-a50a-429d-968e-15e2cad0456f" />
+
+---
+
 ## 서비스 흐름도
 <img width="500" height="1500" alt="mermaid-diagram-2026-03-05-042524" src="https://github.com/user-attachments/assets/c5654596-98c1-409f-9e3d-e4a7cc225c55" />
 
