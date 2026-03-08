@@ -58,7 +58,7 @@ RareGo는 대규모 트래픽 환경에서도 데이터 정합성을 유지하�
 ---
 
 ## 아키텍처
-<img width="1024" height="565" alt="Image" src="https://github.com/user-attachments/assets/5d95dd48-59c9-498f-a99b-61f7b1d6dcbf" />
+<img width="1392" height="768" alt="image" src="https://github.com/user-attachments/assets/bd1411de-6af2-43f0-a075-80ff22f1497a" />
 
 ---
 
