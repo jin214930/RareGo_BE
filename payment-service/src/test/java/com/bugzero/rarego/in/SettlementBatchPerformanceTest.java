@@ -26,11 +26,13 @@ import org.springframework.util.StopWatch;
 
 import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.domain.SettlementPayout;
 import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.out.PaymentMemberRepository;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
 import com.bugzero.rarego.out.SettlementFeeRepository;
+import com.bugzero.rarego.out.SettlementPayoutRepository;
 import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.out.WalletRepository;
 
@@ -48,6 +50,9 @@ abstract class AbstractSettlementTest {
 
 	@Autowired
 	protected SettlementFeeRepository settlementFeeRepository;
+
+	@Autowired
+	protected SettlementPayoutRepository payoutRepository;
 
 	@Autowired
 	protected JobOperatorTestUtils jobOperatorTestUtils;
@@ -76,6 +81,7 @@ abstract class AbstractSettlementTest {
 		this.jobOperatorTestUtils.setJob(settlementJob);
 		// 역순 데이터 클렌징
 		settlementFeeRepository.deleteAllInBatch();
+		payoutRepository.deleteAllInBatch();
 		paymentTransactionRepository.deleteAllInBatch();
 		settlementRepository.deleteAllInBatch();
 		walletRepository.deleteAllInBatch();
@@ -167,6 +173,12 @@ abstract class AbstractSettlementTest {
 			.allMatch(source -> source.getStatus() == SettlementStatus.DONE);
 		assertThat(paymentTransactionRepository.count()).isEqualTo(expectedSourceCount);
 		assertThat(settlementFeeRepository.count()).isZero();
+		assertThat(payoutRepository.findAll()).hasSize(expectedSourceCount).allMatch(SettlementPayout::isPaid);
+		assertThat(jobExecution.getStepExecutions()).anyMatch(step -> step.getStepName().equals("payoutMainStep"));
+		long recipientWrites = jobExecution.getStepExecutions().stream()
+			.filter(step -> step.getStepName().startsWith("settlementPayoutStep:partition"))
+			.mapToLong(step -> step.getWriteCount()).sum();
+		assertThat(recipientWrites).isEqualTo(expectedBalances.size());
 		assertThat(jobExecution.getStepExecutions())
 			.noneMatch(step -> step.getStepName().equals("systemWalletDepositStep"));
 		assertThat(walletRepository.findAll()).allSatisfy(wallet ->
@@ -177,7 +189,7 @@ abstract class AbstractSettlementTest {
 /**
  * 단일 스레드 환경 테스트
  */
-@SpringBootTest(properties = "batch.thread.size=1")
+@SpringBootTest(properties = {"batch.thread.size=1", "custom.payment.settlement.payoutThreadSize=1"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class SingleThreadPerformanceTest extends AbstractSettlementTest {
 

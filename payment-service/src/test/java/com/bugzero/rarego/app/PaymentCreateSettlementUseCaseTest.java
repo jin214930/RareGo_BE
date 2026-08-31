@@ -15,6 +15,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.SettlementType;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.out.SettlementRepository;
@@ -41,6 +42,17 @@ class PaymentCreateSettlementUseCaseTest {
 		given(repository.findAllByAuctionIdForUpdate(100L)).willReturn(paymentSources(100000));
 
 		assertThatThrownBy(() -> useCase.validateNotCreated(100L)).isInstanceOf(CustomException.class);
+		verify(repository, never()).save(any());
+	}
+
+	@Test
+	void pendingSourcesAreRecognizedDuringPaymentRecovery() {
+		List<Settlement> existing = paymentSources(100000);
+		existing.forEach(source -> ReflectionTestUtils.setField(source, "status", SettlementStatus.PENDING));
+		given(support.findMemberById(1L)).willReturn(system);
+		given(repository.findAllByAuctionIdForUpdate(100L)).willReturn(existing);
+
+		assertThat(useCase.hasCompletePaymentSources(100L, "레고", seller, 100000)).isTrue();
 		verify(repository, never()).save(any());
 	}
 

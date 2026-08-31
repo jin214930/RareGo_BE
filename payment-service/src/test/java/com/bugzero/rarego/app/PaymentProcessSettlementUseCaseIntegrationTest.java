@@ -8,42 +8,45 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.domain.SettlementPayout;
 import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.out.PaymentMemberRepository;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
 import com.bugzero.rarego.out.SettlementFeeRepository;
+import com.bugzero.rarego.out.SettlementPayoutRepository;
 import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.out.WalletRepository;
 
 @SpringBootTest(properties = "custom.payment.settlement.holdDays=-1")
 class PaymentProcessSettlementUseCaseIntegrationTest {
-
 	@MockitoBean
 	private KafkaTemplate<String, Object> kafkaTemplate;
-
 	@MockitoBean
 	private OutboxUseCase outboxUseCase;
-
+	@MockitoSpyBean
+	private SettlementPayoutRepository payoutRepository;
 	@Autowired
 	private PaymentProcessSettlementUseCase useCase;
-
+	@Autowired
+	private PaymentSettlementProcessor processor;
 	@Autowired
 	private PaymentMemberRepository memberRepository;
 	@Autowired
@@ -51,151 +54,174 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 	@Autowired
 	private SettlementRepository settlementRepository;
 	@Autowired
-	private PaymentTransactionRepository paymentTransactionRepository;
+	private PaymentTransactionRepository transactionRepository;
 	@Autowired
-	private SettlementFeeRepository settlementFeeRepository;
+	private SettlementFeeRepository feeRepository;
 
 	@BeforeEach
 	void setUp() {
-		settlementFeeRepository.deleteAllInBatch();
-		paymentTransactionRepository.deleteAllInBatch();
+		feeRepository.deleteAllInBatch();
+		payoutRepository.deleteAllInBatch();
+		transactionRepository.deleteAllInBatch();
 		settlementRepository.deleteAllInBatch();
 		walletRepository.deleteAllInBatch();
 		memberRepository.deleteAllInBatch();
-
-		createMemberAndWallet(2L, "system");
+		createMember(2L);
+		createMember(100L);
 	}
 
 	@Test
-	@DisplayName("수취인 파티셔닝으로 판매자 정산금과 시스템 수수료를 병렬 처리한다")
-	void concurrency_lock_check() throws Exception {
-		// given: 5명의 판매자와 각각의 정산 데이터 생성
-		for (long i = 100; i < 105; i++) {
-			PaymentMember seller = createMemberAndWallet(i, "seller" + i);
-			createSettlement(seller, 9000, 1000);
-		}
+	void preparationDoesNotDepositOrNotifyAndRecipientDepositIsIdempotent() {
+		createSources(100L, 10000);
+		createSources(100L, 20000);
+		List<Long> ids = sourceIds();
 
-		int threadCount = 5;
-		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-		List<Future<?>> futures = new ArrayList<>();
+		useCase.prepareSettlements(10L, ids);
+		useCase.prepareSettlements(10L, ids);
+		useCase.prepareSettlements(11L, ids);
 
-		// when: 실제 배치와 동일하게 수취인 ID를 기준으로 파티셔닝한다.
-		try {
-			for (int i = 0; i < threadCount; i++) {
-				final int partitionIndex = i;
-				futures.add(executorService.submit(() -> {
-					List<Settlement> targets = settlementRepository.findAll().stream()
-						.filter(s -> s.getRecipient().getId() % threadCount == partitionIndex)
-						.toList();
-					useCase.processSettlements(targets);
-				}));
+		assertThat(payoutRepository.findAll()).hasSize(4).allMatch(p -> p.getRunId() == 10L && !p.isPaid());
+		assertThat(settlementRepository.findAll()).allMatch(s -> s.getStatus() == SettlementStatus.PENDING);
+		assertThat(walletRepository.findAll()).allMatch(w -> w.getBalance() == 0);
+		assertThat(transactionRepository.count()).isZero();
+		verify(outboxUseCase, never()).saveOutbox(any());
+
+		processor.processRecipientDeposits(11L, 100L);
+		assertThat(balance(100L)).isZero();
+		processor.processRecipientDeposits(10L, 100L);
+		processor.processRecipientDeposits(10L, 2L);
+		processor.processRecipientDeposits(10L, 100L);
+		processor.processRecipientDeposits(10L, 2L);
+		useCase.prepareSettlements(12L, ids);
+
+		assertThat(balance(100L)).isEqualTo(27000);
+		assertThat(balance(2L)).isEqualTo(3000);
+		assertThat(transactionRepository.count()).isEqualTo(4);
+		assertThat(payoutRepository.findAll()).hasSize(4).allMatch(SettlementPayout::isPaid);
+		assertThat(settlementRepository.findAll()).allMatch(s -> s.getStatus() == SettlementStatus.DONE);
+		assertThat(feeRepository.count()).isZero();
+		verify(outboxUseCase).saveOutbox(any());
+	}
+
+	@Test
+	void databaseRejectsDuplicatePayoutForTheSameSource() {
+		createSources(100L, 10000);
+		useCase.prepareSettlements(10L, sourceIds());
+		Settlement source = settlementRepository.findAll().getFirst();
+
+		assertThatExceptionOfType(DataIntegrityViolationException.class)
+			.isThrownBy(() -> payoutRepository.saveAndFlush(
+				SettlementPayout.builder().runId(11L).settlement(source).build()));
+
+		assertThat(payoutRepository.count()).isEqualTo(2);
+		assertThat(walletRepository.findAll()).allMatch(w -> w.getBalance() == 0);
+	}
+
+	@Test
+	void canceledSourcesAreNotPrepared() {
+		List<Settlement> sources = createSources(100L, 10000);
+		sources.forEach(Settlement::cancel);
+		settlementRepository.saveAll(sources);
+
+		useCase.prepareSettlements(10L, sourceIds());
+
+		assertThat(payoutRepository.count()).isZero();
+		assertThat(settlementRepository.findAll()).allMatch(s -> s.getStatus() == SettlementStatus.CANCELED);
+	}
+
+	@Test
+	void failedQueueInsertRollsBackSourceTransition() {
+		createSources(100L, 10000);
+		doThrow(new IllegalStateException("queue failure")).when(payoutRepository).save(any(SettlementPayout.class));
+
+		assertThatIllegalStateException().isThrownBy(() -> useCase.prepareSettlements(10L, sourceIds()));
+
+		assertThat(settlementRepository.findAll()).allMatch(s -> s.getStatus() == SettlementStatus.READY);
+		assertThat(payoutRepository.count()).isZero();
+		assertThat(transactionRepository.count()).isZero();
+	}
+
+	@Test
+	void outboxFailureRollsBackRecipientAndRetryPaysOnce() {
+		createSources(100L, 10000);
+		useCase.prepareSettlements(10L, sourceIds());
+		doThrow(new IllegalStateException("outbox failure")).when(outboxUseCase).saveOutbox(any());
+
+		assertThatIllegalStateException().isThrownBy(() -> processor.processRecipientDeposits(10L, 100L));
+
+		assertThat(balance(100L)).isZero();
+		assertThat(transactionRepository.count()).isZero();
+		assertThat(payoutRepository.findAll()).noneMatch(SettlementPayout::isPaid);
+		assertThat(settlementRepository.findAll()).allMatch(s -> s.getStatus() == SettlementStatus.PENDING);
+
+		reset(outboxUseCase);
+		processor.processRecipientDeposits(10L, 100L);
+		assertThat(balance(100L)).isEqualTo(9000);
+		assertThat(transactionRepository.count()).isEqualTo(1);
+	}
+
+	@Test
+	void overlappingRunsCannotPrepareOrPayTheSameSourceTwice() throws Exception {
+		createSources(100L, 10000);
+		List<Long> ids = sourceIds();
+		runConcurrently(List.of(
+			() -> {
+				useCase.prepareSettlements(10L, ids);
+				return null;
+			},
+			() -> {
+				useCase.prepareSettlements(11L, ids);
+				return null;
+			}));
+		assertThat(payoutRepository.count()).isEqualTo(2);
+		List<Callable<Void>> deposits = new ArrayList<>();
+		for (int repeat = 0; repeat < 2; repeat++) {
+			for (long run : List.of(10L, 11L)) {
+				deposits.add(() -> {
+					processor.processRecipientDeposits(run, 100L);
+					return null;
+				});
+				deposits.add(() -> {
+					processor.processRecipientDeposits(run, 2L);
+					return null;
+				});
 			}
-			for (Future<?> future : futures) {
-				future.get(30, TimeUnit.SECONDS);
+		}
+		runConcurrently(deposits);
+
+		assertThat(balance(100L)).isEqualTo(9000);
+		assertThat(balance(2L)).isEqualTo(1000);
+		assertThat(transactionRepository.count()).isEqualTo(2);
+		assertThat(payoutRepository.findAll()).allMatch(SettlementPayout::isPaid);
+	}
+
+	private void runConcurrently(List<Callable<Void>> tasks) throws Exception {
+		try (var executor = Executors.newFixedThreadPool(tasks.size())) {
+			List<Future<Void>> futures = executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
+			for (Future<Void> future : futures) {
+				future.get(5, TimeUnit.SECONDS);
 			}
-		} finally {
-			executorService.shutdownNow();
 		}
-
-		// then: 모든 판매자 지갑에 9000원씩 입금 완료 확인
-		for (long i = 100; i < 105; i++) {
-			Wallet sellerWallet = walletRepository.findByMemberId(i).get();
-			assertThat(sellerWallet.getBalance()).isEqualTo(9000);
-		}
-
-		// 모든 정산 데이터 상태 변경 확인
-		List<Settlement> results = settlementRepository.findAll();
-		assertThat(results).hasSize(10).allMatch(s -> s.getStatus() == SettlementStatus.DONE);
-
-		// 별도 수수료 처리 없이 시스템 지갑에도 입금된다.
-		Wallet systemWallet = walletRepository.findByMemberId(2L).get();
-		assertThat(systemWallet.getBalance()).isEqualTo(5000);
-		assertThat(paymentTransactionRepository.count()).isEqualTo(10);
-		assertThat(settlementFeeRepository.count()).isZero();
 	}
 
-	@Test
-	@DisplayName("벌크 처리 테스트: 한 판매자의 여러 정산 건이 한 번의 지갑 업데이트로 처리되어야 한다")
-	void bulk_settlement_test() {
-		// given
-		PaymentMember seller = createMemberAndWallet(100L, "seller");
-		createSettlement(seller, 9000, 1000);
-		createSettlement(seller, 18000, 2000);
-		createSettlement(seller, 27000, 3000);
-		List<Settlement> targets = settlementRepository.findAll();
-
-		// when
-		useCase.processSettlements(targets);
-
-		// then: 판매자 잔액 합산 확인
-		Wallet sellerWallet = walletRepository.findByMemberId(100L).get();
-		assertThat(sellerWallet.getBalance()).isEqualTo(54000);
-
-		// 정산 상태 DONE 확인
-		List<Settlement> results = settlementRepository.findAll();
-		assertThat(results).allMatch(s -> s.getStatus() == SettlementStatus.DONE);
-
-		// 동일한 처리 경로에서 시스템 수수료도 합산 입금된다.
-		Wallet systemWallet = walletRepository.findByMemberId(2L).get();
-		assertThat(systemWallet.getBalance()).isEqualTo(6000);
-		assertThat(paymentTransactionRepository.count()).isEqualTo(6);
-		assertThat(settlementFeeRepository.count()).isZero();
+	private List<Long> sourceIds() {
+		return settlementRepository.findAll().stream().map(Settlement::getId).toList();
 	}
 
-	@Test
-	@DisplayName("원자성 테스트: 처리 중 예외 발생 시 전체 롤백되어야 한다")
-	void atomicity_test() {
-		// given
-		PaymentMember seller = createMemberAndWallet(100L, "seller");
-		createSettlement(seller, 9000, 1000);
-
-		doThrow(new IllegalStateException("outbox failure"))
-			.when(outboxUseCase).saveOutbox(any());
-		List<Settlement> targets = settlementRepository.findAll();
-
-		// when & then
-		assertThatThrownBy(() -> useCase.processSettlements(targets))
-			.isInstanceOf(RuntimeException.class);
-
-		// 롤백되어 READY 상태로 유지되는지 확인
-		assertThat(settlementRepository.findAll()).hasSize(2)
-			.allMatch(s -> s.getStatus() == SettlementStatus.READY);
-		assertThat(walletRepository.findAll()).allMatch(wallet -> wallet.getBalance() == 0);
-		assertThat(paymentTransactionRepository.count()).isZero();
-		assertThat(settlementFeeRepository.count()).isZero();
+	private int balance(Long memberId) {
+		return walletRepository.findByMemberId(memberId).orElseThrow().getBalance();
 	}
 
-	// --- Helper Methods ---
-	private PaymentMember createMember(Long id, String name) {
-		PaymentMember member = PaymentMember.builder()
-			.id(id)
-			.publicId(UUID.randomUUID().toString())
-			.email(name + "@test.com")
-			.nickname(name)
-			.createdAt(LocalDateTime.now())
-			.updatedAt(LocalDateTime.now())
-			.build();
-		return memberRepository.save(member);
+	private void createMember(Long id) {
+		PaymentMember member = memberRepository.save(PaymentMember.builder().id(id)
+			.publicId(UUID.randomUUID().toString()).email(id + "@test.com").nickname("member" + id)
+			.createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build());
+		walletRepository.save(Wallet.builder().member(member).balance(0).holdingAmount(0).build());
 	}
 
-	private void createWallet(PaymentMember member) {
-		Wallet wallet = Wallet.builder()
-			.member(member)
-			.balance(0)
-			.holdingAmount(0)
-			.build();
-		walletRepository.save(wallet);
-	}
-
-	private PaymentMember createMemberAndWallet(Long id, String name) {
-		PaymentMember member = createMember(id, name);
-		createWallet(member);
-		return member;
-	}
-
-	private void createSettlement(PaymentMember seller, int settlementAmount, int feeAmount) {
-		PaymentMember system = memberRepository.findById(2L).orElseThrow();
-		settlementRepository.saveAll(Settlement.createPaymentSources(
-			System.nanoTime(), "레고", seller, system, settlementAmount + feeAmount));
+	private List<Settlement> createSources(Long sellerId, int salesAmount) {
+		return settlementRepository.saveAll(Settlement.createPaymentSources(System.nanoTime(), "상품",
+			memberRepository.findById(sellerId).orElseThrow(), memberRepository.findById(2L).orElseThrow(),
+			salesAmount));
 	}
 }
