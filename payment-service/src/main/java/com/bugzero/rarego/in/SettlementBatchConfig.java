@@ -15,7 +15,6 @@ import org.springframework.batch.infrastructure.item.ExecutionContext;
 import org.springframework.batch.infrastructure.item.ItemWriter;
 import org.springframework.batch.infrastructure.item.database.JpaCursorItemReader;
 import org.springframework.batch.infrastructure.item.database.builder.JpaCursorItemReaderBuilder;
-import org.springframework.batch.infrastructure.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +24,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import com.bugzero.rarego.app.PaymentFacade;
 import com.bugzero.rarego.domain.Settlement;
-import com.bugzero.rarego.out.SettlementRepository;
 
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SettlementBatchConfig {
 	private final PaymentFacade paymentFacade;
-	private final SettlementRepository settlementRepository;
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
 	private final EntityManagerFactory entityManagerFactory;
@@ -54,14 +51,13 @@ public class SettlementBatchConfig {
 	public Job settlementJob() {
 		return new JobBuilder("settlementJob", jobRepository)
 			.start(mainStep())
-			.next(systemWalletDepositStep())
 			.build();
 	}
 
 	@Bean
 	public Step mainStep() {
 		return new StepBuilder("mainStep", jobRepository)
-			.partitioner("subStep", sellerIdPartitioner())
+			.partitioner("subStep", recipientIdPartitioner())
 			.step(subStep())
 			.gridSize(threadSize)
 			.taskExecutor(executor())
@@ -69,7 +65,7 @@ public class SettlementBatchConfig {
 	}
 
 	@Bean
-	public Partitioner sellerIdPartitioner() {
+	public Partitioner recipientIdPartitioner() {
 		return gridSize -> {
 			Map<String, ExecutionContext> map = new HashMap<>();
 			for (int i = 0; i < gridSize; i++) {
@@ -109,7 +105,12 @@ public class SettlementBatchConfig {
 		return new JpaCursorItemReaderBuilder<Settlement>()
 			.name("settlementReader")
 			.entityManagerFactory(entityManagerFactory)
-			.queryString("SELECT s FROM Settlement s WHERE s.status = 'READY' AND s.createdAt < :cutoffDate AND MOD(s.seller.id, :gridSize) = :partitionIndex ORDER BY s.id ASC")
+			.queryString("""
+				SELECT s FROM Settlement s
+				WHERE s.status = 'READY' AND s.createdAt < :cutoffDate
+				AND MOD(s.recipient.id, :gridSize) = :partitionIndex
+				ORDER BY s.id ASC
+				""")
 			.parameterValues(parameters)
 			.build();
 	}
@@ -118,23 +119,6 @@ public class SettlementBatchConfig {
 	@StepScope
 	public ItemWriter<Settlement> settlementWriter() {
 		return chunk -> paymentFacade.processSettlements(chunk.getItems());
-	}
-
-	@Bean
-	public Step systemWalletDepositStep() {
-		return new StepBuilder("systemWalletDepositStep", jobRepository)
-			.tasklet((contribution, chunkContext) -> {
-				int limit = 1000;
-				int processedCount;
-				int totalProcessed = 0;
-
-				do {
-					processedCount = paymentFacade.processSettlementFees();
-					totalProcessed += processedCount;
-				} while (processedCount == limit);
-				contribution.incrementWriteCount(totalProcessed);
-				return RepeatStatus.FINISHED;
-			}, transactionManager).build();
 	}
 
 	// 정산 스레드 풀 설정

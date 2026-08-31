@@ -2,12 +2,14 @@ package com.bugzero.rarego.app;
 
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.domain.SettlementType;
 import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.shared.payment.dto.SettlementResponseDto;
 import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
@@ -28,12 +30,14 @@ public class PaymentProcessSettlementUseCase {
 			return;
 		}
 
-		Map<Long, List<Settlement>> settlementsBySeller = settlements.stream()
-			.collect(Collectors.groupingBy(s -> s.getSeller().getId()));
+		// 공통 시스템 지갑을 포함해 청크 간 지갑 락 획득 순서를 동일하게 유지한다.
+		Map<Long, List<Settlement>> settlementsByRecipient = settlements.stream()
+			.collect(Collectors.groupingBy(s -> s.getRecipient().getId(), TreeMap::new, Collectors.toList()));
 
-		settlementsBySeller.forEach(paymentSettlementProcessor::processSellerDeposits);
+		settlementsByRecipient.forEach(paymentSettlementProcessor::processRecipientDeposits);
 
 		List<SettlementResponseDto> responses = settlements.stream()
+			.filter(s -> s.getType() != SettlementType.PLATFORM_FEE)
 			.map(s -> new SettlementResponseDto(
 				s.getId(),
 				s.getAuctionId(),
@@ -47,6 +51,8 @@ public class PaymentProcessSettlementUseCase {
 			))
 			.toList();
 
-		outboxUseCase.saveOutbox(SettlementFinishedEvent.of(responses));
+		if (!responses.isEmpty()) {
+			outboxUseCase.saveOutbox(SettlementFinishedEvent.of(responses));
+		}
 	}
 }

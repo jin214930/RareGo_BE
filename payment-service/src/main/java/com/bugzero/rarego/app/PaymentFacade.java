@@ -46,7 +46,6 @@ public class PaymentFacade {
 	private final PaymentWithdrawUseCase paymentWithdrawUseCase;
 	private final PaymentAuctionExpiringSoonUseCase paymentAuctionExpiringSoonUseCase;
 	private final PaymentReconcilePaymentUseCase paymentReconcilePaymentUseCase;
-	private final PaymentSettlementProcessor paymentSettlementProcessor;
 
 	/**
 	 * 보증금 홀딩
@@ -88,13 +87,6 @@ public class PaymentFacade {
 	 */
 	public void processSettlements(List<? extends Settlement> settlements) {
 		paymentProcessSettlementUseCase.processSettlements(settlements);
-	}
-
-	/**
-	 * 정산 수수료 처리
-	 */
-	public int processSettlementFees() {
-		return paymentSettlementProcessor.processFees();
 	}
 
 	/**
