@@ -3,7 +3,9 @@ package com.bugzero.rarego.in;
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -24,9 +26,11 @@ import org.springframework.util.StopWatch;
 
 import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
+import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.out.PaymentMemberRepository;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
+import com.bugzero.rarego.out.SettlementFeeRepository;
 import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.out.WalletRepository;
 
@@ -39,6 +43,11 @@ import com.bugzero.rarego.out.WalletRepository;
 	"classpath:org/springframework/batch/core/schema-h2.sql"
 }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 abstract class AbstractSettlementTest {
+	private final Map<Long, Integer> expectedBalances = new HashMap<>();
+	private int expectedSourceCount;
+
+	@Autowired
+	protected SettlementFeeRepository settlementFeeRepository;
 
 	@Autowired
 	protected JobOperatorTestUtils jobOperatorTestUtils;
@@ -66,6 +75,7 @@ abstract class AbstractSettlementTest {
 	void setUp() {
 		this.jobOperatorTestUtils.setJob(settlementJob);
 		// 역순 데이터 클렌징
+		settlementFeeRepository.deleteAllInBatch();
 		paymentTransactionRepository.deleteAllInBatch();
 		settlementRepository.deleteAllInBatch();
 		walletRepository.deleteAllInBatch();
@@ -73,6 +83,16 @@ abstract class AbstractSettlementTest {
 	}
 
 	protected void createTestData(int recordCount, int userCount) {
+		expectedBalances.clear();
+		expectedSourceCount = recordCount * 2;
+		PaymentMember system = paymentMemberRepository.save(PaymentMember.builder()
+			.id(2L)
+			.publicId(UUID.randomUUID().toString())
+			.email("system@rarego.com")
+			.nickname("system")
+			.build());
+		walletRepository.save(Wallet.builder().member(system).balance(0).holdingAmount(0).build());
+		expectedBalances.put(2L, recordCount * 1000);
 		List<PaymentMember> members = new ArrayList<>();
 		List<Wallet> wallets = new ArrayList<>();
 		List<Settlement> settlements = new ArrayList<>();
@@ -80,7 +100,7 @@ abstract class AbstractSettlementTest {
 		// 1. 판매자 및 지갑 생성
 		for (long i = 1; i <= userCount; i++) {
 			PaymentMember member = PaymentMember.builder()
-				.id(i) // 수동 ID 할당
+				.id(i + 100) // 시스템 계정과 판매자 계정을 분리한다.
 				.publicId(UUID.randomUUID().toString())
 				.email("seller" + i + "@rarego.com")
 				.nickname("seller" + i)
@@ -102,14 +122,15 @@ abstract class AbstractSettlementTest {
 			// userCount 범위 내에서 판매자를 순환하며 할당 (충돌 테스트용)
 			PaymentMember targetSeller = members.get(i % userCount);
 
-			// Settlement.create() 팩토리 메서드 활용
-			Settlement settlement = Settlement.create(
+			List<Settlement> sources = Settlement.createPaymentSources(
 				(long) i + 100,             // auctionId (unique 제약조건 고려)
 				"테스트 상품 " + i,           // productName
 				targetSeller,               // seller
+				system,
 				10000                       // salesAmount (예: 만원)
 			);
-			settlements.add(settlement);
+			settlements.addAll(sources);
+			expectedBalances.merge(targetSeller.getId(), 9000, Integer::sum);
 		}
 
 		// 일괄 저장
@@ -142,6 +163,14 @@ abstract class AbstractSettlementTest {
 
 		System.out.println("[" + label + "] 실행 시간: " + stopWatch.getTotalTimeMillis() + "ms");
 		assertThat(jobExecution.getExitStatus().getExitCode()).isEqualTo("COMPLETED");
+		assertThat(settlementRepository.findAll()).hasSize(expectedSourceCount)
+			.allMatch(source -> source.getStatus() == SettlementStatus.DONE);
+		assertThat(paymentTransactionRepository.count()).isEqualTo(expectedSourceCount);
+		assertThat(settlementFeeRepository.count()).isZero();
+		assertThat(jobExecution.getStepExecutions())
+			.noneMatch(step -> step.getStepName().equals("systemWalletDepositStep"));
+		assertThat(walletRepository.findAll()).allSatisfy(wallet ->
+			assertThat(wallet.getBalance()).isEqualTo(expectedBalances.get(wallet.getMember().getId())));
 	}
 }
 

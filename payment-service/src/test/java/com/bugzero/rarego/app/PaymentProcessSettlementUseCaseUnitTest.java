@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementStatus;
+import com.bugzero.rarego.domain.SettlementType;
 import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
 
@@ -49,8 +50,8 @@ class PaymentProcessSettlementUseCaseUnitTest {
 
 		// then
 		// 1. 판매자별 그룹화 처리 검증 (100L은 2건 리스트, 200L은 1건 리스트로 전달되어야 함)
-		verify(paymentSettlementProcessor).processSellerDeposits(eq(100L), argThat(list -> list.size() == 2));
-		verify(paymentSettlementProcessor).processSellerDeposits(eq(200L), argThat(list -> list.size() == 1));
+		verify(paymentSettlementProcessor).processRecipientDeposits(eq(100L), argThat(list -> list.size() == 2));
+		verify(paymentSettlementProcessor).processRecipientDeposits(eq(200L), argThat(list -> list.size() == 1));
 
 		// 2. 전체 결과에 대한 Outbox 저장 검증
 		ArgumentCaptor<SettlementFinishedEvent> eventCaptor = ArgumentCaptor.forClass(SettlementFinishedEvent.class);
@@ -68,7 +69,7 @@ class PaymentProcessSettlementUseCaseUnitTest {
 		List<Settlement> settlements = List.of(s1);
 
 		doThrow(new RuntimeException("DB Error"))
-			.when(paymentSettlementProcessor).processSellerDeposits(anyLong(), anyList());
+			.when(paymentSettlementProcessor).processRecipientDeposits(anyLong(), anyList());
 
 		// when & then
 		assertThatThrownBy(() -> useCase.processSettlements(settlements))
@@ -91,6 +92,37 @@ class PaymentProcessSettlementUseCaseUnitTest {
 		verifyNoInteractions(outboxUseCase);
 	}
 
+	@Test
+	void splitSourcesGoToTheirRecipientsButOnlySellerReceivesNotification() {
+		PaymentMember seller = PaymentMember.builder().id(100L).build();
+		PaymentMember system = PaymentMember.builder().id(2L).build();
+		List<Settlement> sources = Settlement.createPaymentSources(1L, "상품", seller, system, 100000);
+
+		useCase.processSettlements(sources);
+
+		var ordered = inOrder(paymentSettlementProcessor);
+		ordered.verify(paymentSettlementProcessor).processRecipientDeposits(2L, List.of(sources.getLast()));
+		ordered.verify(paymentSettlementProcessor).processRecipientDeposits(100L, List.of(sources.getFirst()));
+		ArgumentCaptor<SettlementFinishedEvent> captor = ArgumentCaptor.forClass(SettlementFinishedEvent.class);
+		verify(outboxUseCase).saveOutbox(captor.capture());
+		assertThat(captor.getValue().settlements()).singleElement().satisfies(dto -> {
+			assertThat(dto.sellerId()).isEqualTo(100L);
+			assertThat(dto.settlementAmount()).isEqualTo(90000);
+		});
+	}
+
+	@Test
+	void feeOnlyChunkDoesNotPublishEmptySellerEvent() {
+		PaymentMember seller = PaymentMember.builder().id(100L).build();
+		PaymentMember system = PaymentMember.builder().id(2L).build();
+		Settlement fee = Settlement.createPaymentSources(1L, "상품", seller, system, 100000).getLast();
+
+		useCase.processSettlements(List.of(fee));
+
+		verify(paymentSettlementProcessor).processRecipientDeposits(2L, List.of(fee));
+		verifyNoInteractions(outboxUseCase);
+	}
+
 	private Settlement createMockSettlement(Long id, Long sellerId) {
 		Settlement settlement = mock(Settlement.class);
 		PaymentMember seller = mock(PaymentMember.class);
@@ -98,6 +130,8 @@ class PaymentProcessSettlementUseCaseUnitTest {
 		lenient().when(settlement.getId()).thenReturn(id);
 		lenient().when(seller.getId()).thenReturn(sellerId);
 		lenient().when(settlement.getSeller()).thenReturn(seller);
+		lenient().when(settlement.getRecipient()).thenReturn(seller);
+		lenient().when(settlement.getType()).thenReturn(SettlementType.SELLER_PROCEEDS);
 
 		lenient().when(settlement.getAuctionId()).thenReturn(id * 100);
 		lenient().when(settlement.getSalesAmount()).thenReturn(10000);

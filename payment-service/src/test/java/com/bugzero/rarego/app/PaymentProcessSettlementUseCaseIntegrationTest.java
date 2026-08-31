@@ -1,13 +1,17 @@
 package com.bugzero.rarego.app;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,9 +45,6 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 	private PaymentProcessSettlementUseCase useCase;
 
 	@Autowired
-	private PaymentSettlementProcessor paymentSettlementProcessor;
-
-	@Autowired
 	private PaymentMemberRepository memberRepository;
 	@Autowired
 	private WalletRepository walletRepository;
@@ -66,48 +67,51 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("동시성 테스트: 5개의 스레드가 각기 다른 판매자의 정산을 병렬 처리해도 문제없이 수행된다")
-	void concurrency_lock_check() throws InterruptedException {
+	@DisplayName("수취인 파티셔닝으로 판매자 정산금과 시스템 수수료를 병렬 처리한다")
+	void concurrency_lock_check() throws Exception {
 		// given: 5명의 판매자와 각각의 정산 데이터 생성
 		for (long i = 100; i < 105; i++) {
 			PaymentMember seller = createMemberAndWallet(i, "seller" + i);
-			createSettlement(seller, 10000, 1000);
+			createSettlement(seller, 9000, 1000);
 		}
 
 		int threadCount = 5;
 		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-		CountDownLatch latch = new CountDownLatch(threadCount);
+		List<Future<?>> futures = new ArrayList<>();
 
-		// when: 각 스레드가 자신이 담당하는 판매자의 데이터만 가져와서 처리 (배치 파티셔닝 시뮬레이션)
-		for (long i = 100; i < 105; i++) {
-			final long sellerId = i;
-			executorService.submit(() -> {
-				try {
+		// when: 실제 배치와 동일하게 수취인 ID를 기준으로 파티셔닝한다.
+		try {
+			for (int i = 0; i < threadCount; i++) {
+				final int partitionIndex = i;
+				futures.add(executorService.submit(() -> {
 					List<Settlement> targets = settlementRepository.findAll().stream()
-						.filter(s -> s.getSeller().getId().equals(sellerId))
+						.filter(s -> s.getRecipient().getId() % threadCount == partitionIndex)
 						.toList();
 					useCase.processSettlements(targets);
-				} finally {
-					latch.countDown();
-				}
-			});
+				}));
+			}
+			for (Future<?> future : futures) {
+				future.get(30, TimeUnit.SECONDS);
+			}
+		} finally {
+			executorService.shutdownNow();
 		}
-		latch.await();
 
-		// then: 모든 판매자 지갑에 10000원씩 입금 완료 확인
+		// then: 모든 판매자 지갑에 9000원씩 입금 완료 확인
 		for (long i = 100; i < 105; i++) {
 			Wallet sellerWallet = walletRepository.findByMemberId(i).get();
-			assertThat(sellerWallet.getBalance()).isEqualTo(10000);
+			assertThat(sellerWallet.getBalance()).isEqualTo(9000);
 		}
 
 		// 모든 정산 데이터 상태 변경 확인
 		List<Settlement> results = settlementRepository.findAll();
-		assertThat(results).allMatch(s -> s.getStatus() == SettlementStatus.DONE);
+		assertThat(results).hasSize(10).allMatch(s -> s.getStatus() == SettlementStatus.DONE);
 
-		// 수수료 일괄 처리 후 시스템 지갑 확인 (1000원 * 5건 = 5000원)
-		paymentSettlementProcessor.processFees();
+		// 별도 수수료 처리 없이 시스템 지갑에도 입금된다.
 		Wallet systemWallet = walletRepository.findByMemberId(2L).get();
 		assertThat(systemWallet.getBalance()).isEqualTo(5000);
+		assertThat(paymentTransactionRepository.count()).isEqualTo(10);
+		assertThat(settlementFeeRepository.count()).isZero();
 	}
 
 	@Test
@@ -115,9 +119,9 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 	void bulk_settlement_test() {
 		// given
 		PaymentMember seller = createMemberAndWallet(100L, "seller");
-		createSettlement(seller, 10000, 1000);
-		createSettlement(seller, 20000, 2000);
-		createSettlement(seller, 30000, 3000);
+		createSettlement(seller, 9000, 1000);
+		createSettlement(seller, 18000, 2000);
+		createSettlement(seller, 27000, 3000);
 		List<Settlement> targets = settlementRepository.findAll();
 
 		// when
@@ -125,16 +129,17 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 
 		// then: 판매자 잔액 합산 확인
 		Wallet sellerWallet = walletRepository.findByMemberId(100L).get();
-		assertThat(sellerWallet.getBalance()).isEqualTo(60000);
+		assertThat(sellerWallet.getBalance()).isEqualTo(54000);
 
 		// 정산 상태 DONE 확인
 		List<Settlement> results = settlementRepository.findAll();
 		assertThat(results).allMatch(s -> s.getStatus() == SettlementStatus.DONE);
 
-		// 수수료 처리 후 시스템 잔액 확인
-		paymentSettlementProcessor.processFees();
+		// 동일한 처리 경로에서 시스템 수수료도 합산 입금된다.
 		Wallet systemWallet = walletRepository.findByMemberId(2L).get();
 		assertThat(systemWallet.getBalance()).isEqualTo(6000);
+		assertThat(paymentTransactionRepository.count()).isEqualTo(6);
+		assertThat(settlementFeeRepository.count()).isZero();
 	}
 
 	@Test
@@ -142,9 +147,10 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 	void atomicity_test() {
 		// given
 		PaymentMember seller = createMemberAndWallet(100L, "seller");
-		createSettlement(seller, 10000, 1000);
+		createSettlement(seller, 9000, 1000);
 
-		walletRepository.deleteAllInBatch();
+		doThrow(new IllegalStateException("outbox failure"))
+			.when(outboxUseCase).saveOutbox(any());
 		List<Settlement> targets = settlementRepository.findAll();
 
 		// when & then
@@ -152,8 +158,11 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 			.isInstanceOf(RuntimeException.class);
 
 		// 롤백되어 READY 상태로 유지되는지 확인
-		Settlement result = settlementRepository.findAll().get(0);
-		assertThat(result.getStatus()).isEqualTo(SettlementStatus.READY);
+		assertThat(settlementRepository.findAll()).hasSize(2)
+			.allMatch(s -> s.getStatus() == SettlementStatus.READY);
+		assertThat(walletRepository.findAll()).allMatch(wallet -> wallet.getBalance() == 0);
+		assertThat(paymentTransactionRepository.count()).isZero();
+		assertThat(settlementFeeRepository.count()).isZero();
 	}
 
 	// --- Helper Methods ---
@@ -185,16 +194,8 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 	}
 
 	private void createSettlement(PaymentMember seller, int settlementAmount, int feeAmount) {
-		Settlement settlement = Settlement.builder()
-			.auctionId(System.nanoTime())
-			.seller(seller)
-			.recipient(seller)
-			.salesAmount(settlementAmount + feeAmount)
-			.feeAmount(feeAmount)
-			.productName("레고")
-			.settlementAmount(settlementAmount)
-			.status(SettlementStatus.READY)
-			.build();
-		settlementRepository.save(settlement);
+		PaymentMember system = memberRepository.findById(2L).orElseThrow();
+		settlementRepository.saveAll(Settlement.createPaymentSources(
+			System.nanoTime(), "레고", seller, system, settlementAmount + feeAmount));
 	}
 }
