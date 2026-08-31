@@ -99,3 +99,43 @@ tasks.jacocoTestCoverageVerification {
         }
     }
 }
+
+// 명시적으로 실행하는 대용량 실측. 일반 test/CI 및 운영 클래스패스에서 제외한다.
+val benchmark by sourceSets.creating
+configurations[benchmark.implementationConfigurationName].extendsFrom(configurations.testImplementation.get())
+configurations[benchmark.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
+configurations[benchmark.annotationProcessorConfigurationName].extendsFrom(configurations.annotationProcessor.get())
+configurations[benchmark.compileOnlyConfigurationName].extendsFrom(configurations.compileOnly.get())
+benchmark.compileClasspath += sourceSets.main.get().output
+benchmark.runtimeClasspath += sourceSets.main.get().output
+
+// build/check에서도 벤치마크 컴파일이 끼어들지 않도록 기본 검사 대상을 유지한다.
+checkstyle {
+    sourceSets = listOf(project.sourceSets.main.get(), project.sourceSets.test.get())
+}
+
+tasks.register<Test>("settlementBenchmark") {
+    description = "격리된 로컬 MySQL에서 정산 방식별 대용량 성능을 측정합니다."
+    group = "verification"
+    testClassesDirs = benchmark.output.classesDirs
+    classpath = benchmark.runtimeClasspath
+    useJUnitPlatform()
+    maxHeapSize = "4g"
+    minHeapSize = "4g"
+    extensions.configure<JacocoTaskExtension> { isEnabled = false }
+    outputs.upToDateWhen { false }
+    systemProperty("benchmark.output", layout.buildDirectory.dir("settlement-benchmark").get().asFile.absolutePath)
+    project.properties.filterKeys { it.startsWith("benchmark.") }.forEach { (key, value) ->
+        systemProperty(key, value.toString())
+    }
+    testLogging.showStandardStreams = true
+}
+
+tasks.register<Copy>("settlementBenchmarkBundle") {
+    description = "같은 벤치마크를 DB와 동일 Docker 네트워크에서 실행할 클래스패스를 구성합니다."
+    dependsOn(tasks.named(benchmark.classesTaskName))
+    into(layout.buildDirectory.dir("settlement-benchmark-runtime"))
+    from(benchmark.output) { into("classes") }
+    from(sourceSets.main.get().output) { into("classes") }
+    from(benchmark.runtimeClasspath.filter { it.isFile }) { into("lib") }
+}
