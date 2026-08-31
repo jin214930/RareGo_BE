@@ -1,52 +1,41 @@
 package com.bugzero.rarego.app;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bugzero.rarego.domain.Settlement;
-import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
-import com.bugzero.rarego.shared.payment.dto.SettlementResponseDto;
-import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
+import com.bugzero.rarego.domain.SettlementPayout;
+import com.bugzero.rarego.out.SettlementPayoutRepository;
+import com.bugzero.rarego.out.SettlementRepository;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentProcessSettlementUseCase {
-	private final PaymentSettlementProcessor paymentSettlementProcessor;
-	private final OutboxUseCase outboxUseCase;
+	private final SettlementRepository settlementRepository;
+	private final SettlementPayoutRepository payoutRepository;
 
 	@Transactional
-	public void processSettlements(List<? extends Settlement> settlements) {
-		if (settlements == null || settlements.isEmpty()) {
+	public void prepareSettlements(Long runId, List<? extends Long> settlementIds) {
+		if (runId == null) {
+			throw new IllegalArgumentException("정산 실행 ID가 필요합니다.");
+		}
+		if (settlementIds == null || settlementIds.isEmpty()) {
 			return;
 		}
-
-		Map<Long, List<Settlement>> settlementsBySeller = settlements.stream()
-			.collect(Collectors.groupingBy(s -> s.getSeller().getId()));
-
-		settlementsBySeller.forEach(paymentSettlementProcessor::processSellerDeposits);
-
-		List<SettlementResponseDto> responses = settlements.stream()
-			.map(s -> new SettlementResponseDto(
-				s.getId(),
-				s.getAuctionId(),
-				s.getSeller().getId(),
-				s.getSalesAmount(),
-				s.getFeeAmount(),
-				s.getSettlementAmount(),
-				s.getProductName(),
-				s.getStatus().name(),
-				s.getCreatedAt()
-			))
-			.toList();
-
-		outboxUseCase.saveOutbox(SettlementFinishedEvent.of(responses));
+		// 겹치는 실행도 같은 순서로 UPDATE하여 교착 가능성을 줄인다.
+		for (Long id : settlementIds.stream().distinct().sorted().toList()) {
+			if (settlementRepository.markPendingIfReady(id) == 0) {
+				continue;
+			}
+			Settlement settlement = settlementRepository.findById(id).orElseThrow();
+			payoutRepository.save(SettlementPayout.builder()
+				.runId(runId)
+				.settlement(settlement)
+				.build());
+		}
 	}
 }

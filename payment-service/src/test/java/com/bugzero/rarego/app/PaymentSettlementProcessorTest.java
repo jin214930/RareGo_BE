@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import java.util.List;
+import java.util.stream.LongStream;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,130 +17,129 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.PaymentTransaction;
 import com.bugzero.rarego.domain.Settlement;
-import com.bugzero.rarego.domain.SettlementFee;
+import com.bugzero.rarego.domain.SettlementPayout;
+import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.Wallet;
+import com.bugzero.rarego.domain.WalletTransactionType;
+import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
-import com.bugzero.rarego.out.SettlementFeeRepository;
-import com.bugzero.rarego.out.SettlementRepository;
+import com.bugzero.rarego.out.SettlementPayoutRepository;
+import com.bugzero.rarego.shared.payment.event.SettlementFinishedEvent;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentSettlementProcessorTest {
-
 	@InjectMocks
 	private PaymentSettlementProcessor processor;
-
 	@Mock
 	private PaymentSupport paymentSupport;
-
 	@Mock
-	private PaymentTransactionRepository paymentTransactionRepository;
-
+	private PaymentTransactionRepository transactionRepository;
 	@Mock
-	private SettlementFeeRepository settlementFeeRepository;
-
+	private SettlementPayoutRepository payoutRepository;
 	@Mock
-	private SettlementRepository settlementRepository;
+	private OutboxUseCase outboxUseCase;
 
+	private final PaymentMember seller = PaymentMember.builder().id(100L).build();
+	private final PaymentMember system = PaymentMember.builder().id(2L).build();
 
-	@BeforeEach
-	void setUp() {
-		ReflectionTestUtils.setField(processor, "systemMemberId", 2L);
+	@Test
+	void sellerProceedsUpdateWalletOnceWithPerSourceLedgerAndCompletedEvents() {
+		List<SettlementPayout> payouts = List.of(
+			pending(Settlement.create(1L, "상품1", seller, 100000)),
+			pending(Settlement.create(2L, "상품2", seller, 200000)));
+		Wallet wallet = wallet(seller, 5000, payouts);
+
+		processor.processRecipientDeposits(10L, 100L);
+
+		verify(wallet).addBalance(270000);
+		assertThat(wallet.getBalance()).isEqualTo(275000);
+		assertThat(payouts).allMatch(SettlementPayout::isPaid);
+		ArgumentCaptor<PaymentTransaction> captor = ArgumentCaptor.forClass(PaymentTransaction.class);
+		verify(transactionRepository, times(2)).save(captor.capture());
+		assertThat(captor.getAllValues()).extracting(PaymentTransaction::getBalanceAfter)
+			.containsExactly(95000, 275000);
+		assertThat(captor.getAllValues())
+			.allMatch(t -> t.getTransactionType() == WalletTransactionType.SETTLEMENT_PAID);
+		ArgumentCaptor<SettlementFinishedEvent> events = ArgumentCaptor.forClass(SettlementFinishedEvent.class);
+		verify(outboxUseCase).saveOutbox(events.capture());
+		assertThat(events.getValue().settlements()).hasSize(2).allMatch(dto -> dto.status().equals("DONE"));
 	}
 
 	@Test
-	@DisplayName("processSellerDeposits 성공: 여러 건의 정산을 합산하여 입금하고, 수수료와 정산 데이터를 벌크 저장한다")
-	void processSellerDeposits_success() {
-		// given
-		Long sellerId = 100L;
+	void systemFeesKeepSourceReferencesWithoutSellerEvents() {
+		SettlementPayout first = pending(Settlement.createPaymentSources(1L, "상품1", seller, system, 100000).getLast());
+		SettlementPayout second = pending(Settlement.createPaymentSources(2L, "상품2", seller, system, 200000).getLast());
+		Wallet wallet = wallet(system, 7000, List.of(first, second));
 
-		// 2건의 정산 데이터 준비
-		Settlement s1 = mock(Settlement.class);
-		given(s1.getId()).willReturn(1L);
-		given(s1.getSettlementAmount()).willReturn(10000);
-		given(s1.getFeeAmount()).willReturn(1000);
+		processor.processRecipientDeposits(10L, 2L);
 
-		Settlement s2 = mock(Settlement.class);
-		given(s2.getId()).willReturn(2L);
-		given(s2.getSettlementAmount()).willReturn(20000);
-		given(s2.getFeeAmount()).willReturn(2000);
-
-		List<Settlement> settlements = List.of(s1, s2);
-		int expectedTotalSettlement = 30000;
-
-		Wallet sellerWallet = mock(Wallet.class);
-		PaymentMember seller = mock(PaymentMember.class);
-		given(paymentSupport.findWalletByMemberIdForUpdate(sellerId)).willReturn(sellerWallet);
-		given(sellerWallet.getMember()).willReturn(seller);
-
-		// when
-		processor.processSellerDeposits(sellerId, settlements);
-
-		// then
-		// 1. 합산 금액이 한 번에 입금되었는지 확인
-		verify(sellerWallet, times(1)).addBalance(expectedTotalSettlement);
-
-		// 2. 각 정산 건에 대해 완료 처리 및 개별 트랜잭션 기록 확인
-		verify(s1).complete();
-		verify(s2).complete();
-		verify(paymentTransactionRepository, times(2)).save(any(PaymentTransaction.class));
-
-		// 💡 [수정됨] 3. 수수료 데이터가 save()가 아닌 saveAll()로 한 번에 저장되었는지 확인
-		verify(settlementFeeRepository, times(1)).saveAll(anyList());
-
-		// 💡 [추가] 4. 정산 데이터들도 saveAll()로 업데이트되었는지 검증
-		verify(settlementRepository, times(1)).saveAll(settlements);
+		verify(wallet).addBalance(30000);
+		assertThat(wallet.getBalance()).isEqualTo(37000);
+		ArgumentCaptor<PaymentTransaction> captor = ArgumentCaptor.forClass(PaymentTransaction.class);
+		verify(transactionRepository, times(2)).save(captor.capture());
+		assertThat(captor.getAllValues()).extracting(PaymentTransaction::getReferenceId).containsExactly(1L, 2L);
+		assertThat(captor.getAllValues()).allMatch(t -> t.getTransactionType() == WalletTransactionType.SETTLEMENT_FEE);
+		verifyNoInteractions(outboxUseCase);
 	}
 
 	@Test
-	@DisplayName("processFees 성공: 1000건 단위로 수수료를 조회하여 시스템 지갑에 합산 입금한다")
-	void processFees_success() {
-		// given
-		Long systemMemberId = 2L;
+	void zeroFeeCompletesWithoutWalletUpdate() {
+		SettlementPayout fee = pending(Settlement.createPaymentSources(1L, "상품", seller, system, 9).getLast());
+		Wallet wallet = wallet(system, 50, List.of(fee));
 
-		SettlementFee fee1 = mock(SettlementFee.class);
-		given(fee1.getFeeAmount()).willReturn(5000);
+		processor.processRecipientDeposits(10L, 2L);
 
-		SettlementFee fee2 = mock(SettlementFee.class);
-		given(fee2.getFeeAmount()).willReturn(5000);
-
-		List<SettlementFee> fees = List.of(fee1, fee2);
-		int expectedTotalFee = 10000;
-
-		Wallet systemWallet = mock(Wallet.class);
-		PaymentMember systemMember = mock(PaymentMember.class);
-
-		given(settlementFeeRepository.findTop1000ByOrderByIdAsc()).willReturn(fees);
-		given(paymentSupport.findWalletByMemberIdForUpdate(systemMemberId)).willReturn(systemWallet);
-		given(systemWallet.getMember()).willReturn(systemMember);
-
-		// when
-		int processedCount = processor.processFees();
-
-		// then
-		assertThat(processedCount).isEqualTo(2);
-
-		// 1. 시스템 지갑에 합산 입금 확인
-		verify(systemWallet).addBalance(expectedTotalFee);
-
-		// 2. 수수료 데이터 일괄 삭제 확인
-		verify(settlementFeeRepository).deleteAllInBatch(fees);
-
-		// 3. 시스템 입금 트랜잭션 1건 저장 확인
-		verify(paymentTransactionRepository, times(1)).save(any(PaymentTransaction.class));
+		assertThat(fee.isPaid()).isTrue();
+		verify(wallet, never()).addBalance(anyInt());
+		verify(transactionRepository).save(argThat(t -> t.getBalanceDelta() == 0 && t.getBalanceAfter() == 50));
+		verifyNoInteractions(outboxUseCase);
 	}
 
 	@Test
-	@DisplayName("processFees: 수수료 대기열이 비어있으면 0을 반환하고 종료한다")
-	void processFees_empty() {
-		// given
-		given(settlementFeeRepository.findTop1000ByOrderByIdAsc()).willReturn(List.of());
+	void overflowIsRejectedBeforeAnyPaymentSideEffect() {
+		SettlementPayout payout = pending(Settlement.createFromForfeit(1L, "상품", seller, 100));
+		Wallet wallet = wallet(seller, Integer.MAX_VALUE, List.of(payout));
 
-		// when
-		int processedCount = processor.processFees();
+		assertThatExceptionOfType(ArithmeticException.class)
+			.isThrownBy(() -> processor.processRecipientDeposits(10L, 100L));
 
-		// then
-		assertThat(processedCount).isZero();
-		verify(paymentSupport, never()).findWalletByMemberIdForUpdate(anyLong());
-		verify(settlementFeeRepository, never()).deleteAllInBatch(anyList());
+		assertThat(payout.isPaid()).isFalse();
+		verify(wallet, never()).addBalance(anyInt());
+		verifyNoInteractions(transactionRepository, outboxUseCase);
+	}
+
+	@Test
+	void noPendingPayoutIsANoOp() {
+		Wallet wallet = wallet(seller, 0, List.of());
+		processor.processRecipientDeposits(10L, 100L);
+		verify(wallet, never()).addBalance(anyInt());
+		verifyNoInteractions(transactionRepository, outboxUseCase);
+	}
+
+	@Test
+	void largeRecipientSplitsEventsButDepositsOnlyOnce() {
+		List<SettlementPayout> payouts = LongStream.rangeClosed(1, 205)
+			.mapToObj(id -> pending(Settlement.createFromForfeit(id, "상품", seller, 10))).toList();
+		Wallet wallet = wallet(seller, 0, payouts);
+
+		processor.processRecipientDeposits(10L, 100L);
+
+		verify(wallet).addBalance(2050);
+		ArgumentCaptor<SettlementFinishedEvent> events = ArgumentCaptor.forClass(SettlementFinishedEvent.class);
+		verify(outboxUseCase, times(3)).saveOutbox(events.capture());
+		assertThat(events.getAllValues()).extracting(event -> event.settlements().size()).containsExactly(100, 100, 5);
+	}
+
+	private SettlementPayout pending(Settlement settlement) {
+		ReflectionTestUtils.setField(settlement, "id", settlement.getAuctionId());
+		ReflectionTestUtils.setField(settlement, "status", SettlementStatus.PENDING);
+		return SettlementPayout.builder().runId(10L).settlement(settlement).build();
+	}
+
+	private Wallet wallet(PaymentMember member, int balance, List<SettlementPayout> payouts) {
+		Wallet wallet = spy(Wallet.builder().member(member).balance(balance).build());
+		given(paymentSupport.findWalletByMemberIdForUpdate(member.getId())).willReturn(wallet);
+		given(payoutRepository.findPendingForUpdate(10L, member.getId())).willReturn(payouts);
+		return wallet;
 	}
 }

@@ -7,7 +7,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.bugzero.rarego.domain.PaymentMember;
-import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.SettlementStatus;
 import com.bugzero.rarego.domain.WalletTransactionType;
 import com.bugzero.rarego.global.response.PagedResponseDto;
@@ -37,6 +36,7 @@ public class PaymentFacade {
 	private final PaymentRequestPaymentUseCase paymentRequestPaymentUseCase;
 	private final PaymentConfirmPaymentUseCase paymentConfirmPaymentUseCase;
 	private final PaymentProcessSettlementUseCase paymentProcessSettlementUseCase;
+	private final PaymentSettlementProcessor paymentSettlementProcessor;
 	private final PaymentAuctionFinalUseCase paymentAuctionFinalUseCase;
 	private final PaymentGetWalletTransactionsUseCase paymentGetWalletTransactionsUseCase;
 	private final PaymentRefundUseCase paymentRefundUseCase;
@@ -46,7 +46,6 @@ public class PaymentFacade {
 	private final PaymentWithdrawUseCase paymentWithdrawUseCase;
 	private final PaymentAuctionExpiringSoonUseCase paymentAuctionExpiringSoonUseCase;
 	private final PaymentReconcilePaymentUseCase paymentReconcilePaymentUseCase;
-	private final PaymentSettlementProcessor paymentSettlementProcessor;
 
 	/**
 	 * 보증금 홀딩
@@ -86,15 +85,12 @@ public class PaymentFacade {
 	/**
 	 * 정산 처리
 	 */
-	public void processSettlements(List<? extends Settlement> settlements) {
-		paymentProcessSettlementUseCase.processSettlements(settlements);
+	public void prepareSettlements(Long runId, List<? extends Long> settlementIds) {
+		paymentProcessSettlementUseCase.prepareSettlements(runId, settlementIds);
 	}
 
-	/**
-	 * 정산 수수료 처리
-	 */
-	public int processSettlementFees() {
-		return paymentSettlementProcessor.processFees();
+	public void depositSettlements(Long runId, Long recipientId) {
+		paymentSettlementProcessor.processRecipientDeposits(runId, recipientId);
 	}
 
 	/**

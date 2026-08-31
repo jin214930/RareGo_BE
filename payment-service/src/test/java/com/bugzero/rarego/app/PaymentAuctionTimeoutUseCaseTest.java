@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import com.bugzero.rarego.domain.Deposit;
 import com.bugzero.rarego.domain.DepositStatus;
 import com.bugzero.rarego.domain.PaymentMember;
+import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.global.exception.CustomException;
 import com.bugzero.rarego.global.outbox.app.OutboxUseCase;
@@ -26,7 +27,6 @@ import com.bugzero.rarego.global.response.ErrorType;
 import com.bugzero.rarego.out.AuctionOrderApiClient;
 import com.bugzero.rarego.out.DepositRepository;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
-import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.payment.event.PaymentTimeoutEvent;
 
@@ -49,7 +49,7 @@ class PaymentAuctionTimeoutUseCaseTest {
 	@Mock
 	private PaymentTransactionRepository transactionRepository;
 	@Mock
-	private SettlementRepository settlementRepository;
+	private PaymentCreateSettlementUseCase paymentCreateSettlementUseCase;
 	@Mock
 	private PaymentSupport paymentSupport;
 	@Mock
@@ -77,6 +77,8 @@ class PaymentAuctionTimeoutUseCaseTest {
 		given(paymentSupport.findWalletByMemberIdForUpdate(BIDDER_ID)).willReturn(wallet);
 		given(paymentSupport.findMemberById(BIDDER_ID)).willReturn(buyer);
 		given(paymentSupport.findMemberById(SELLER_ID)).willReturn(seller);
+		given(paymentCreateSettlementUseCase.createFromForfeit(AUCTION_ID, "테스트 상품", seller, DEPOSIT_AMOUNT))
+			.willReturn(Settlement.createFromForfeit(AUCTION_ID, "테스트 상품", seller, DEPOSIT_AMOUNT));
 
 		// when
 		paymentAuctionTimeoutUseCase.processTimeout(AUCTION_ID);
@@ -111,6 +113,8 @@ class PaymentAuctionTimeoutUseCaseTest {
 		given(paymentSupport.findWalletByMemberIdForUpdate(BIDDER_ID)).willReturn(wallet);
 		given(paymentSupport.findMemberById(BIDDER_ID)).willReturn(buyer);
 		given(paymentSupport.findMemberById(SELLER_ID)).willReturn(seller);
+		given(paymentCreateSettlementUseCase.createFromForfeit(AUCTION_ID, "테스트 상품", seller, DEPOSIT_AMOUNT))
+			.willReturn(Settlement.createFromForfeit(AUCTION_ID, "테스트 상품", seller, DEPOSIT_AMOUNT));
 
 		// when
 		paymentAuctionTimeoutUseCase.processTimeout(AUCTION_ID);
@@ -118,10 +122,32 @@ class PaymentAuctionTimeoutUseCaseTest {
 		// then
 		assertThat(deposit.getStatus()).isEqualTo(DepositStatus.FORFEITED);
 		assertThat(wallet.getHoldingAmount()).isEqualTo(0);
-		verify(settlementRepository).save(any());
+		verify(paymentCreateSettlementUseCase).createFromForfeit(AUCTION_ID, "테스트 상품", seller, DEPOSIT_AMOUNT);
 
 		// 3. paymentOutboxProcessor.process() 검증 제거 후 saveOutbox 호출 검증
 		verify(outboxUseCase).saveOutbox(any(PaymentTimeoutEvent.class));
+	}
+
+	@Test
+	@DisplayName("기존 몰수 원천이 있으면 지갑 락 획득 후 중복 차감을 차단한다")
+	void processTimeout_ExistingSourceDoesNotForfeitAgain() {
+		PaymentMember buyer = createMockMember(BIDDER_ID);
+		Deposit deposit = createMockDeposit(buyer, AUCTION_ID, DEPOSIT_AMOUNT);
+		Wallet wallet = Wallet.builder().balance(50000).holdingAmount(20000).build();
+		given(auctionOrderApiClient.getOrder(AUCTION_ID)).willReturn(new AuctionOrderDto(
+			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "PROCESSING", LocalDateTime.now(), "레고"));
+		given(depositRepository.findByMemberIdAndAuctionId(BIDDER_ID, AUCTION_ID)).willReturn(Optional.of(deposit));
+		given(paymentSupport.findWalletByMemberIdForUpdate(BIDDER_ID)).willReturn(wallet);
+		doThrow(new CustomException(ErrorType.INVALID_ORDER_STATUS))
+			.when(paymentCreateSettlementUseCase).validateNotCreated(AUCTION_ID);
+
+		assertThatThrownBy(() -> paymentAuctionTimeoutUseCase.processTimeout(AUCTION_ID))
+			.isInstanceOf(CustomException.class);
+
+		assertThat(wallet.getBalance()).isEqualTo(50000);
+		assertThat(wallet.getHoldingAmount()).isEqualTo(20000);
+		assertThat(deposit.getStatus()).isEqualTo(DepositStatus.HOLD);
+		verifyNoInteractions(transactionRepository, outboxUseCase);
 	}
 
 	@Test

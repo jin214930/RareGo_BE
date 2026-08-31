@@ -66,6 +66,7 @@ class PaymentGetSettlementsUseCaseTest {
 		Settlement settlement = Settlement.builder()
 			.auctionId(100L)
 			.seller(mockSeller)
+			.recipient(mockSeller)
 			.salesAmount(10000)
 			.feeAmount(1000)
 			.settlementAmount(9000)

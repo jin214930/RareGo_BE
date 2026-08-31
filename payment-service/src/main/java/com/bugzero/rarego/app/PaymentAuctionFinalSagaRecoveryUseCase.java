@@ -21,7 +21,6 @@ import com.bugzero.rarego.domain.PaymentSagaExecutionStatus;
 import com.bugzero.rarego.domain.PaymentSagaType;
 import com.bugzero.rarego.domain.PaymentTransaction;
 import com.bugzero.rarego.domain.ReferenceType;
-import com.bugzero.rarego.domain.Settlement;
 import com.bugzero.rarego.domain.Wallet;
 import com.bugzero.rarego.domain.WalletTransactionType;
 import com.bugzero.rarego.global.exception.CustomException;
@@ -31,7 +30,6 @@ import com.bugzero.rarego.out.AuctionOrderApiClient;
 import com.bugzero.rarego.out.DepositRepository;
 import com.bugzero.rarego.out.PaymentSagaExecutionRepository;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
-import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.payment.event.AuctionPaymentCompletedEvent;
 
@@ -50,7 +48,7 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 	private final AuctionOrderApiClient auctionOrderApiClient;
 	private final DepositRepository depositRepository;
 	private final PaymentTransactionRepository transactionRepository;
-	private final SettlementRepository settlementRepository;
+	private final PaymentCreateSettlementUseCase paymentCreateSettlementUseCase;
 	private final PaymentSupport paymentSupport;
 	private final OutboxUseCase outboxUseCase;
 	private final PaymentSagaTracker sagaTracker;
@@ -122,7 +120,9 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 
 		try {
 			AuctionOrderDto order = auctionOrderApiClient.getOrder(auctionId);
-			boolean settlementExists = settlementRepository.findByAuctionIdForUpdate(auctionId).isPresent();
+			PaymentMember seller = paymentSupport.findMemberById(order.sellerId());
+			boolean settlementExists = paymentCreateSettlementUseCase.hasCompletePaymentSources(
+				auctionId, order.productName(), seller, order.finalPrice());
 
 			if (settlementExists && ORDER_STATUS_SUCCESS.equals(order.status())) {
 				log.info("낙찰 최종결제 Saga 재개 스킵(이미 로컬 정산 완료): auctionId={}", auctionId);
@@ -192,9 +192,9 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 			safeMarkStep(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.AUCTION_COMPLETE_SENT);
 		}
 
+		// 체크포인트만 믿지 않고 두 지급 원천을 검증하여 누락된 유형만 복구한다.
+		paymentCreateSettlementUseCase.createForPayment(auctionId, order.productName(), seller, finalPrice);
 		if (!hasReached(checkpoint, AuctionFinalPaymentSagaStep.SETTLEMENT_READY)) {
-			Settlement settlement = Settlement.create(auctionId, order.productName(), seller, finalPrice);
-			settlementRepository.save(settlement);
 			safeMarkStep(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
 			safeMarkCheckpoint(saga, sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
 		}
@@ -209,8 +209,8 @@ public class PaymentAuctionFinalSagaRecoveryUseCase {
 		);
 		if (!hasReached(checkpoint, AuctionFinalPaymentSagaStep.COMPLETED)) {
 			outboxUseCase.saveOutbox(event);
-			safeMarkCompleted(saga, sagaBusinessKey);
 		}
+		safeMarkCompleted(saga, sagaBusinessKey);
 
 		log.info("낙찰 최종결제 Saga 재개 성공: auctionId={}, remoteCompleteCalled={}, finalPrice={}",
 			auctionId, completeRemoteOrder, finalPrice);
