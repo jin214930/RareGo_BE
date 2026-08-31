@@ -166,6 +166,35 @@ class PaymentAuctionFinalUseCaseTest {
 	}
 
 	@Test
+	@DisplayName("이미 원천이 생성된 결제는 지갑 락 획득 후 재검증하여 중복 차감하지 않는다")
+	void finalPayment_ExistingSourceDoesNotDebitAgain() {
+		PaymentMember buyer = PaymentMember.builder().id(1L).publicId("buyer").build();
+		Deposit deposit = Deposit.create(buyer, 100L, 10000);
+		Wallet wallet = Wallet.builder().member(buyer).balance(200000).holdingAmount(20000).build();
+		given(paymentSupport.findMemberByPublicId("buyer")).willReturn(buyer);
+		given(auctionOrderApiClient.getOrder(100L)).willReturn(new AuctionOrderDto(
+			1L, 100L, 5L, 1L, 100000, "PROCESSING", LocalDateTime.now(), "레고"));
+		given(depositRepository.findByMemberIdAndAuctionId(1L, 100L)).willReturn(Optional.of(deposit));
+		given(paymentSupport.findWalletByMemberIdForUpdate(1L)).willReturn(wallet);
+		given(paymentSupport.findMemberById(1L)).willReturn(buyer);
+		doThrow(new CustomException(ErrorType.INVALID_ORDER_STATUS))
+			.when(paymentCreateSettlementUseCase).validateNotCreated(100L);
+
+		assertThatThrownBy(() -> paymentAuctionFinalUseCase.finalPayment("buyer", 100L,
+			new AuctionFinalPaymentRequestDto("홍길동", "01012345678", "12345", "서울", "101", "문앞")))
+			.isInstanceOf(CustomException.class);
+
+		assertThat(wallet.getBalance()).isEqualTo(200000);
+		assertThat(wallet.getHoldingAmount()).isEqualTo(20000);
+		assertThat(deposit.getStatus()).isEqualTo(DepositStatus.HOLD);
+		var order = inOrder(paymentSupport, paymentCreateSettlementUseCase);
+		order.verify(paymentSupport).findWalletByMemberIdForUpdate(1L);
+		order.verify(paymentCreateSettlementUseCase).validateNotCreated(100L);
+		verifyNoInteractions(transactionRepository, outboxUseCase);
+		verify(auctionOrderApiClient, never()).completeOrder(anyLong(), any());
+	}
+
+	@Test
 	@DisplayName("실패: 주문 정보 없음")
 	void finalPayment_OrderNotFound() {
 		// given

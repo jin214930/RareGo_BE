@@ -129,6 +129,28 @@ class PaymentAuctionTimeoutUseCaseTest {
 	}
 
 	@Test
+	@DisplayName("기존 몰수 원천이 있으면 지갑 락 획득 후 중복 차감을 차단한다")
+	void processTimeout_ExistingSourceDoesNotForfeitAgain() {
+		PaymentMember buyer = createMockMember(BIDDER_ID);
+		Deposit deposit = createMockDeposit(buyer, AUCTION_ID, DEPOSIT_AMOUNT);
+		Wallet wallet = Wallet.builder().balance(50000).holdingAmount(20000).build();
+		given(auctionOrderApiClient.getOrder(AUCTION_ID)).willReturn(new AuctionOrderDto(
+			1L, AUCTION_ID, SELLER_ID, BIDDER_ID, FINAL_PRICE, "PROCESSING", LocalDateTime.now(), "레고"));
+		given(depositRepository.findByMemberIdAndAuctionId(BIDDER_ID, AUCTION_ID)).willReturn(Optional.of(deposit));
+		given(paymentSupport.findWalletByMemberIdForUpdate(BIDDER_ID)).willReturn(wallet);
+		doThrow(new CustomException(ErrorType.INVALID_ORDER_STATUS))
+			.when(paymentCreateSettlementUseCase).validateNotCreated(AUCTION_ID);
+
+		assertThatThrownBy(() -> paymentAuctionTimeoutUseCase.processTimeout(AUCTION_ID))
+			.isInstanceOf(CustomException.class);
+
+		assertThat(wallet.getBalance()).isEqualTo(50000);
+		assertThat(wallet.getHoldingAmount()).isEqualTo(20000);
+		assertThat(deposit.getStatus()).isEqualTo(DepositStatus.HOLD);
+		verifyNoInteractions(transactionRepository, outboxUseCase);
+	}
+
+	@Test
 	@DisplayName("실패: 주문을 찾을 수 없음")
 	void processTimeout_Fail_OrderNotFound() {
 		// given
