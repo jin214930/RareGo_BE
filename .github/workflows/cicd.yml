@@ -143,6 +143,7 @@ jobs:
     if: |
       always() && 
       github.event_name == 'push' && 
+      github.ref == 'refs/heads/main' &&
       (needs.build-test.result == 'success' || needs.build-test.result == 'skipped')
     strategy:
       matrix:
@@ -219,7 +220,7 @@ jobs:
     if: |
       always() && 
       (github.event_name == 'push') && 
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') &&
+      github.ref == 'refs/heads/main' &&
       (needs.build-images.result == 'success' || (needs.detect-changes.outputs.k8s == 'true' && needs.build-test.result != 'failure'))
     steps:
       - name: Checkout
