@@ -87,7 +87,8 @@ public class PaymentCreateSettlementUseCase {
 				|| source.getFeeAmount() != target.getFeeAmount()
 				|| source.getSettlementAmount() != target.getSettlementAmount()
 				|| !Objects.equals(source.getProductName(), target.getProductName())
-				|| (source.getStatus() != SettlementStatus.READY && source.getStatus() != SettlementStatus.DONE)) {
+				|| (source.getStatus() != SettlementStatus.READY && source.getStatus() != SettlementStatus.PENDING
+					&& source.getStatus() != SettlementStatus.DONE)) {
 				throw conflict(source);
 			}
 		}
