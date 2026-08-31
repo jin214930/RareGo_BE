@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,9 +14,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.bugzero.rarego.domain.PaymentMember;
 import com.bugzero.rarego.domain.Settlement;
-import com.bugzero.rarego.domain.SettlementStatus;
+import com.bugzero.rarego.domain.SettlementPayout;
 import com.bugzero.rarego.out.SettlementPayoutRepository;
 import com.bugzero.rarego.out.SettlementRepository;
+
+import jakarta.persistence.EntityManager;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentProcessSettlementUseCaseUnitTest {
@@ -27,22 +28,27 @@ class PaymentProcessSettlementUseCaseUnitTest {
 	private SettlementRepository settlementRepository;
 	@Mock
 	private SettlementPayoutRepository payoutRepository;
+	@Mock
+	private EntityManager entityManager;
 
 	@Test
-	void preparesOnlySourcesWhoseStateTransitionSucceeded() {
+	void preparesOnlyClaimedSourcesAndCombinesSameRecipientWithinChunk() {
 		PaymentMember seller = PaymentMember.builder().id(100L).build();
-		Settlement source = Settlement.create(1L, "상품", seller, 10000);
-		ReflectionTestUtils.setField(source, "status", SettlementStatus.PENDING);
-		given(settlementRepository.markPendingIfReady(1L)).willReturn(1);
-		given(settlementRepository.findById(1L)).willReturn(Optional.of(source));
+		Settlement first = Settlement.create(1L, "상품1", seller, 10000);
+		Settlement second = Settlement.create(2L, "상품2", seller, 20000);
+		ReflectionTestUtils.setField(first, "id", 1L);
+		ReflectionTestUtils.setField(second, "id", 2L);
+		given(settlementRepository.findReadyForUpdate(List.of(1L, 2L, 3L)))
+			.willReturn(List.of(first, second));
+		given(payoutRepository.save(any(SettlementPayout.class))).willAnswer(invocation -> invocation.getArgument(0));
+		given(settlementRepository.assignPayout(eq(List.of(1L, 2L)), any())).willReturn(2);
 
-		useCase.prepareSettlements(10L, List.of(2L, 1L, 1L));
+		useCase.prepareSettlements(10L, List.of(3L, 2L, 1L, 1L));
 
 		verify(payoutRepository).save(argThat(p -> p.getRunId() == 10L && p.getRecipientId() == 100L
-			&& p.getAmount() == 9000 && !p.isPaid()));
-		verify(settlementRepository, never()).findById(2L);
-		verify(settlementRepository, never()).findByIdForUpdate(anyLong());
-		assertThat(source.getStatus()).isEqualTo(SettlementStatus.PENDING);
+			&& p.getChunkId() == 1L && p.getAmount() == 27000 && p.getSourceCount() == 2 && !p.isPaid()));
+		verify(entityManager).flush();
+		verify(entityManager).clear();
 	}
 
 	@Test
@@ -50,6 +56,6 @@ class PaymentProcessSettlementUseCaseUnitTest {
 		useCase.prepareSettlements(10L, List.of());
 		useCase.prepareSettlements(10L, null);
 		assertThatIllegalArgumentException().isThrownBy(() -> useCase.prepareSettlements(null, List.of(1L)));
-		verifyNoInteractions(settlementRepository, payoutRepository);
+		verifyNoInteractions(settlementRepository, payoutRepository, entityManager);
 	}
 }

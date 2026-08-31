@@ -13,7 +13,7 @@ import jakarta.persistence.LockModeType;
 public interface SettlementPayoutRepository extends JpaRepository<SettlementPayout, Long> {
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
-		SELECT p FROM SettlementPayout p JOIN FETCH p.settlement s
+		SELECT p FROM SettlementPayout p
 		WHERE p.runId = :runId AND p.recipientId = :recipientId AND p.paid = false
 		ORDER BY p.id
 		""")

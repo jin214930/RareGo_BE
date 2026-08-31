@@ -81,9 +81,9 @@ abstract class AbstractSettlementTest {
 		this.jobOperatorTestUtils.setJob(settlementJob);
 		// 역순 데이터 클렌징
 		settlementFeeRepository.deleteAllInBatch();
-		payoutRepository.deleteAllInBatch();
 		paymentTransactionRepository.deleteAllInBatch();
 		settlementRepository.deleteAllInBatch();
+		payoutRepository.deleteAllInBatch();
 		walletRepository.deleteAllInBatch();
 		paymentMemberRepository.deleteAllInBatch();
 	}
@@ -154,9 +154,9 @@ abstract class AbstractSettlementTest {
 
 			// 부모 스텝이 아닌, 실제로 일을 한 파티션(Slave) 스텝들의 에러 메시지를 가져옵니다.
 			List<String> exitMessages = jdbcTemplate.queryForList(
-				"SELECT EXIT_MESSAGE FROM BATCH_STEP_EXECUTION " +
-					"WHERE JOB_EXECUTION_ID = ? AND STEP_NAME LIKE '%:partition%' " +
-					"AND STATUS = 'FAILED'",
+				"SELECT EXIT_MESSAGE FROM BATCH_STEP_EXECUTION "
+					+ "WHERE JOB_EXECUTION_ID = ? AND STEP_NAME LIKE '%:partition%' "
+					+ "AND STATUS = 'FAILED'",
 				String.class,
 				jobExecution.getId()
 			);
@@ -173,7 +173,10 @@ abstract class AbstractSettlementTest {
 			.allMatch(source -> source.getStatus() == SettlementStatus.DONE);
 		assertThat(paymentTransactionRepository.count()).isEqualTo(expectedSourceCount);
 		assertThat(settlementFeeRepository.count()).isZero();
-		assertThat(payoutRepository.findAll()).hasSize(expectedSourceCount).allMatch(SettlementPayout::isPaid);
+		assertThat(payoutRepository.findAll()).allMatch(SettlementPayout::isPaid);
+		assertThat(payoutRepository.findAll().stream().mapToInt(SettlementPayout::getSourceCount).sum())
+			.isEqualTo(expectedSourceCount);
+		assertThat(settlementRepository.findAll()).allMatch(s -> s.getPayout() != null);
 		assertThat(jobExecution.getStepExecutions()).anyMatch(step -> step.getStepName().equals("payoutMainStep"));
 		long recipientWrites = jobExecution.getStepExecutions().stream()
 			.filter(step -> step.getStepName().startsWith("settlementPayoutStep:partition"))

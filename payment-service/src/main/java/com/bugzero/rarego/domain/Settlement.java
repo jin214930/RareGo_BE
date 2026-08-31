@@ -26,7 +26,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "PAYMENT_SETTLEMENT", uniqueConstraints = {
 	@UniqueConstraint(name = "uk_settlement_auction_type", columnNames = {"auction_id", "type"})
 }, indexes = {
-	@Index(name = "idx_settlement_status_created_id", columnList = "status, created_at, id")
+	@Index(name = "idx_settlement_status_created_id", columnList = "status, created_at, id"),
+	@Index(name = "idx_settlement_payout_status_id", columnList = "payout_id, status, id")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
@@ -47,6 +48,10 @@ public class Settlement extends BaseIdAndTime {
 	@JoinColumn(name = "recipient_id", nullable = false)
 	// 실제 지급 대상: 판매자 또는 시스템 회원.
 	private PaymentMember recipient;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "payout_id")
+	private SettlementPayout payout;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
