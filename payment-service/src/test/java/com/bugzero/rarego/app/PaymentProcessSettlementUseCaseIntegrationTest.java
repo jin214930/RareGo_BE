@@ -188,6 +188,7 @@ class PaymentProcessSettlementUseCaseIntegrationTest {
 		Settlement settlement = Settlement.builder()
 			.auctionId(System.nanoTime())
 			.seller(seller)
+			.recipient(seller)
 			.salesAmount(settlementAmount + feeAmount)
 			.feeAmount(feeAmount)
 			.productName("레고")

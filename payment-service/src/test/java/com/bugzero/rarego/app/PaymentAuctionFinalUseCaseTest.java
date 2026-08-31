@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +32,6 @@ import com.bugzero.rarego.in.dto.AuctionFinalPaymentResponseDto;
 import com.bugzero.rarego.out.AuctionOrderApiClient;
 import com.bugzero.rarego.out.DepositRepository;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
-import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.payment.event.AuctionPaymentCompletedEvent;
 
@@ -51,7 +51,7 @@ class PaymentAuctionFinalUseCaseTest {
 	private PaymentTransactionRepository transactionRepository;
 
 	@Mock
-	private SettlementRepository settlementRepository;
+	private PaymentCreateSettlementUseCase paymentCreateSettlementUseCase;
 
 	@Mock
 	private PaymentSupport paymentSupport;
@@ -131,6 +131,8 @@ class PaymentAuctionFinalUseCaseTest {
 		// UseCase 로직상 buyer와 seller를 각각 조회함
 		given(paymentSupport.findMemberById(memberId)).willReturn(buyer);   // Step 4에서 호출
 		given(paymentSupport.findMemberById(sellerId)).willReturn(seller);  // Step 8에서 호출
+		given(paymentCreateSettlementUseCase.createForPayment(auctionId, "테스트 상품", seller, finalPrice))
+			.willReturn(List.of(mock(Settlement.class), mock(Settlement.class)));
 		given(sagaTracker.startOrResume(any(), anyString(), any())).willReturn("cmd-final-1");
 
 		// when
@@ -154,8 +156,8 @@ class PaymentAuctionFinalUseCaseTest {
 
 		// 4. 외부 호출 검증 (Verify)
 		verify(transactionRepository, times(2)).save(any(PaymentTransaction.class)); // 거래내역 2건
-			verify(auctionOrderApiClient).completeOrder(auctionId, "cmd-final-1"); // 주문 완료 요청
-		verify(settlementRepository).save(any(Settlement.class)); // 정산 정보 저장 (NEW)
+		verify(auctionOrderApiClient).completeOrder(auctionId, "cmd-final-1"); // 주문 완료 요청
+		verify(paymentCreateSettlementUseCase).createForPayment(auctionId, "테스트 상품", seller, finalPrice);
 		verify(outboxUseCase).saveOutbox(any(AuctionPaymentCompletedEvent.class));
 		verify(sagaTracker).startOrResume(
 			eq(PaymentSagaType.AUCTION_FINAL_PAYMENT),

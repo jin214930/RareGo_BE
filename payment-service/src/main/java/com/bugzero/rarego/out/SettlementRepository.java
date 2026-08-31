@@ -20,6 +20,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 	@Query("SELECT s FROM Settlement s WHERE s.auctionId = :auctionId")
 	Optional<Settlement> findByAuctionIdForUpdate(Long auctionId);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT s FROM Settlement s WHERE s.auctionId = :auctionId ORDER BY s.id")
+	List<Settlement> findAllByAuctionIdForUpdate(Long auctionId);
+
 	List<Settlement> findAllByStatus(SettlementStatus status);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -34,6 +38,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 	@Query("""
 		SELECT s FROM Settlement s
 		WHERE s.seller.id = :sellerId
+		AND s.type <> com.bugzero.rarego.domain.SettlementType.PLATFORM_FEE
 		AND (:status IS NULL OR s.status = :status)
 		AND (:from IS NULL OR s.createdAt >= :from)
 		AND (:to IS NULL OR s.createdAt < :to)

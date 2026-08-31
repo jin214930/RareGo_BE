@@ -1,6 +1,7 @@
 package com.bugzero.rarego.app;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,6 @@ import com.bugzero.rarego.in.dto.AuctionFinalPaymentResponseDto;
 import com.bugzero.rarego.out.AuctionOrderApiClient;
 import com.bugzero.rarego.out.DepositRepository;
 import com.bugzero.rarego.out.PaymentTransactionRepository;
-import com.bugzero.rarego.out.SettlementRepository;
 import com.bugzero.rarego.shared.auction.dto.AuctionOrderDto;
 import com.bugzero.rarego.shared.payment.event.AuctionPaymentCompletedEvent;
 
@@ -41,7 +41,7 @@ public class PaymentAuctionFinalUseCase {
 	private final AuctionOrderApiClient auctionOrderApiClient;
 	private final DepositRepository depositRepository;
 	private final PaymentTransactionRepository transactionRepository;
-	private final SettlementRepository settlementRepository;
+	private final PaymentCreateSettlementUseCase paymentCreateSettlementUseCase;
 	private final PaymentSupport paymentSupport;
 	private final OutboxUseCase outboxUseCase;
 	private final PaymentSagaTracker sagaTracker;
@@ -78,6 +78,8 @@ public class PaymentAuctionFinalUseCase {
 			// 4. 지갑 조회
 			Wallet wallet = paymentSupport.findWalletByMemberIdForUpdate(memberId);
 			PaymentMember buyer = paymentSupport.findMemberById(memberId);
+			// 지갑 락 대기 중 다른 요청이 결제를 완료했으면 다시 차감하지 않는다.
+			paymentCreateSettlementUseCase.validateNotCreated(auctionId);
 
 			// 5. 보증금 사용 처리
 			failedStep = AuctionFinalPaymentSagaStep.LOCAL_DEBIT_DONE;
@@ -101,13 +103,13 @@ public class PaymentAuctionFinalUseCase {
 			// 8. 정산 정보 생성 (status = READY)
 			failedStep = AuctionFinalPaymentSagaStep.SETTLEMENT_READY;
 			PaymentMember seller = paymentSupport.findMemberById(order.sellerId());
-			Settlement settlement = Settlement.create(auctionId, order.productName(), seller, finalPrice);
-			settlementRepository.save(settlement);
+			List<Settlement> settlements = paymentCreateSettlementUseCase.createForPayment(
+				auctionId, order.productName(), seller, finalPrice);
 			safeMarkStep(sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
 			registerAfterCommitCheckpoint(sagaBusinessKey, AuctionFinalPaymentSagaStep.SETTLEMENT_READY);
 
-			log.info("낙찰 결제 완료: auctionId={}, memberId={}, finalPrice={}, paid={}, settlementId={}",
-				auctionId, memberId, finalPrice, paymentAmount, settlement.getId());
+			log.info("낙찰 결제 완료: auctionId={}, memberId={}, finalPrice={}, paid={}, settlementCount={}",
+				auctionId, memberId, finalPrice, paymentAmount, settlements.size());
 
 			// 9. 낙찰 결제 완료 이벤트 발행
 			failedStep = AuctionFinalPaymentSagaStep.COMPLETED;
