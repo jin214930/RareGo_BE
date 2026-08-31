@@ -18,6 +18,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 
 import com.bugzero.rarego.app.PaymentFacade;
 
@@ -62,9 +64,14 @@ public class SettlementPayoutBatchConfig {
 
 	@Bean
 	public Step settlementPayoutStep() {
+		// INSERT SELECT의 원천 공유 잠금과 벌크 UPDATE의 잠금 승격 충돌을 피한다.
+		// 서비스의 REQUIRED 트랜잭션이 이 청크에 참여하므로 청크에도 같은 격리 수준을 설정한다.
+		DefaultTransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
+		transactionAttribute.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
 		return new StepBuilder("settlementPayoutStep", jobRepository)
 			.<Long, Long>chunk(1)
 			.transactionManager(transactionManager)
+			.transactionAttribute(transactionAttribute)
 			.reader(payoutRecipientReader(null, null, null))
 			.writer(payoutWriter(null))
 			.build();
