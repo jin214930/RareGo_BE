@@ -96,3 +96,6 @@ AGENTS.md
 
 # Kubernetes Secrets
 k8s/secret.yaml
+
+# Local documentation
+/docs/
